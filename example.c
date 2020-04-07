@@ -1393,7 +1393,7 @@ static void disp_insn(struct ad_insn *insn){
 int main(int argc, char **argv, const char **envp)
 {
     struct ad_insn insn;
-
+    armadillo_init(&insn);
 #define DISASSEMBLE(opcode, pc) \
     do { \
         if(ArmadilloDisassemble(opcode, pc, &insn)){ \
@@ -1401,7 +1401,7 @@ int main(int argc, char **argv, const char **envp)
             return 1; \
         } \
         \
-        disp_insn(&insn); \
+        disp_insn(&insn); armadillo_init(&insn);\
         puts(""); \
     } while(0) \
 
