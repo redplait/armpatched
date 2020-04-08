@@ -53,6 +53,8 @@ arm64_pe_file::arm64_pe_file(const wchar_t *mod_name)
   m_name = mod_name;
   m_mz = NULL;
   m_fp = NULL;
+  m_lc_readed = 0;
+  memset(&m_lc, 0, sizeof(m_lc));
 }
 
 arm64_pe_file::~arm64_pe_file()
@@ -136,7 +138,7 @@ int arm64_pe_file::read(int dump_sects)
     {  return -6; }
     if ( dump_sects )
     {
-      printf("%s: VA %X, VSize %X, size %X, offset %X flags %X\n",
+      printf("[%X] %s: VA %X, VSize %X, size %X, offset %X flags %X\n", i,
        s.name,
        sh.VirtualAddress,
        sh.Misc.VirtualSize,
@@ -174,6 +176,29 @@ char *arm64_pe_file::read_ename(DWORD rva)
   fread(res, len, 1, m_fp);
   res[len] = 0;
   return res;
+}
+
+PBYTE arm64_pe_file::read_load_config(DWORD &readed)
+{
+  if ( m_lc_readed )
+  {
+    readed = m_lc_readed;
+    return (PBYTE)&m_lc;
+  }
+  DWORD addr = m_hdr64.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress;
+  DWORD size = m_hdr64.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size;
+  if ( !addr || !size )
+    return NULL;
+  const struct one_section *os = find_section_rva(addr);
+  if ( os == NULL )
+    return NULL;
+  fseek(m_fp, os->offset + addr - os->va, SEEK_SET);
+  size = min(size, sizeof(m_lc));
+  m_lc_readed = fread(&m_lc, 1, size, m_fp);
+  if ( !m_lc_readed )
+    return NULL;
+  readed = m_lc_readed;
+  return (PBYTE)&m_lc;
 }
 
 PBYTE arm64_pe_file::read_relocs(DWORD &rsize)
@@ -428,4 +453,103 @@ exports_dict *arm64_pe_file::get_export_dict()
     return NULL;
   }
   return res;
+}
+
+void arm64_pe_file::dump_rfg_relocs()
+{
+  // check if we have load_config and DynamicValueRelocTableOffset
+  if ( m_lc_readed < offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, DynamicValueRelocTableOffset) )
+    return;
+  if ( !m_lc.DynamicValueRelocTableOffset)
+    return;
+  // yep, we have some RFG, find section where they located
+  DWORD reloff = rel_addr();
+  DWORD our_off = reloff + m_lc.DynamicValueRelocTableOffset;
+  const struct one_section *os = find_section_rva(our_off);
+  if ( os == NULL )
+    return;
+  DWORD version = 0;
+  // check if rva has some content on disk
+  if ( (reloff  + sizeof(DWORD)) > (os->va + os->size) )
+     return;
+  // seek and read version
+  fseek(m_fp, os->offset + our_off - os->va, SEEK_SET);
+  if ( 1 != fread(&version, sizeof(version), 1, m_fp) )
+    return;
+  printf("RFG version: %d\n", version);
+  if ( 1 != version )
+    return;
+  DWORD size = 0;
+  // read size of RFG relocs
+  if ( 1 != fread(&size, sizeof(size), 1, m_fp) )
+    return;
+  printf("RFG size: %X\n", size);
+  // alloc enough memory
+  PBYTE data = (PBYTE)malloc(size);
+  if ( data == NULL )
+    return;
+  dumb_free_ptr dumb(data);
+  if ( 1 != fread(data, size, 1, m_fp) )
+    return;
+  // dump
+  PBYTE data_end = data + size;
+  PBYTE curr = data;
+  // iterate on IMAGE_DYNAMIC_RELOCATION
+  while( curr < data_end )
+  {
+    BYTE rel_type = *curr;
+    if ( (rel_type > 5) || !rel_type )
+    {
+       printf("unknown IMAGE_DYNAMIC_RELOCATION.Symbol %X at %X\n", rel_type, os->offset + our_off - os->va + (curr - data));
+       return;
+    }
+    curr += 8;
+    DWORD block_size = *(PDWORD)curr;
+    curr += sizeof(DWORD);
+    PBYTE block = curr;
+    curr += block_size;
+    while( (block < curr) && (block < data_end) )
+    {
+      DWORD base_addr = *(PDWORD)block;
+      PBYTE cblock = block;
+      cblock += sizeof(DWORD);
+      // read size
+      DWORD bsize = *(PDWORD)cblock;
+      cblock += sizeof(DWORD);
+      block += bsize;
+      printf("rel_type %X at %X bsize %X\n", rel_type, our_off + (block - data), bsize);
+      if ( rel_type == 5 )
+          for ( int idx = 0; (cblock < block) && (cblock < data_end); cblock += sizeof(IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION), idx++ )
+          {
+            PIMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION block5 = (PIMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION)cblock;
+            // there are strange entries with zero at end of block. perhaps inserted just for alignment
+            if ( !block5->PageRelativeOffset && idx )
+              continue;
+            printf(" addr %X, offset %X\n", block5->PageRelativeOffset + base_addr, our_off + (cblock - data));
+          }
+        else if ( rel_type == 4 )
+          for ( int idx = 0; (cblock < block) && (cblock < data_end); cblock += sizeof(IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION), idx++ )
+          {
+            PIMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION block4 = (PIMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION)cblock;
+            // there are strange entries with zero at end of block. perhaps inserted just for alignment
+            if ( !block4->PageRelativeOffset && idx )
+              continue;
+            printf(" addr %X, offset %X\n", block4->PageRelativeOffset + base_addr, our_off + (cblock - data));
+          }
+        else if ( rel_type == 3 )
+          for ( int idx = 0; (cblock < block) && (cblock < data_end); cblock += sizeof(IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION), idx++ )
+          {
+            PIMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION block3 = (PIMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION)cblock;
+            printf(" addr %X, offset %X\n", block3->PageRelativeOffset + base_addr, our_off + (cblock - data));
+          }
+        else for ( int idx = 0; (cblock < block) && (cblock < data_end); cblock += sizeof(WORD), idx++ )
+        {
+            WORD off2 = *(PWORD)cblock;
+            // there are strange entries with zero at end of block. perhaps inserted just for alignment
+            if ( !off2 && idx )
+              continue;
+            printf(" addr %X, offset %X\n", off2 + base_addr, our_off + (cblock - data));
+        }
+    }
+  }
 }

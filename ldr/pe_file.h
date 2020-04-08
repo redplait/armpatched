@@ -1,6 +1,7 @@
 #pragma once
 
 #include "exports_dict.h"
+#include "load_config.h"
 
 /* Standart PE relocation thunk */
 typedef struct _RELOC {
@@ -295,15 +296,18 @@ class arm64_pe_file
    {
      return m_mz;
    }
-   inline PBYTE image_base() const
+   inline ULONGLONG image_base() const
    {
-     return (PBYTE)m_hdr64.OptionalHeader.ImageBase;
+     return m_hdr64.OptionalHeader.ImageBase;
    }
    const one_section *find_section_rva(DWORD addr) const;
    // exports
    exports_dict *get_export_dict();
    // read relocs
    PBYTE read_relocs(DWORD &rsize);
+   // load config
+   PBYTE read_load_config(DWORD &readed);
+   void dump_rfg_relocs();
   protected:
     inline int get_xxx(DWORD &addr, DWORD &size, int idx) const
     {
@@ -332,4 +336,7 @@ class arm64_pe_file
     size_t m_exports_total_size;
     // EAT
     export_address_table m_eat;
+    // load config
+    DWORD m_lc_readed;
+    rfg_IMAGE_LOAD_CONFIG_DIRECTORY64 m_lc;
 };

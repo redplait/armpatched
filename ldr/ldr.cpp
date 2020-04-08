@@ -5,6 +5,7 @@ void usage(const wchar_t *progname)
 {
   printf("%S: [options] arm64_pe file(s)\n", progname);
   printf("Options:\n");
+  printf(" -dlc - dump load_config\n");
   printf(" -de - dump exports\n");
   printf(" -dr - dump relocs\n");
   printf(" -ds - dump sections\n");
@@ -19,6 +20,7 @@ int wmain(int argc, wchar_t **argv)
    int dump_exp = 0;
    int dump_sects = 0;
    int dump_relocs = 0;
+   int dump_lc = 0;
    std::pair<TDirGet, const char *> dir_get[] = { 
      std::make_pair(&arm64_pe_file::get_export, "export"),
      std::make_pair(&arm64_pe_file::get_import, "import"),
@@ -49,6 +51,11 @@ int wmain(int argc, wchar_t **argv)
        dump_relocs = 1;
        continue;
      }
+     if ( !wcscmp(argv[i], L"-dlc") )
+     {
+       dump_lc = 1;
+       continue;
+     }
      if ( !wcscmp(argv[i], L"-ds") )
      {
        dump_sects = 1;
@@ -66,7 +73,7 @@ int wmain(int argc, wchar_t **argv)
      if ( f.read(dump_sects) )
        continue;
      // dump PE directories
-     printf("ImageBase: %p\n", f.image_base());
+     printf("ImageBase: %I64X\n", f.image_base());
      for ( const auto &diter : dir_get )
      {
        DWORD addr = 0;
@@ -120,6 +127,41 @@ int wmain(int argc, wchar_t **argv)
          }
        }
        free(rbody);
+     }
+     // dump load_config
+     if ( dump_lc )
+     {
+       DWORD lc_size = 0;
+       Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64 lc = (Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64)f.read_load_config(lc_size);
+       if ( lc != NULL && lc_size )
+       {
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, SEHandlerTable) )
+           printf("SecurityCookie: %I64X\n", lc->SecurityCookie);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardCFDispatchFunctionPointer) && lc->GuardCFCheckFunctionPointer )
+           printf("GuardCFCheckFunctionPointer: %I64X\n", lc->GuardCFCheckFunctionPointer);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardCFFunctionTable) && lc->GuardCFDispatchFunctionPointer )
+           printf("GuardCFDispatchFunctionPointer: %I64X\n", lc->GuardCFDispatchFunctionPointer);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardRFFailureRoutineFunctionPointer) && lc->GuardRFFailureRoutine )
+           printf("GuardRFFailureRoutine: %I64X\n", lc->GuardRFFailureRoutine);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, DynamicValueRelocTableOffset) && lc->GuardRFFailureRoutineFunctionPointer )
+           printf("GuardRFFailureRoutineFunctionPointer: %I64X\n", lc->GuardRFFailureRoutineFunctionPointer);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, HotPatchTableOffset) && lc->GuardRFVerifyStackPointerFunctionPointer )
+           printf("GuardRFVerifyStackPointerFunctionPointer: %I64X\n", lc->GuardRFVerifyStackPointerFunctionPointer);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, CHPEMetadataPointer) && lc->DynamicValueRelocTable )
+           printf("DynamicValueRelocTable: %I64X\n", lc->DynamicValueRelocTable);
+         int has_rfg = 0;
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, DynamicValueRelocTableSection) && lc->DynamicValueRelocTableOffset )
+         {
+           printf("DynamicValueRelocTableOffset: %X\n", lc->DynamicValueRelocTableOffset);
+           if ( lc->DynamicValueRelocTableOffset )
+             has_rfg = 1;
+         }
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, Reserved2) )
+           printf("DynamicValueRelocTableSection: %X\n", lc->DynamicValueRelocTableSection);
+         // dump RFG relocs
+         if ( has_rfg )
+           f.dump_rfg_relocs();
+       }
      }
    }
    return 0;
