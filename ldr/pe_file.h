@@ -308,6 +308,8 @@ class arm64_pe_file
    // load config
    PBYTE read_load_config(DWORD &readed);
    void dump_rfg_relocs();
+   // manual sunset
+   int map_pe();
   protected:
     inline int get_xxx(DWORD &addr, DWORD &size, int idx) const
     {
@@ -325,6 +327,7 @@ class arm64_pe_file
 
     std::wstring m_name;
     std::list<one_section> m_sects;
+    // for file mapping
     PBYTE m_mz;
     FILE *m_fp;
     IMAGE_NT_HEADERS64 m_hdr64;

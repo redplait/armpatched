@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "pe_file.h"
+#include "../source/armadillo.h"
 
 void usage(const wchar_t *progname)
 {
@@ -95,7 +96,6 @@ int wmain(int argc, wchar_t **argv)
      {
        if ( dump_exp )
          ed->dump();
-       delete ed;
      }
      // dump relocs
      if ( dump_relocs )
@@ -163,6 +163,25 @@ int wmain(int argc, wchar_t **argv)
            f.dump_rfg_relocs();
        }
      }
+     if ( f.map_pe() && ed != NULL )
+     {
+       // quick and dirty test
+       const export_item *exp = ed->find("ExInitializeNPagedLookasideList");
+       if (exp != NULL )
+       {
+         PBYTE addr = f.base_addr() + exp->rva;
+         struct ad_insn arm_dis;
+         for ( int i = 0; i < 3; i++, addr += 4 )
+         {
+           int res = ArmadilloDisassemble(*(PDWORD)addr, (uint64)(f.base_addr() + exp->rva + i * 4), &arm_dis);
+           printf("res %d, %s\n", res, arm_dis.decoded);
+           if ( res )
+             break;
+         }
+       }
+     }
+     if ( ed != NULL )
+       delete ed;
    }
    return 0;
 }

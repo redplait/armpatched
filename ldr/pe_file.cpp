@@ -59,6 +59,8 @@ arm64_pe_file::arm64_pe_file(const wchar_t *mod_name)
 
 arm64_pe_file::~arm64_pe_file()
 {
+  if ( m_mz != NULL )
+    VirtualFree(m_mz, 0, MEM_RELEASE);
   if ( m_fp != NULL )
     fclose(m_fp);
   clean_exports();
@@ -552,4 +554,50 @@ void arm64_pe_file::dump_rfg_relocs()
         }
     }
   }
+}
+
+int arm64_pe_file::map_pe()
+{
+  if ( m_fp == NULL )
+    return 0;
+  if ( m_mz != NULL ) // already mapped ?
+    return 0;
+  // iterate over sections to find size of mapping and header
+  DWORD max_size = 0;
+  DWORD min_size = 0;
+  for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )
+  {
+    if ( !min_size )
+      min_size = iter->offset;
+    else if ( min_size > iter->offset )
+      min_size = iter->offset;
+    DWORD aligned = align_size(iter->vsize);
+    if ( iter->va + aligned > max_size )
+      max_size = iter->va + aligned;
+  }
+  printf("min_size %X, max_size %X\n", min_size, max_size);
+  // create "mapping"
+  m_mz = (PBYTE)VirtualAlloc(NULL, max_size, MEM_COMMIT, PAGE_READWRITE);
+  if ( NULL == m_mz )
+  {
+    printf("VirtualAlloc failed, error %d\n", ::GetLastError());
+    return 0;
+  }
+  // map each section
+  for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )
+  {
+    fseek(m_fp, iter->offset, SEEK_SET);
+    if ( 1 != fread(m_mz + iter->va, iter->size, 1, m_fp) )
+    {
+      printf("cannot copy section %s to %p\n", iter->name, m_mz + iter->va);
+      VirtualFree(m_mz, 0, MEM_RELEASE);
+      m_mz = NULL;
+      return 0;
+    }
+    printf("%s mapped %X to %p\n", iter->name, iter->size, m_mz + iter->va);
+  }
+  // hanging on the cake - MZ header
+  fseek(m_fp, 0, SEEK_SET);
+  fread(m_mz, min_size, 1, m_fp);
+  return 1;
 }
