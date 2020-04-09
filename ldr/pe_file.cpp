@@ -624,7 +624,8 @@ int arm64_pe_file::map_pe(int verbose)
     if ( iter->va + aligned > max_size )
       max_size = iter->va + aligned;
   }
-  printf("min_size %X, max_size %X\n", min_size, max_size);
+  if ( verbose )
+    printf("min_size %X, max_size %X\n", min_size, max_size);
   m_mz_size = max_size;
   // create "mapping"
   m_mz = (PBYTE)VirtualAlloc(NULL, m_mz_size, MEM_COMMIT, PAGE_READWRITE);
@@ -637,6 +638,9 @@ int arm64_pe_file::map_pe(int verbose)
   // map each section
   for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )
   {
+    // for example PadXX sections has zero size
+    if ( !iter->size )
+      continue;
     fseek(m_fp, iter->offset, SEEK_SET);
     if ( 1 != fread(m_mz + iter->va, iter->size, 1, m_fp) )
     {
