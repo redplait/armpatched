@@ -616,6 +616,9 @@ int arm64_pe_file::map_pe(int verbose)
   DWORD min_size = 0;
   for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )
   {
+    // for example PadXX sections has zero size
+    if ( !iter->size )
+      continue;
     if ( !min_size )
       min_size = iter->offset;
     else if ( min_size > iter->offset )
