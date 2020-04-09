@@ -310,6 +310,16 @@ class arm64_pe_file
    void dump_rfg_relocs();
    // manual sunset
    int map_pe();
+   int apply_relocs();
+   // sanitizers
+   inline int is_inside(PBYTE psp)
+   {
+     if ( m_mz == NULL )
+       return 0;
+     if ( psp < m_mz )
+       return 0;
+     return (psp < m_mz + m_mz_size);
+   }
   protected:
     inline int get_xxx(DWORD &addr, DWORD &size, int idx) const
     {
@@ -329,6 +339,7 @@ class arm64_pe_file
     std::list<one_section> m_sects;
     // for file mapping
     PBYTE m_mz;
+    size_t m_mz_size;
     FILE *m_fp;
     IMAGE_NT_HEADERS64 m_hdr64;
     DWORD m_pe_off;    

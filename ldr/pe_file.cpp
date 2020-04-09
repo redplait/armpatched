@@ -52,6 +52,7 @@ arm64_pe_file::arm64_pe_file(const wchar_t *mod_name)
 {
   m_name = mod_name;
   m_mz = NULL;
+  m_mz_size = 0;
   m_fp = NULL;
   m_lc_readed = 0;
   memset(&m_lc, 0, sizeof(m_lc));
@@ -196,7 +197,7 @@ PBYTE arm64_pe_file::read_load_config(DWORD &readed)
     return NULL;
   fseek(m_fp, os->offset + addr - os->va, SEEK_SET);
   size = min(size, sizeof(m_lc));
-  m_lc_readed = fread(&m_lc, 1, size, m_fp);
+  m_lc_readed = (DWORD)fread(&m_lc, 1, size, m_fp);
   if ( !m_lc_readed )
     return NULL;
   readed = m_lc_readed;
@@ -223,6 +224,42 @@ PBYTE arm64_pe_file::read_relocs(DWORD &rsize)
     return NULL;
   }
   return res;
+}
+
+int arm64_pe_file::apply_relocs()
+{
+  if ( m_mz == NULL ) 
+    return 0;
+  DWORD raddr = 0,
+        rsize = 0;
+  if ( !get_rel(raddr, rsize) )
+    return 0;
+  PIMAGE_BASE_RELOCATION BaseReloc = (PIMAGE_BASE_RELOCATION)(m_mz + raddr);
+  PBYTE  RelEnd = ((PBYTE)BaseReloc + rsize);
+  LONGLONG diff = (LONGLONG)m_mz - image_base();
+  while ((PBYTE)BaseReloc < RelEnd && BaseReloc->SizeOfBlock)
+  {
+    PRELOC Reloc = (PRELOC)((PBYTE)BaseReloc + sizeof(IMAGE_BASE_RELOCATION));
+    for ( DWORD i = 0;
+          (i < (BaseReloc->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(RELOC)) &&
+          ((PBYTE)&Reloc[i] < RelEnd);
+          i++
+        )
+    {
+       if ( !Reloc[i].Type ) // I don`t know WTF is absolute reloc means
+         continue;
+       // see https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#base-relocation-types
+       // 10 - IMAGE_REL_BASED_DIR64
+       if ( Reloc[i].Type != 10 )
+       {
+          printf("unknown reltype %d offset %X\n", Reloc[i].Type, BaseReloc->VirtualAddress + Reloc[i].Offset);
+          continue;
+        }
+        *(LONGLONG *)(m_mz + BaseReloc->VirtualAddress + Reloc[i].Offset) += diff;
+    }
+    BaseReloc = (PIMAGE_BASE_RELOCATION)((PBYTE)BaseReloc + BaseReloc->SizeOfBlock);
+  }
+  return 1;
 }
 
 int arm64_pe_file::read_exports()
@@ -576,11 +613,13 @@ int arm64_pe_file::map_pe()
       max_size = iter->va + aligned;
   }
   printf("min_size %X, max_size %X\n", min_size, max_size);
+  m_mz_size = max_size;
   // create "mapping"
-  m_mz = (PBYTE)VirtualAlloc(NULL, max_size, MEM_COMMIT, PAGE_READWRITE);
+  m_mz = (PBYTE)VirtualAlloc(NULL, m_mz_size, MEM_COMMIT, PAGE_READWRITE);
   if ( NULL == m_mz )
   {
-    printf("VirtualAlloc failed, error %d\n", ::GetLastError());
+    printf("VirtualAlloc(%X bytes) failed, error %d\n", m_mz_size, ::GetLastError());
+    m_mz_size = 0;
     return 0;
   }
   // map each section
@@ -592,6 +631,7 @@ int arm64_pe_file::map_pe()
       printf("cannot copy section %s to %p\n", iter->name, m_mz + iter->va);
       VirtualFree(m_mz, 0, MEM_RELEASE);
       m_mz = NULL;
+      m_mz_size = 0;
       return 0;
     }
     printf("%s mapped %X to %p\n", iter->name, iter->size, m_mz + iter->va);

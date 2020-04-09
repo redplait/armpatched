@@ -164,6 +164,8 @@ int wmain(int argc, wchar_t **argv)
      }
      if ( f.map_pe() && ed != NULL )
      {
+       // apply relocs
+       f.apply_relocs();
        // quick and dirty test
        const export_item *exp = ed->find("ExInitializeNPagedLookasideList");
        if (exp != NULL )
