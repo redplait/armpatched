@@ -153,8 +153,7 @@ int wmain(int argc, wchar_t **argv)
          if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, DynamicValueRelocTableSection) && lc->DynamicValueRelocTableOffset )
          {
            printf("DynamicValueRelocTableOffset: %X\n", lc->DynamicValueRelocTableOffset);
-           if ( lc->DynamicValueRelocTableOffset )
-             has_rfg = 1;
+           has_rfg = 1;
          }
          if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, Reserved2) )
            printf("DynamicValueRelocTableSection: %X\n", lc->DynamicValueRelocTableSection);
