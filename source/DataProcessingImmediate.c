@@ -39,7 +39,7 @@ static int DisassemblePCRelativeAddressingInstr(struct instruction *i,
         instr_s = "adrp";
 
         imm = ((immhi << 2) | immlo) << 12;
-        imm = sign_extend((unsigned long)imm, 32);
+        imm = sign_ext64(imm, 32);
         imm += (i->PC & ~0xfff);
 
         SET_INSTR_ID(out, AD_INSTR_ADRP);

@@ -4,7 +4,7 @@
 #ifdef _MSC_VER
 # define uint64	unsigned __int64
 #else
-# define uint64 insigned long
+# define uint64 unsigned long
 #endif
 
 struct ad_operand {
