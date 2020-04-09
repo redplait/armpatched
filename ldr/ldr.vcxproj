@@ -157,6 +157,8 @@
   <ItemGroup>
     <ClCompile Include="dict.c" />
     <ClCompile Include="exports_dict.cpp" />
+    <ClCompile Include="hack.cpp" />
+    <ClCompile Include="krnl_hack.cpp" />
     <ClCompile Include="ldr.cpp" />
     <ClCompile Include="pe_file.cpp" />
   </ItemGroup>

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "pe_file.h"
+#include "krnl_hack.h"
 #include "../source/armadillo.h"
 
 void usage(const wchar_t *progname)
@@ -11,6 +12,7 @@ void usage(const wchar_t *progname)
   printf(" -dr - dump relocs\n");
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
+  printf(" -v - verbose output\n");
   exit(6);
 }
 
@@ -22,6 +24,7 @@ int wmain(int argc, wchar_t **argv)
    int dump_sects = 0;
    int dump_relocs = 0;
    int dump_lc = 0;
+   int verb_mode = 0;
    std::pair<TDirGet, const char *> dir_get[] = { 
      std::make_pair(&arm64_pe_file::get_export, "export"),
      std::make_pair(&arm64_pe_file::get_import, "import"),
@@ -67,6 +70,11 @@ int wmain(int argc, wchar_t **argv)
        dump_exp = 1;
        dump_relocs = 1;
        dump_sects = 1;
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-v") )
+     {
+       verb_mode = 1;
        continue;
      }
      printf("%S:\n", argv[i]);
@@ -135,7 +143,7 @@ int wmain(int argc, wchar_t **argv)
        Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64 lc = (Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64)f.read_load_config(lc_size);
        if ( lc != NULL && lc_size )
        {
-         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, SEHandlerTable) )
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, SEHandlerTable) && lc->SecurityCookie )
            printf("SecurityCookie: %I64X\n", lc->SecurityCookie);
          if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardCFDispatchFunctionPointer) && lc->GuardCFCheckFunctionPointer )
            printf("GuardCFCheckFunctionPointer: %I64X\n", lc->GuardCFCheckFunctionPointer);
@@ -162,24 +170,15 @@ int wmain(int argc, wchar_t **argv)
            f.dump_rfg_relocs();
        }
      }
-     if ( f.map_pe() && ed != NULL )
+     if ( f.map_pe(verb_mode) && ed != NULL )
      {
        // apply relocs
        f.apply_relocs();
        // quick and dirty test
-       const export_item *exp = ed->find("ExInitializeNPagedLookasideList");
-       if (exp != NULL )
-       {
-         PBYTE addr = f.base_addr() + exp->rva;
-         struct ad_insn arm_dis;
-         for ( int i = 0; i < 3; i++, addr += 4 )
-         {
-           int res = ArmadilloDisassemble(*(PDWORD)addr, (uint64)(f.base_addr() + exp->rva + i * 4), &arm_dis);
-           printf("res %d, %s\n", res, arm_dis.decoded);
-           if ( res )
-             break;
-         }
-       }
+       ntoskrnl_hack nt(&f, ed);
+       ed = NULL; // will be killed inside ~arm64_hack
+       nt.hack(verb_mode);
+       nt.dump();
      }
      if ( ed != NULL )
        delete ed;

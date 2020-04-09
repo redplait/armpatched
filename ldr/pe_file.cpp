@@ -79,6 +79,18 @@ const one_section *arm64_pe_file::find_section_rva(DWORD addr) const
   return NULL;
 }
 
+const one_section *arm64_pe_file::find_section_v(DWORD addr) const
+{
+  for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )
+  {
+    DWORD end = iter->va + iter->vsize;
+    if ( addr >= iter->va &&
+         addr < end )
+     return &*iter;
+  }
+  return NULL;
+}
+
 void arm64_pe_file::clean_exports()
 {
   std::map<WORD, struct one_export *>::iterator iter = m_eords.begin();
@@ -593,7 +605,7 @@ void arm64_pe_file::dump_rfg_relocs()
   }
 }
 
-int arm64_pe_file::map_pe()
+int arm64_pe_file::map_pe(int verbose)
 {
   if ( m_fp == NULL )
     return 0;
@@ -634,7 +646,8 @@ int arm64_pe_file::map_pe()
       m_mz_size = 0;
       return 0;
     }
-    printf("%s mapped %X to %p\n", iter->name, iter->size, m_mz + iter->va);
+    if ( verbose )
+      printf("%s mapped %X to %p\n", iter->name, iter->size, m_mz + iter->va);
   }
   // hanging on the cake - MZ header
   fseek(m_fp, 0, SEEK_SET);

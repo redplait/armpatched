@@ -300,7 +300,10 @@ class arm64_pe_file
    {
      return m_hdr64.OptionalHeader.ImageBase;
    }
+   // search only in inited section data
    const one_section *find_section_rva(DWORD addr) const;
+   // search in whole section content
+   const one_section *find_section_v(DWORD addr) const;
    // exports
    exports_dict *get_export_dict();
    // read relocs
@@ -309,7 +312,7 @@ class arm64_pe_file
    PBYTE read_load_config(DWORD &readed);
    void dump_rfg_relocs();
    // manual sunset
-   int map_pe();
+   int map_pe(int verb_mode);
    int apply_relocs();
    // sanitizers
    inline int is_inside(PBYTE psp)
