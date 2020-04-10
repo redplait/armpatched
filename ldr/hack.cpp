@@ -134,6 +134,16 @@ int arm64_hack::is_ldr() const
   ;
 }
 
+int arm64_hack::is_str() const
+{
+  return (m_dis.instr_id == AD_INSTR_STR) && 
+         (m_dis.num_operands == 3) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_REG) &&
+         (m_dis.operands[2].type == AD_OP_IMM)
+  ;
+}
+
 int arm64_hack::disasm(int state)
 {
   if ( !m_pe->is_inside(m_psp + 4) )

@@ -150,7 +150,7 @@ class cf_graph: public graph_ranges<T>
    // add new node with address
    void add(T addr)
    {
-     if ( in_mranges(addr) )
+     if (graph_ranges<T>::in_mranges(addr) )
       return;
      try
      {
@@ -174,7 +174,7 @@ class cf_graph: public graph_ranges<T>
      for ( auto citer = ranges->begin(); citer != ranges->end(); ++citer )
      {
        delete_in(*citer);
-       insert_range(*citer);
+       graph_ranges<T>::insert_range(*citer);
      }
      ranges->clear();
      return m_nodes.size();

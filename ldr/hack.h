@@ -90,7 +90,7 @@ class arm64_hack
    int is_bl_jimm(PBYTE &addr) const;
    inline int is_bl_reg() const
    {
-     return (m_dis.instr_id == AD_INSTR_BL && m_dis.num_operands == 1 && m_dis.operands[0].type == AD_OP_REG);
+     return (m_dis.instr_id == AD_INSTR_BLR && m_dis.num_operands == 1 && m_dis.operands[0].type == AD_OP_REG);
    }
    int is_cbnz_jimm(PBYTE &addr) const;
    int is_cbz_jimm(PBYTE &addr) const;
@@ -99,6 +99,11 @@ class arm64_hack
    int is_adrp() const;
    int is_add() const;
    int is_ldr() const;
+   int is_str() const;
+   inline int is_mov_rimm() const
+   {
+     return (m_dis.instr_id == AD_INSTR_MOV && m_dis.num_operands == 2 && m_dis.operands[0].type == AD_OP_REG && m_dis.operands[1].type == AD_OP_IMM);
+   }
    int in_section(PBYTE addr, const char *sname) const
    {
      ptrdiff_t off = addr - m_pe->base_addr();
