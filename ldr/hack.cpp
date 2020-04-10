@@ -43,6 +43,56 @@ int arm64_hack::is_b_jimm(PBYTE &addr) const
     return 0;
 }
 
+int arm64_hack::is_tbz_jimm(PBYTE &addr) const
+{
+  if ( m_dis.instr_id == AD_INSTR_TBZ && m_dis.num_operands == 3 && m_dis.operands[2].type == AD_OP_IMM )
+  {
+    addr = (PBYTE)m_dis.operands[2].op_imm.bits;
+    return 1;
+  }
+  return 0;
+}
+
+int arm64_hack::is_tbnz_jimm(PBYTE &addr) const
+{
+  if ( m_dis.instr_id == AD_INSTR_TBNZ && m_dis.num_operands == 3 && m_dis.operands[2].type == AD_OP_IMM )
+  {
+    addr = (PBYTE)m_dis.operands[2].op_imm.bits;
+    return 1;
+  }
+  return 0;
+}
+
+int arm64_hack::is_cbz_jimm(PBYTE &addr) const
+{
+  if ( m_dis.instr_id == AD_INSTR_CBZ && m_dis.num_operands == 2 && m_dis.operands[1].type == AD_OP_IMM )
+  {
+    addr = (PBYTE)m_dis.operands[1].op_imm.bits;
+    return 1;
+  }
+  return 0;
+}
+
+int arm64_hack::is_cbnz_jimm(PBYTE &addr) const
+{
+  if ( m_dis.instr_id == AD_INSTR_CBNZ && m_dis.num_operands == 2 && m_dis.operands[1].type == AD_OP_IMM )
+  {
+    addr = (PBYTE)m_dis.operands[1].op_imm.bits;
+    return 1;
+  }
+  return 0;
+}
+
+int arm64_hack::is_bxx_jimm(PBYTE &addr) const
+{
+  if ( m_dis.instr_id == AD_INSTR_B && m_dis.cc != AD_NONE && m_dis.num_operands == 1 && m_dis.operands[0].type == AD_OP_IMM )
+  {
+    addr = (PBYTE)m_dis.operands[0].op_imm.bits;
+    return 1;
+  } else
+    return 0;
+}
+
 // check if current instruction is call jimm
 int arm64_hack::is_bl_jimm(PBYTE &addr) const
 {
@@ -73,6 +123,30 @@ int arm64_hack::is_add() const
   ;
 }
 
+int arm64_hack::is_ldr() const
+{
+  return (m_dis.instr_id == AD_INSTR_LDR) && 
+         (m_dis.num_operands == 3) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_REG) &&
+         (m_dis.operands[2].type == AD_OP_IMM)
+  ;
+}
+
+int arm64_hack::disasm(int verbose, int state)
+{
+  if ( !m_pe->is_inside(m_psp + 4) )
+    return 0;
+  if ( ArmadilloDisassemble(*(PDWORD)m_psp, (ULONGLONG)m_psp, &m_dis) )
+    return 0;
+  if ( verbose )
+    printf("%p: %s state %d\n", m_psp, m_dis.decoded, state);
+  m_psp += 4;
+  if (m_dis.instr_id == AD_INSTR_UDF)
+    return 0;
+  return 1;
+}
+
 int arm64_hack::disasm(int verbose)
 {
   if ( !m_pe->is_inside(m_psp + 4) )
@@ -82,6 +156,8 @@ int arm64_hack::disasm(int verbose)
   if ( verbose )
     printf("%p: %s\n", m_psp, m_dis.decoded);
   m_psp += 4;
+  if (m_dis.instr_id == AD_INSTR_UDF)
+    return 0;
   return 1;
 }
 

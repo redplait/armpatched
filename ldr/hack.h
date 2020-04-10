@@ -74,6 +74,7 @@ class arm64_hack
      return 1;
    }
    int disasm(int verbose);
+   int disasm(int verbose, int state);
    // some shortcuts methods
    inline int get_reg(int idx)
    {
@@ -85,9 +86,15 @@ class arm64_hack
      return (m_dis.instr_id == AD_INSTR_RET);
    }
    int is_b_jimm(PBYTE &addr) const;
+   int is_bxx_jimm(PBYTE &addr) const;
    int is_bl_jimm(PBYTE &addr) const;
+   int is_cbnz_jimm(PBYTE &addr) const;
+   int is_cbz_jimm(PBYTE &addr) const;
+   int is_tbz_jimm(PBYTE &addr) const;
+   int is_tbnz_jimm(PBYTE &addr) const;
    int is_adrp() const;
    int is_add() const;
+   int is_ldr() const;
    int in_section(PBYTE addr, const char *sname) const
    {
      ptrdiff_t off = addr - m_pe->base_addr();
