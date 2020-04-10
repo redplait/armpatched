@@ -124,6 +124,16 @@ int arm64_hack::is_add() const
   ;
 }
 
+int arm64_hack::is_ldrb() const
+{
+  return (m_dis.instr_id == AD_INSTR_LDRB) && 
+         (m_dis.num_operands == 3) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_REG) &&
+         (m_dis.operands[2].type == AD_OP_IMM)
+  ;
+}
+
 int arm64_hack::is_ldr() const
 {
   return (m_dis.instr_id == AD_INSTR_LDR) && 
@@ -153,7 +163,9 @@ int arm64_hack::disasm(int state)
   if ( m_verbose )
     printf("%p: %s state %d\n", m_psp, m_dis.decoded, state);
   m_psp += 4;
-  if (m_dis.instr_id == AD_INSTR_UDF)
+  if ( (m_dis.instr_id == AD_INSTR_UDF) ||
+       (m_dis.instr_id == AD_INSTR_BRK)
+     )
     return 0;
   return 1;
 }
@@ -167,7 +179,9 @@ int arm64_hack::disasm()
   if ( m_verbose )
     printf("%p: %s\n", m_psp, m_dis.decoded);
   m_psp += 4;
-  if (m_dis.instr_id == AD_INSTR_UDF)
+  if ( (m_dis.instr_id == AD_INSTR_UDF) ||
+       (m_dis.instr_id == AD_INSTR_BRK)
+     )
     return 0;
   return 1;
 }

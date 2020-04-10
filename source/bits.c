@@ -17,7 +17,7 @@ unsigned int sign_extend(unsigned int number, int numbits){
 uint64 sign_ext64(uint64 number, int numbits)
 {
     if(number & (1I64 << (numbits - 1)))
-        return number | ~((1 << numbits) - 1);
+        return number | ~((1I64 << numbits) - 1);
 
     return number;
 }

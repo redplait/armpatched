@@ -83,6 +83,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_x18(PBYTE psp, DWORD &off);
     int hack_entry(PBYTE psp);
     int hack_sdt(PBYTE psp);
+    int hack_ob_types(PBYTE psp);
     // auxilary data
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
@@ -101,6 +102,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KeLoaderBlock;
     PBYTE m_KiServiceLimit;
     PBYTE m_KiServiceTable;
+    // obtypes cookie & table
+    PBYTE m_ObHeaderCookie;
+    PBYTE m_ObTypeIndexTable;
     // thread offsets
     DWORD m_stack_base_off;
     DWORD m_stack_limit_off;

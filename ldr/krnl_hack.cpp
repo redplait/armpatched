@@ -32,6 +32,7 @@ void ntoskrnl_hack::zero_data()
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
   m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = NULL;
+  m_ObHeaderCookie = m_ObTypeIndexTable = NULL;
 }
 
 void ntoskrnl_hack::dump() const
@@ -57,6 +58,10 @@ void ntoskrnl_hack::dump() const
     printf("KiServiceLimit: %p\n", m_KiServiceLimit - mz);
   if ( m_KiServiceTable != NULL )
     printf("KiServiceTable: %p\n", m_KiServiceTable - mz);
+  if ( m_ObHeaderCookie != NULL )
+    printf("ObHeaderCookie: %p\n", m_ObHeaderCookie - mz);
+  if ( m_ObTypeIndexTable != NULL )
+    printf("ObTypeIndexTable: %p\n", m_ObTypeIndexTable - mz);
   if ( m_stack_base_off )
     printf("KTHREAD.StackBase offset:  %X\n", m_stack_base_off);
   if ( m_stack_limit_off )
@@ -101,7 +106,10 @@ int ntoskrnl_hack::hack(int verbose)
    {
      res += hack_entry(mz + ep);
    } catch(std::bad_alloc)
-   { } 
+   { }
+  exp = m_ed->find("ObReferenceObjectByPointerWithTag");
+    res += hack_ob_types(mz + exp->rva);
+  if ( exp != NULL ) 
   // thread offsets
   exp = m_ed->find("PsGetCurrentThreadId");
   if ( exp != NULL )
@@ -188,6 +196,47 @@ int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
   return (lock != NULL) && (list != NULL);
 }
 
+int ntoskrnl_hack::hack_ob_types(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  int state = 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 30; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp() )
+    {
+      used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+      continue;
+    }
+    // ldrb for cookie
+    if ( !state && is_ldrb() ) 
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, "ALMOSTRO") )
+         used_regs.zero(get_reg(0));
+       else {
+         m_ObHeaderCookie = what;
+         state = 1;
+       }
+    }
+    // add for index tab
+    if ( state && is_add() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, "ALMOSTRO") )
+         used_regs.zero(get_reg(0));
+       else {
+         m_ObTypeIndexTable = what;
+         break;
+       }
+    }
+  }
+  return (m_ObHeaderCookie != NULL) && (m_ObTypeIndexTable != NULL);
+}
+
 int ntoskrnl_hack::hack_sdt(PBYTE psp)
 {
   if ( !setup(psp) )
@@ -209,6 +258,7 @@ int ntoskrnl_hack::hack_sdt(PBYTE psp)
       if ( !setup(psp) )
         continue;
       regs_pad used_regs;
+      edge_n++;
       for ( DWORD i = 0; i < 100; i++ )
       {
         if ( !disasm() || is_ret() )
