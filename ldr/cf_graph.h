@@ -301,6 +301,8 @@ class statefull_graph: public graph_ranges<T>
    {
      delete_ranges(ranges);
      list->clear();
+     if ( m_nodes.empty() )
+       return 0;
      try
      {
        for ( auto iter = m_nodes.cbegin(); iter != m_nodes.cend(); ++iter )
@@ -311,6 +313,22 @@ class statefull_graph: public graph_ranges<T>
      } catch(std::bad_alloc)
      { }
      return list->size();
+   }
+   size_t delete_ranges(std::list<code_area<T> > *ranges, std::vector<Edge> &vec)
+   {
+     delete_ranges(ranges);
+     vec.clear();
+     if ( m_nodes.empty() )
+       return 0;
+     try
+     {
+        vec.reserve(m_nodes.size());
+        std::copy(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec));
+     } catch(std::bad_alloc)
+     { }
+     // sort vector
+     std::sort(vec.begin(), vec.end(), [](const Edge &l, const Edge &r) -> bool { return l.first < r.first;  });
+     return vec.size();
    }
   protected:
    void delete_in(const code_area<T> &ca)
