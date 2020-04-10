@@ -1872,7 +1872,7 @@ static int DisassembleAdvancedSIMDTwoRegisterMiscellaneousInstr(struct instructi
         unsigned op = bits(i->opcode, 12, 12);
         unsigned cop = (op << 1) | U;
 
-        struct itab tab[] = {
+        static const struct itab tab[] = {
             { "fcmgt", AD_INSTR_FCMGT }, { "fcmge", AD_INSTR_FCMGE },
             { "fcmeq", AD_INSTR_FCMEQ }, { "fcmle", AD_INSTR_FCMLE }
         };
@@ -2285,7 +2285,7 @@ static int DisassembleAdvancedSIMDTwoRegisterMiscellaneousInstr(struct instructi
 
         if(U == 0){
             if(s == 0){
-                struct itab tab[] = {
+                static const struct itab tab[] = {
                     { "fcvtns", AD_INSTR_FCVTNS }, { "fcvtms", AD_INSTR_FCVTMS },
                     { "fcvtas", AD_INSTR_FCVTAS }, { "scvtf", AD_INSTR_SCVTF }
                 };
@@ -2441,26 +2441,39 @@ static int DisassembleAdvancedSIMDScalarPairwiseInstr(struct instruction *i,
 
         unsigned tempop = opcode - 12;
 
-        const struct itab tab[] = {
-            { s == 0 ? "fmaxnmp" : "fminnmp", s == 0 ? AD_INSTR_FMAXNMP : AD_INSTR_FMINNMP },
-            { s == 0 ? "faddp" : NULL, s == 0 ? AD_INSTR_FADDP : AD_NONE },
+        static const struct itab tab_s0[] = {
+            { "fmaxnmp", AD_INSTR_FMAXNMP },
+            { "faddp",   AD_INSTR_FADDP },
             /* one blank, idx 2 */
             { NULL, AD_NONE },
-            { s == 0 ? "fmaxp" : "fminp", s == 0 ? AD_INSTR_FMAXP : AD_INSTR_FMINP }
+            { "fmaxp",   AD_INSTR_FMAXP }
+        };
+        static const struct itab tab_s1[] = {
+            { "fminnmp", AD_INSTR_FMINNMP },
+            { NULL,   AD_NONE },
+            /* one blank, idx 2 */
+            { NULL, AD_NONE },
+            { "fminp",   AD_INSTR_FMINP }
         };
 
         if(opcode == 13 && s == 1)
             return 1;
 
-        if(OOB(tempop, tab))
+        if(OOB(tempop, tab_s0))
             return 1;
 
-        instr_s = tab[tempop].instr_s;
+        if ( !s )
+          instr_s = tab_s0[tempop].instr_s;
+        else
+          instr_s = tab_s1[tempop].instr_s;
 
         if(!instr_s)
             return 1;
 
-        instr_id = tab[tempop].instr_id;
+        if ( !s )
+          instr_id = tab_s0[tempop].instr_id;
+        else
+          instr_id = tab_s1[tempop].instr_id;
 
         if(fp16 && _sz == 1)
             return 1;
@@ -2956,29 +2969,53 @@ static int DisassembleAdvancedSIMDShiftByImmediateInstr(struct instruction *i, s
     ADD_FIELD(out, Rd);
 
     if(opcode <= 0xe){
-        struct itab tab[] = {
-            { U == 0 ? "sshr" : "ushr", U == 0 ? AD_INSTR_SSHR : AD_INSTR_USHR },
+        static const struct itab tab_u0[] = {
+            { "sshr", AD_INSTR_SSHR },
             /* one blank, idx 1 */
             { NULL, AD_NONE },
-            { U == 0 ? "ssra" : "usra", U == 0 ? AD_INSTR_SSRA : AD_INSTR_USRA },
+            { "ssra", AD_INSTR_SSRA },
             /* one blank, idx 3 */
             { NULL, AD_NONE },
-            { U == 0 ? "srshr" : "urshr", U == 0 ? AD_INSTR_SRSHR : AD_INSTR_URSHR },
+            { "srshr", AD_INSTR_SRSHR },
             /* one blank, idx 5 */
             { NULL, AD_NONE },
-            { U == 0 ? "srsra" : "ursra", U == 0 ? AD_INSTR_SRSRA : AD_INSTR_URSRA },
+            { "srsra", AD_INSTR_SRSRA },
             /* one blank, idx 7 */
             { NULL, AD_NONE },
-            { U == 0 ? NULL : "sri", U == 0 ? AD_NONE : AD_INSTR_SRI },
+            { NULL, AD_NONE },
             /* one blank, idx 9 */
             { NULL, AD_NONE },
-            { U == 0 ? "shl" : "sli", U == 0 ? AD_INSTR_SHL : AD_INSTR_SLI },
+            { "shl", AD_INSTR_SHL },
             /* one blank, idx 11 */
             { NULL, AD_NONE },
-            { U == 0 ? NULL : "sqshlu", U == 0 ? AD_NONE : AD_INSTR_SQSHLU },
+            { NULL, AD_NONE },
             /* one blank, idx 13 */
             { NULL, AD_NONE },
-            { U == 0 ? "sqshl" : "uqshl", U == 0 ? AD_INSTR_SQSHL : AD_INSTR_UQSHL },
+            { "sqshl",  AD_INSTR_SQSHL },
+        };
+        static const struct itab tab_u1[] = {
+            { "ushr", AD_INSTR_USHR },
+            /* one blank, idx 1 */
+            { NULL, AD_NONE },
+            { "usra", AD_INSTR_USRA },
+            /* one blank, idx 3 */
+            { NULL, AD_NONE },
+            { "urshr", AD_INSTR_URSHR },
+            /* one blank, idx 5 */
+            { NULL, AD_NONE },
+            { "ursra", AD_INSTR_URSRA },
+            /* one blank, idx 7 */
+            { NULL, AD_NONE },
+            { "sri", AD_INSTR_SRI },
+            /* one blank, idx 9 */
+            { NULL, AD_NONE },
+            { "sli", AD_INSTR_SLI },
+            /* one blank, idx 11 */
+            { NULL, AD_NONE },
+            { "sqshlu", AD_INSTR_SQSHLU },
+            /* one blank, idx 13 */
+            { NULL, AD_NONE },
+            { "uqshl", AD_INSTR_UQSHL },
         };
         const char *const *rtbl = NULL;
         unsigned sz = 0;
@@ -2987,14 +3024,16 @@ static int DisassembleAdvancedSIMDShiftByImmediateInstr(struct instruction *i, s
 
         unsigned shift = 0;
 
-        if(OOB(opcode, tab))
+        if(OOB(opcode, tab_u0))
             return 1;
 
-        instr_s = tab[opcode].instr_s;
+        if ( !U )
+          instr_s = tab_u0[opcode].instr_s;
+        else
+          instr_s = tab_u1[opcode].instr_s;
         
         if(!instr_s)
             return 1;
-
 
         hsb = HighestSetBit(immh, 4);
 
