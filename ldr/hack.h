@@ -73,14 +73,14 @@ class arm64_hack
      m_psp = psp;
      return 1;
    }
-   int disasm(int verbose);
-   int disasm(int verbose, int state);
+   int disasm();
+   int disasm(int state);
    // some shortcuts methods
    inline int get_reg(int idx)
    {
      return m_dis.operands[idx].op_reg.rn;
    }
-   int find_first_jmp(PBYTE addr, PBYTE &out, int verbose);
+   int find_first_jmp(PBYTE addr, PBYTE &out);
    inline int is_ret() const
    {
      return (m_dis.instr_id == AD_INSTR_RET);
@@ -109,6 +109,7 @@ class arm64_hack
    PBYTE m_GuardCFDispatchFunctionPointer;
 
    // disasm data
+   int m_verbose;
    PBYTE m_psp;
    arm64_pe_file *m_pe;
    // pe file data

@@ -45,6 +45,7 @@ void ntoskrnl_hack::dump() const
 
 int ntoskrnl_hack::hack(int verbose)
 {
+  m_verbose = verbose;
   if ( m_ed == NULL )
     return 0;
   int res = 0;
@@ -53,27 +54,27 @@ int ntoskrnl_hack::hack(int verbose)
   if ( exp != NULL )
   {
     PBYTE next = NULL;
-    if ( find_first_jmp(mz + exp->rva, next, verbose) )
-      res += find_lock_list(next, m_ExPagedLookasideLock, m_ExPagedLookasideListHead, verbose);
+    if ( find_first_jmp(mz + exp->rva, next) )
+      res += find_lock_list(next, m_ExPagedLookasideLock, m_ExPagedLookasideListHead);
   }
   exp = m_ed->find("ExInitializeNPagedLookasideList");
   if ( exp != NULL ) 
   {
     PBYTE next = NULL;
-    if ( find_first_jmp(mz + exp->rva, next, verbose) )
-      res += find_lock_list(next, m_ExNPagedLookasideLock, m_ExNPagedLookasideListHead, verbose);
+    if ( find_first_jmp(mz + exp->rva, next) )
+      res += find_lock_list(next, m_ExNPagedLookasideLock, m_ExNPagedLookasideListHead);
   }
   exp = m_ed->find("KeSetTracepoint");
   if ( exp != NULL ) 
    try
    {
-     res += hack_tracepoints(mz + exp->rva, verbose);
+     res += hack_tracepoints(mz + exp->rva);
    } catch(std::bad_alloc)
    { }
   return res;
 }
 
-int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list, int verbose)
+int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
 {
   lock = NULL;
   list = NULL;
@@ -84,7 +85,7 @@ int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list, int verbo
   PBYTE tmp;
   for ( DWORD i = 0; i < 200; i++ )
   {
-    if ( !disasm(verbose) || is_ret() )
+    if ( !disasm() || is_ret() )
       return 0;
     if ( is_adrp() )
     {
@@ -115,7 +116,7 @@ int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list, int verbo
   return (lock != NULL) && (list != NULL);
 }
 
-int ntoskrnl_hack::hack_tracepoints(PBYTE psp, int verbose)
+int ntoskrnl_hack::hack_tracepoints(PBYTE psp)
 {
   statefull_graph<PBYTE, int> cgraph;
   std::list<std::pair<PBYTE, int> > addr_list;
@@ -129,7 +130,7 @@ int ntoskrnl_hack::hack_tracepoints(PBYTE psp, int verbose)
     {
       psp = iter->first;
       int state = iter->second;
-      if ( verbose )
+      if ( m_verbose )
         printf("hack_tracepoints: %p, state %d, edge_gen %d, edge_n %d\n", psp, state, edge_gen, edge_n);
       if ( cgraph.in_ranges(psp) )
         continue;
@@ -139,7 +140,7 @@ int ntoskrnl_hack::hack_tracepoints(PBYTE psp, int verbose)
       edge_n++;
       for ( ; ; )
       {
-        if ( !disasm(verbose, state) || is_ret() )
+        if ( !disasm(state) || is_ret() )
           break;
         if ( check_jmps(cgraph, state) )
           continue;

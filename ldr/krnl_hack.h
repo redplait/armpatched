@@ -47,8 +47,8 @@ class ntoskrnl_hack: public arm64_hack
       return 0;
     }
     void zero_data();
-    int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list, int verbose);
-    int hack_tracepoints(PBYTE psp, int verbose);
+    int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
+    int hack_tracepoints(PBYTE psp);
     // auxilary data
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;

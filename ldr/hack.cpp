@@ -5,6 +5,7 @@ arm64_hack::arm64_hack(arm64_pe_file *pe, exports_dict *ed)
 {
   m_pe = pe;
   m_ed = ed;
+  m_verbose = 0;
   fill_lc();
 }
 
@@ -133,13 +134,13 @@ int arm64_hack::is_ldr() const
   ;
 }
 
-int arm64_hack::disasm(int verbose, int state)
+int arm64_hack::disasm(int state)
 {
   if ( !m_pe->is_inside(m_psp + 4) )
     return 0;
   if ( ArmadilloDisassemble(*(PDWORD)m_psp, (ULONGLONG)m_psp, &m_dis) )
     return 0;
-  if ( verbose )
+  if ( m_verbose )
     printf("%p: %s state %d\n", m_psp, m_dis.decoded, state);
   m_psp += 4;
   if (m_dis.instr_id == AD_INSTR_UDF)
@@ -147,13 +148,13 @@ int arm64_hack::disasm(int verbose, int state)
   return 1;
 }
 
-int arm64_hack::disasm(int verbose)
+int arm64_hack::disasm()
 {
   if ( !m_pe->is_inside(m_psp + 4) )
     return 0;
   if ( ArmadilloDisassemble(*(PDWORD)m_psp, (ULONGLONG)m_psp, &m_dis) )
     return 0;
-  if ( verbose )
+  if ( m_verbose )
     printf("%p: %s\n", m_psp, m_dis.decoded);
   m_psp += 4;
   if (m_dis.instr_id == AD_INSTR_UDF)
@@ -161,13 +162,13 @@ int arm64_hack::disasm(int verbose)
   return 1;
 }
 
-int arm64_hack::find_first_jmp(PBYTE addr, PBYTE &out, int verbose)
+int arm64_hack::find_first_jmp(PBYTE addr, PBYTE &out)
 {
   if ( !setup(addr) )
     return 0;
   for ( DWORD i = 0; i < 10; i++ )
   {
-    if ( !disasm(verbose) || is_ret() )
+    if ( !disasm() || is_ret() )
       return 0;
     if ( is_b_jimm(out) )
       return 1;
