@@ -49,6 +49,7 @@ class ntoskrnl_hack: public arm64_hack
     void zero_data();
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
+    int hack_x18(PBYTE psp, DWORD &off);
     // auxilary data
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
@@ -61,4 +62,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KiDynamicTraceEnabled;
     PBYTE m_KiTpStateLock;
     PBYTE m_KiTpHashTable;
+    // thread offsets
+    DWORD m_stack_limit_off;
+    DWORD m_thread_id_off;
+    DWORD m_thread_process_off;
 };

@@ -22,6 +22,7 @@ void ntoskrnl_hack::zero_data()
   m_ExPagedLookasideLock = NULL;
   m_ExPagedLookasideListHead = NULL;
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
+  m_stack_limit_off = m_thread_id_off = m_thread_process_off = 0;
 }
 
 void ntoskrnl_hack::dump() const
@@ -41,6 +42,12 @@ void ntoskrnl_hack::dump() const
     printf("KiTpStateLock: %p\n", m_KiTpStateLock - mz);
   if ( m_KiTpHashTable != NULL )
     printf("KiTpHashTable: %p\n", m_KiTpHashTable - mz);
+  if ( m_stack_limit_off )
+    printf("KTHREAD.StackLimit offset: %X\n", m_stack_limit_off);
+  if ( m_thread_id_off )
+    printf("ETHREAD.ThreadId offset:   %X\n", m_thread_id_off);
+  if ( m_thread_process_off )
+    printf("KTHREAD.Process offset:    %X\n", m_thread_process_off);
 }
 
 int ntoskrnl_hack::hack(int verbose)
@@ -71,7 +78,45 @@ int ntoskrnl_hack::hack(int verbose)
      res += hack_tracepoints(mz + exp->rva);
    } catch(std::bad_alloc)
    { }
+  // thread offsets
+  exp = m_ed->find("PsGetCurrentThreadId");
+  if ( exp != NULL )
+    res += hack_x18(mz + exp->rva, m_thread_id_off);
+  exp = m_ed->find("PsGetCurrentThreadStackLimit");
+  if ( exp != NULL )
+    res += hack_x18(mz + exp->rva, m_stack_limit_off);
+  exp = m_ed->find("PsGetCurrentThreadProcess");
+  if ( exp != NULL )
+    res += hack_x18(mz + exp->rva, m_thread_process_off);
   return res;
+}
+
+// according to https://docs.microsoft.com/ru-ru/cpp/build/arm64-windows-abi-conventions?view=vs-2019
+// x18 reg points to KPCR in kernel mode (and in user mode, points to TEB)
+int ntoskrnl_hack::hack_x18(PBYTE psp, DWORD &off)
+{
+  if ( !setup(psp) )
+    return 0;
+  int reg = -1;
+  off = 0;
+  for ( DWORD i = 0; i < 10; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_ldr() && get_reg(1) == AD_REG_X18 )
+      reg = get_reg(0);
+    if ( is_ldr() && reg == get_reg(1) )
+    {
+      off = (DWORD)m_dis.operands[2].op_imm.bits;
+      break;
+    }
+    if ( is_add() && reg == get_reg(1) )
+    {
+      off = (DWORD)m_dis.operands[2].op_imm.bits;
+      break;
+    }
+  }
+  return (off != 0);
 }
 
 int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)

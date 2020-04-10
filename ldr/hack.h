@@ -88,6 +88,10 @@ class arm64_hack
    int is_b_jimm(PBYTE &addr) const;
    int is_bxx_jimm(PBYTE &addr) const;
    int is_bl_jimm(PBYTE &addr) const;
+   inline int is_bl_reg() const
+   {
+     return (m_dis.instr_id == AD_INSTR_BL && m_dis.num_operands == 1 && m_dis.operands[0].type == AD_OP_REG);
+   }
    int is_cbnz_jimm(PBYTE &addr) const;
    int is_cbz_jimm(PBYTE &addr) const;
    int is_tbz_jimm(PBYTE &addr) const;
