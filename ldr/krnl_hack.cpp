@@ -34,7 +34,7 @@ void ntoskrnl_hack::zero_data()
   m_ExPagedLookasideLock = NULL;
   m_ExPagedLookasideListHead = NULL;
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
-  m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = 0;
+  m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = NULL;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
 }
@@ -78,6 +78,8 @@ void ntoskrnl_hack::dump() const
     printf("ETHREAD.ThreadId offset:   %X\n", m_thread_id_off);
   if ( m_thread_process_off )
     printf("KTHREAD.Process offset:    %X\n", m_thread_process_off);
+  if ( m_thread_prevmod_off )
+    printf("KTHREAD.PreviousMode offset: %X\n", m_thread_prevmod_off);
 }
 
 int ntoskrnl_hack::hack(int verbose)
@@ -140,6 +142,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsGetCurrentThreadProcess");
   if ( exp != NULL )
     res += hack_x18(mz + exp->rva, m_thread_process_off);
+  exp = m_ed->find("ExGetPreviousMode");
+  if ( exp != NULL )
+    res += hack_x18(mz + exp->rva, m_thread_prevmod_off);
   return res;
 }
 
@@ -190,12 +195,7 @@ int ntoskrnl_hack::hack_x18(PBYTE psp, DWORD &off)
       return 0;
     if ( is_ldr() && get_reg(1) == AD_REG_X18 )
       reg = get_reg(0);
-    if ( is_ldr() && reg == get_reg(1) )
-    {
-      off = (DWORD)m_dis.operands[2].op_imm.bits;
-      break;
-    }
-    if ( is_add() && reg == get_reg(1) )
+    if ( is_ldrxx(AD_INSTR_LDR, AD_INSTR_LDRSB, AD_INSTR_ADD) && reg == get_reg(1) )
     {
       off = (DWORD)m_dis.operands[2].op_imm.bits;
       break;
@@ -272,6 +272,13 @@ int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name)
           return 0;
         if ( check_jmps(cgraph) )
           continue;
+        // check for last b xxx
+        PBYTE b_addr = NULL;
+        if ( is_b_jimm(b_addr) )
+        {
+          cgraph.add(b_addr);
+          break;
+        }
         if ( is_adrp(used_regs) )
           continue;
         if ( is_ldr() ) 
@@ -378,13 +385,7 @@ int ntoskrnl_hack::hack_sdt(PBYTE psp)
         }
         if ( is_adrp(used_regs) )
           continue;
-        if ( is_add() ) 
-        {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, ".rdata") )
-            used_regs.zero(get_reg(0));
-        }
-        if ( is_ldr() )
+        if ( is_ldrxx(AD_INSTR_ADD, AD_INSTR_LDR) ) 
         {
           PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           if ( !in_section(what, ".rdata") )

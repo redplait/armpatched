@@ -75,6 +75,28 @@ class arm64_hack
    }
    int disasm();
    int disasm(int state);
+   // variadic version
+   template <typename T>
+   int is_xx(T op) const
+   {
+     return (m_dis.instr_id == op);
+   }
+   template <typename T, typename... Args>
+   int is_xx(T op, Args... args) const
+   {
+     return (m_dis.instr_id == op) || is_xx(args...);
+   }
+   template <typename... Args>
+   int is_ldrxx(Args... args) const
+   {
+     if ((m_dis.num_operands == 3) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_REG) &&
+         (m_dis.operands[2].type == AD_OP_IMM)
+        )
+       return is_xx(args...);
+     return 0;
+   }
    // some shortcuts methods
    inline int get_reg(int idx) const
    {

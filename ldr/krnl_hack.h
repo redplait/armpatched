@@ -117,4 +117,5 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_stack_limit_off;
     DWORD m_thread_id_off;
     DWORD m_thread_process_off;
+    DWORD m_thread_prevmod_off;
 };
