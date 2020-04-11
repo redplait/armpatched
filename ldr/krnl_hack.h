@@ -81,6 +81,7 @@ class ntoskrnl_hack: public arm64_hack
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
+    int hack_x0_ldr(PBYTE psp, DWORD &off);
     // for ZwXXX functions - get index in sdt
     int hack_x16(PBYTE psp, DWORD &off);
     int get_nt_addr(const char *, PBYTE &);
@@ -118,4 +119,8 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_thread_id_off;
     DWORD m_thread_process_off;
     DWORD m_thread_prevmod_off;
+    // process offsets
+    DWORD m_proc_pid_off;
+    DWORD m_proc_protection_off;
+    DWORD m_proc_debport_off;
 };

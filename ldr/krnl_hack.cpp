@@ -35,6 +35,7 @@ void ntoskrnl_hack::zero_data()
   m_ExPagedLookasideListHead = NULL;
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
   m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = 0;
+  m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = NULL;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
 }
@@ -70,6 +71,7 @@ void ntoskrnl_hack::dump() const
     printf("ObpSymbolicLinkObjectType: %p\n", m_ObpSymbolicLinkObjectType - mz);
   if ( m_AlpcPortObjectType != NULL )
     printf("AlpcPortObjectType: %p\n", m_AlpcPortObjectType - mz);
+  // thread offsets
   if ( m_stack_base_off )
     printf("KTHREAD.StackBase offset:  %X\n", m_stack_base_off);
   if ( m_stack_limit_off )
@@ -80,6 +82,13 @@ void ntoskrnl_hack::dump() const
     printf("KTHREAD.Process offset:    %X\n", m_thread_process_off);
   if ( m_thread_prevmod_off )
     printf("KTHREAD.PreviousMode offset: %X\n", m_thread_prevmod_off);
+  // process offsets
+  if ( m_proc_pid_off )
+    printf("EPROCESS.UniqueProcessId offset: %X\n", m_proc_pid_off);
+  if ( m_proc_protection_off )
+    printf("EPROCESS.Protection offset: %X\n", m_proc_protection_off);
+  if ( m_proc_debport_off )
+    printf("EPROCESS.DebugPort: %X\n", m_proc_debport_off);
 }
 
 int ntoskrnl_hack::hack(int verbose)
@@ -145,6 +154,16 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("ExGetPreviousMode");
   if ( exp != NULL )
     res += hack_x18(mz + exp->rva, m_thread_prevmod_off);
+  // process offsets
+  exp = m_ed->find("PsGetProcessId");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_pid_off);
+  exp = m_ed->find("PsGetProcessProtection");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_protection_off);
+  exp = m_ed->find("PsGetProcessDebugPort");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_debport_off);
   return res;
 }
 
@@ -175,6 +194,25 @@ int ntoskrnl_hack::hack_x16(PBYTE psp, DWORD &off)
     if ( is_mov_rimm() && get_reg(0) == AD_REG_X16 )
     {
       off = (DWORD)m_dis.operands[1].op_imm.bits;
+      break;
+    }
+  }
+  return (off != 0);
+}
+
+// x0 holds first arg - in functions like PsGetProcessXXX
+int ntoskrnl_hack::hack_x0_ldr(PBYTE psp, DWORD &off)
+{
+  if ( !setup(psp) )
+    return 0;
+  off = 0;
+  for ( DWORD i = 0; i < 5; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_ldrxx(AD_INSTR_LDRB, AD_INSTR_LDR) && get_reg(1) == AD_REG_X0 )
+    {
+      off = (DWORD)m_dis.operands[2].op_imm.bits;
       break;
     }
   }
