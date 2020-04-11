@@ -107,6 +107,7 @@ class arm64_hack
    int is_add() const;
    int is_ldr() const;
    int is_ldrb() const;
+   int is_ldrsb() const;
    int is_str() const;
    inline int is_mov_rimm() const
    {

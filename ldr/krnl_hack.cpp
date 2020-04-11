@@ -36,7 +36,7 @@ void ntoskrnl_hack::zero_data()
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
   m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = NULL;
-  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = NULL;
+  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
 }
 
 void ntoskrnl_hack::dump() const
@@ -68,6 +68,8 @@ void ntoskrnl_hack::dump() const
     printf("ObTypeIndexTable: %p\n", m_ObTypeIndexTable - mz);
   if ( m_ObpSymbolicLinkObjectType != NULL ) 
     printf("ObpSymbolicLinkObjectType: %p\n", m_ObpSymbolicLinkObjectType - mz);
+  if ( m_AlpcPortObjectType != NULL )
+    printf("AlpcPortObjectType: %p\n", m_AlpcPortObjectType - mz);
   if ( m_stack_base_off )
     printf("KTHREAD.StackBase offset:  %X\n", m_stack_base_off);
   if ( m_stack_limit_off )
@@ -117,11 +119,14 @@ int ntoskrnl_hack::hack(int verbose)
   {
     PBYTE addr = NULL;
     if ( get_nt_addr("ZwQuerySymbolicLinkObject", addr) )
-      res += hack_obref_type(addr, m_ObpSymbolicLinkObjectType);
+      res += hack_obref_type(addr, m_ObpSymbolicLinkObjectType, ".data");
   }
   exp = m_ed->find("ObReferenceObjectByPointerWithTag");
-    res += hack_ob_types(mz + exp->rva);
   if ( exp != NULL ) 
+    res += hack_ob_types(mz + exp->rva);
+  exp = m_ed->find("NtRequestWaitReplyPort");
+  if ( exp != NULL )
+    res += hack_obref_type(mz + exp->rva, m_AlpcPortObjectType, "ALMOSTRO");
   // thread offsets
   exp = m_ed->find("PsGetCurrentThreadId");
   if ( exp != NULL )
@@ -157,7 +162,6 @@ int ntoskrnl_hack::hack_x16(PBYTE psp, DWORD &off)
 {
   if ( !setup(psp) )
     return 0;
-  int reg = -1;
   off = 0;
   for ( DWORD i = 0; i < 4; i++ )
   {
@@ -239,7 +243,7 @@ int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
   return (lock != NULL) && (list != NULL);
 }
 
-int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off)
+int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name)
 {
   if ( !setup(psp) )
     return 0;
@@ -273,7 +277,7 @@ int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off)
         if ( is_ldr() ) 
         {
           PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, ".data") )
+          if ( !in_section(what, s_name) )
             used_regs.zero(get_reg(0));
         }
         // check for call
