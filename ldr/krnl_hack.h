@@ -81,12 +81,17 @@ class ntoskrnl_hack: public arm64_hack
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
+    // for ZwXXX functions - get index in sdt
+    int hack_x16(PBYTE psp, DWORD &off);
+    int get_nt_addr(const char *, PBYTE &);
     int hack_entry(PBYTE psp);
     int hack_sdt(PBYTE psp);
     int hack_ob_types(PBYTE psp);
+    int hack_obref_type(PBYTE psp, PBYTE &off);
     // auxilary data
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
+    PBYTE aux_ObReferenceObjectByHandle;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_memset;
     // output data
@@ -105,6 +110,7 @@ class ntoskrnl_hack: public arm64_hack
     // obtypes cookie & table
     PBYTE m_ObHeaderCookie;
     PBYTE m_ObTypeIndexTable;
+    PBYTE m_ObpSymbolicLinkObjectType;
     // thread offsets
     DWORD m_stack_base_off;
     DWORD m_stack_limit_off;

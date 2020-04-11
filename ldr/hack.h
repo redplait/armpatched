@@ -76,7 +76,7 @@ class arm64_hack
    int disasm();
    int disasm(int state);
    // some shortcuts methods
-   inline int get_reg(int idx)
+   inline int get_reg(int idx) const
    {
      return m_dis.operands[idx].op_reg.rn;
    }
@@ -97,6 +97,13 @@ class arm64_hack
    int is_tbz_jimm(PBYTE &addr) const;
    int is_tbnz_jimm(PBYTE &addr) const;
    int is_adrp() const;
+   inline int is_adrp(regs_pad &used_regs) const
+   {
+     if ( !is_adrp() )
+       return 0;
+     used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+     return 1;
+   }
    int is_add() const;
    int is_ldr() const;
    int is_ldrb() const;
