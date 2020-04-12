@@ -37,6 +37,7 @@ void ntoskrnl_hack::zero_data()
   m_PspCreateThreadNotifyRoutine = m_PspCreateThreadNotifyRoutineCount = NULL;
   m_SepRmNotifyMutex = m_SeFileSystemNotifyRoutinesExHead = NULL;
   m_ExpHostListLock = m_ExpHostList = NULL;
+  m_KiWaitNever = m_KiWaitAlways = NULL;
 }
 
 void ntoskrnl_hack::dump() const
@@ -88,6 +89,10 @@ void ntoskrnl_hack::dump() const
     printf("SepRmNotifyMutex: %p\n", PVOID(m_SepRmNotifyMutex - mz));
   if ( m_SeFileSystemNotifyRoutinesExHead != NULL )
     printf("SeFileSystemNotifyRoutinesExHead: %p\n", PVOID(m_SeFileSystemNotifyRoutinesExHead - mz));
+  if ( m_KiWaitNever != NULL )
+    printf("KiWaitNever: %p\n", PVOID(m_KiWaitNever - mz));
+  if ( m_KiWaitAlways != NULL )
+    printf("KiWaitAlways: %p\n", PVOID(m_KiWaitAlways - mz));
   // thread offsets
   if ( m_stack_base_off )
     printf("KTHREAD.StackBase offset:  %X\n", m_stack_base_off);
@@ -152,6 +157,15 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("ExRegisterExtension");
   if ( exp != NULL )
     res += hack_reg_ext(mz + exp->rva);
+  exp = m_ed->find("KeSetTimerEx");
+  if ( exp != NULL )
+  {
+    PBYTE next = NULL;
+    if ( find_first_bl(mz + exp->rva, next) )
+      res += hack_timers(next);
+    else
+      res += hack_timers(mz + exp->rva);
+  }
   // kernel notifications
   exp = m_ed->find("PsEstablishWin32Callouts");
   if ( exp != NULL )
@@ -277,6 +291,45 @@ int ntoskrnl_hack::hack_x18(PBYTE psp, DWORD &off)
     }
   }
   return (off != 0);
+}
+
+int ntoskrnl_hack::hack_timers(PBYTE psp)
+{
+  int state = 0; // 0 - expect loading of KiWaitNever
+                 // 1 - expect loading of KiWaitAlways
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 40; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( !state && is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, "ALMOSTRO") )
+        used_regs.zero(get_reg(0));
+      else
+      {
+        m_KiWaitNever = what;
+        state = 1;
+        continue;
+      }
+    }
+    if ( state && is_ldr() ) 
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, "ALMOSTRO") )
+        used_regs.zero(get_reg(0));
+      else {
+        m_KiWaitAlways = what;
+        break;
+      }
+    }
+  }
+  return (m_KiWaitNever != NULL) && (m_KiWaitAlways != NULL);
 }
 
 int ntoskrnl_hack::hask_se_logon(PBYTE psp)

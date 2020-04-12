@@ -210,6 +210,20 @@ int arm64_hack::find_first_jmp(PBYTE addr, PBYTE &out)
   return 0;
 }
 
+int arm64_hack::find_first_bl(PBYTE addr, PBYTE &out)
+{
+  if ( !setup(addr) )
+    return 0;
+  for ( DWORD i = 0; i < 10; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_bl_jimm(out) )
+      return 1;
+  }
+  return 0;
+}
+
 int arm64_hack::find_first_load(PBYTE addr, const char *s_name, PBYTE &out)
 {
   out = NULL;

@@ -103,6 +103,7 @@ class arm64_hack
      return m_dis.operands[idx].op_reg.rn;
    }
    int find_first_jmp(PBYTE addr, PBYTE &out);
+   int find_first_bl(PBYTE addr, PBYTE &out);
    int find_first_load(PBYTE addr, const char *s_name, PBYTE &out);
    inline int is_ret() const
    {
