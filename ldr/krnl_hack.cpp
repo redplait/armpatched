@@ -2,33 +2,26 @@
 #include "krnl_hack.h"
 #include "cf_graph.h"
 
+void ntoskrnl_hack::init_aux(const char *aux_name, PBYTE &aux)
+{
+  aux = NULL;
+  if ( m_ed == NULL )
+    return;
+  const export_item *exp = m_ed->find(aux_name);
+  if ( exp != NULL )
+    aux = m_pe->base_addr() + exp->rva;
+}
+
 void ntoskrnl_hack::zero_data()
 {
   // fill auxilary data
-  aux_KeAcquireSpinLockRaiseToDpc = NULL;
-  aux_ExAcquirePushLockExclusiveEx = NULL;
-  aux_ObReferenceObjectByHandle = NULL;
-  aux_KfRaiseIrql = NULL;
-  aux_memset = NULL;
+  init_aux("KeAcquireSpinLockRaiseToDpc", aux_KeAcquireSpinLockRaiseToDpc);
+  init_aux("ExAcquirePushLockExclusiveEx", aux_ExAcquirePushLockExclusiveEx);
+  init_aux("ObReferenceObjectByHandle", aux_ObReferenceObjectByHandle);
+  init_aux("ExAcquireFastMutexUnsafe", aux_ExAcquireFastMutexUnsafe);
+  init_aux("KfRaiseIrql", aux_KfRaiseIrql);
+  init_aux("memset", aux_memset);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
-  if ( m_ed != NULL )
-  {
-    const export_item *exp = m_ed->find("KeAcquireSpinLockRaiseToDpc");
-    if ( exp != NULL )
-      aux_KeAcquireSpinLockRaiseToDpc = m_pe->base_addr() + exp->rva;
-    exp = m_ed->find("ExAcquirePushLockExclusiveEx");
-    if ( exp != NULL )
-      aux_ExAcquirePushLockExclusiveEx = m_pe->base_addr() + exp->rva;
-    exp = m_ed->find("ObReferenceObjectByHandle");
-    if ( exp != NULL )
-      aux_ObReferenceObjectByHandle = m_pe->base_addr() + exp->rva;
-    exp = m_ed->find("KfRaiseIrql");
-    if ( exp != NULL )
-      aux_KfRaiseIrql = m_pe->base_addr() + exp->rva;
-    exp = m_ed->find("memset");
-    if ( exp != NULL )
-      aux_memset = m_pe->base_addr() + exp->rva;
-  }
   // zero output data
   m_ExNPagedLookasideLock = NULL;
   m_ExNPagedLookasideListHead = NULL;
@@ -42,6 +35,7 @@ void ntoskrnl_hack::zero_data()
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
   m_PspCreateThreadNotifyRoutine = m_PspCreateThreadNotifyRoutineCount = NULL;
+  m_SepRmNotifyMutex = m_SeFileSystemNotifyRoutinesExHead = NULL;
   m_ExpHostListLock = m_ExpHostList = NULL;
 }
 
@@ -49,47 +43,51 @@ void ntoskrnl_hack::dump() const
 {
   PBYTE mz = m_pe->base_addr();
   if ( m_ExNPagedLookasideLock != NULL )
-    printf("ExNPagedLookasideLock: %p\n", m_ExNPagedLookasideLock - mz);
+    printf("ExNPagedLookasideLock: %p\n", PVOID(m_ExNPagedLookasideLock - mz));
   if ( m_ExNPagedLookasideListHead != NULL )
-    printf("ExNPagedLookasideListHead: %p\n", m_ExNPagedLookasideListHead - mz);
+    printf("ExNPagedLookasideListHead: %p\n", PVOID(m_ExNPagedLookasideListHead - mz));
   if ( m_ExPagedLookasideLock != NULL )
-    printf("ExPagedLookasideLock: %p\n", m_ExPagedLookasideLock - mz);
+    printf("ExPagedLookasideLock: %p\n", PVOID(m_ExPagedLookasideLock - mz));
   if ( m_ExPagedLookasideListHead != NULL )
-    printf("ExPagedLookasideListHead: %p\n", m_ExPagedLookasideListHead - mz);
+    printf("ExPagedLookasideListHead: %p\n", PVOID(m_ExPagedLookasideListHead - mz));
   if ( m_KiDynamicTraceEnabled != NULL ) 
-    printf("KiDynamicTraceEnabled: %p\n", m_KiDynamicTraceEnabled - mz);
+    printf("KiDynamicTraceEnabled: %p\n", PVOID(m_KiDynamicTraceEnabled - mz));
   if ( m_KiTpStateLock != NULL )
-    printf("KiTpStateLock: %p\n", m_KiTpStateLock - mz);
+    printf("KiTpStateLock: %p\n", PVOID(m_KiTpStateLock - mz));
   if ( m_KiTpHashTable != NULL )
-    printf("KiTpHashTable: %p\n", m_KiTpHashTable - mz);
+    printf("KiTpHashTable: %p\n", PVOID(m_KiTpHashTable - mz));
   if ( m_KeLoaderBlock != NULL )
-    printf("KeLoaderBlock: %p\n", m_KeLoaderBlock - mz);
+    printf("KeLoaderBlock: %p\n", PVOID(m_KeLoaderBlock - mz));
   if ( m_KiServiceLimit != NULL )
-    printf("KiServiceLimit: %p\n", m_KiServiceLimit - mz);
+    printf("KiServiceLimit: %p\n", PVOID(m_KiServiceLimit - mz));
   if ( m_KiServiceTable != NULL )
-    printf("KiServiceTable: %p\n", m_KiServiceTable - mz);
+    printf("KiServiceTable: %p\n", PVOID(m_KiServiceTable - mz));
   if ( m_ObHeaderCookie != NULL )
-    printf("ObHeaderCookie: %p\n", m_ObHeaderCookie - mz);
+    printf("ObHeaderCookie: %p\n", PVOID(m_ObHeaderCookie - mz));
   if ( m_ObTypeIndexTable != NULL )
-    printf("ObTypeIndexTable: %p\n", m_ObTypeIndexTable - mz);
+    printf("ObTypeIndexTable: %p\n", PVOID(m_ObTypeIndexTable - mz));
   if ( m_ObpSymbolicLinkObjectType != NULL ) 
-    printf("ObpSymbolicLinkObjectType: %p\n", m_ObpSymbolicLinkObjectType - mz);
+    printf("ObpSymbolicLinkObjectType: %p\n", PVOID(m_ObpSymbolicLinkObjectType - mz));
   if ( m_AlpcPortObjectType != NULL )
-    printf("AlpcPortObjectType: %p\n", m_AlpcPortObjectType - mz);
+    printf("AlpcPortObjectType: %p\n", PVOID(m_AlpcPortObjectType - mz));
   if ( m_PsWin32CallBack != NULL )
-    printf("PsWin32CallBack: %p\n", m_PsWin32CallBack - mz);
+    printf("PsWin32CallBack: %p\n", PVOID(m_PsWin32CallBack - mz));
   if ( m_ExpHostListLock != NULL )
-    printf("ExpHostListLock: %p\n", m_ExpHostListLock - mz);
+    printf("ExpHostListLock: %p\n", PVOID(m_ExpHostListLock - mz));
   if ( m_ExpHostList != NULL )
-    printf("ExpHostList: %p\n", m_ExpHostList - mz);
+    printf("ExpHostList: %p\n", PVOID(m_ExpHostList - mz));
   if ( m_PspLoadImageNotifyRoutine != NULL )
-    printf("PspLoadImageNotifyRoutine: %p\n", m_PspLoadImageNotifyRoutine - mz);
+    printf("PspLoadImageNotifyRoutine: %p\n", PVOID(m_PspLoadImageNotifyRoutine - mz));
   if ( m_PspLoadImageNotifyRoutineCount != NULL )
-    printf("PspLoadImageNotifyRoutineCount: %p\n", m_PspLoadImageNotifyRoutineCount - mz);
+    printf("PspLoadImageNotifyRoutineCount: %p\n", PVOID(m_PspLoadImageNotifyRoutineCount - mz));
   if ( m_PspCreateThreadNotifyRoutine != NULL )
-    printf("PspCreateThreadNotifyRoutine: %p\n", m_PspCreateThreadNotifyRoutine - mz);
+    printf("PspCreateThreadNotifyRoutine: %p\n", PVOID(m_PspCreateThreadNotifyRoutine - mz));
   if ( m_PspCreateThreadNotifyRoutineCount != NULL )
-    printf("PspCreateThreadNotifyRoutineCount: %p\n", m_PspCreateThreadNotifyRoutineCount - mz);
+    printf("PspCreateThreadNotifyRoutineCount: %p\n", PVOID(m_PspCreateThreadNotifyRoutineCount - mz));
+  if ( m_SepRmNotifyMutex != NULL )
+    printf("SepRmNotifyMutex: %p\n", PVOID(m_SepRmNotifyMutex - mz));
+  if ( m_SeFileSystemNotifyRoutinesExHead != NULL )
+    printf("SeFileSystemNotifyRoutinesExHead: %p\n", PVOID(m_SeFileSystemNotifyRoutinesExHead - mz));
   // thread offsets
   if ( m_stack_base_off )
     printf("KTHREAD.StackBase offset:  %X\n", m_stack_base_off);
@@ -168,6 +166,9 @@ int ntoskrnl_hack::hack(int verbose)
     if ( find_first_jmp(mz + exp->rva, next) )
       res += resolve_notify(next, m_PspCreateThreadNotifyRoutine, m_PspCreateThreadNotifyRoutineCount);
   }
+  exp = m_ed->find("SeRegisterLogonSessionTerminatedRoutineEx");
+  if ( exp != NULL )
+    res += hask_se_logon(mz + exp->rva);
   exp = m_ed->find("ObReferenceObjectByPointerWithTag");
   if ( exp != NULL ) 
     res += hack_ob_types(mz + exp->rva);
@@ -276,6 +277,51 @@ int ntoskrnl_hack::hack_x18(PBYTE psp, DWORD &off)
     }
   }
   return (off != 0);
+}
+
+int ntoskrnl_hack::hask_se_logon(PBYTE psp)
+{
+  int state = 0; // 0 - expect ExAcquireFastMutexUnsafe, arg in x0 is mutex
+                 // 1 - wait for loading address from PAGEDATA
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( !state && is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, ".data") )
+        used_regs.zero(get_reg(0));
+       continue;
+    }
+    if ( state && is_ldr() ) 
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, "PAGEDATA") )
+        used_regs.zero(get_reg(0));
+      else {
+        m_SeFileSystemNotifyRoutinesExHead = what;
+        break;
+      }
+    }
+    // check for call
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+      if ( caddr == aux_ExAcquireFastMutexUnsafe )
+      {
+        m_SepRmNotifyMutex = (PBYTE)used_regs.get(AD_REG_X0);
+        state = 1;
+        continue;
+      }
+    }
+  }
+  return (m_SepRmNotifyMutex != NULL) && (m_SeFileSystemNotifyRoutinesExHead != NULL);
 }
 
 int ntoskrnl_hack::hack_reg_ext(PBYTE psp)

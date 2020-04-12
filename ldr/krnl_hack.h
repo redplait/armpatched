@@ -78,6 +78,7 @@ class ntoskrnl_hack: public arm64_hack
       return 0;
     }
     void zero_data();
+    void init_aux(const char *, PBYTE &aux);
     int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
@@ -92,10 +93,12 @@ class ntoskrnl_hack: public arm64_hack
     int hack_ob_types(PBYTE psp);
     int hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name);
     int hack_reg_ext(PBYTE psp);
+    int hask_se_logon(PBYTE psp);
     // auxilary data
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
     PBYTE aux_ObReferenceObjectByHandle;
+    PBYTE aux_ExAcquireFastMutexUnsafe;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_memset;
     // not exported
@@ -119,6 +122,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_ExpHostList; // from ExpFindHost
     // kernel notificators
     PBYTE m_PsWin32CallBack;
+    PBYTE m_SepRmNotifyMutex;
+    PBYTE m_SeFileSystemNotifyRoutinesExHead;
     PBYTE m_PspLoadImageNotifyRoutine;
     PBYTE m_PspLoadImageNotifyRoutineCount;
     PBYTE m_PspCreateThreadNotifyRoutine;
