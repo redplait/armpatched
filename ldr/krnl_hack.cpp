@@ -40,6 +40,7 @@ void ntoskrnl_hack::zero_data()
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = NULL;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
   m_PsWin32CallBack = NULL;
+  m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
 }
 
 void ntoskrnl_hack::dump() const
@@ -75,6 +76,10 @@ void ntoskrnl_hack::dump() const
     printf("AlpcPortObjectType: %p\n", m_AlpcPortObjectType - mz);
   if ( m_PsWin32CallBack != NULL )
     printf("PsWin32CallBack: %p\n", m_PsWin32CallBack - mz);
+  if ( m_PspLoadImageNotifyRoutine != NULL )
+    printf("PspLoadImageNotifyRoutine: %p\n", m_PspLoadImageNotifyRoutine - mz);
+  if ( m_PspLoadImageNotifyRoutineCount != NULL )
+    printf("PspLoadImageNotifyRoutineCount: %p\n", m_PspLoadImageNotifyRoutineCount - mz);
   // thread offsets
   if ( m_stack_base_off )
     printf("KTHREAD.StackBase offset:  %X\n", m_stack_base_off);
@@ -136,9 +141,13 @@ int ntoskrnl_hack::hack(int verbose)
     if ( get_nt_addr("ZwQuerySymbolicLinkObject", addr) )
       res += hack_obref_type(addr, m_ObpSymbolicLinkObjectType, ".data");
   }
+  // kernel notifications
   exp = m_ed->find("PsEstablishWin32Callouts");
   if ( exp != NULL )
     res += hack_ex_cbs_aux(mz + exp->rva);
+  exp = m_ed->find("PsSetLoadImageNotifyRoutineEx");
+  if ( exp != NULL )
+    res += resolve_notify(mz + exp->rva, m_PspLoadImageNotifyRoutine, m_PspLoadImageNotifyRoutineCount);
   exp = m_ed->find("ObReferenceObjectByPointerWithTag");
   if ( exp != NULL ) 
     res += hack_ob_types(mz + exp->rva);
@@ -289,6 +298,59 @@ int ntoskrnl_hack::hack_ex_cbs_aux(PBYTE psp)
     }
   }
   return (m_PsWin32CallBack != NULL);
+}
+
+int ntoskrnl_hack::resolve_notify(PBYTE psp, PBYTE &list, PBYTE &count)
+{
+  count = NULL;
+  list = NULL;
+  if ( !setup(psp) )
+    return 0;
+  int state = 0; // 0 - wait for ExAllocateCallBack
+                 // 1 - get list
+                 // 2 - wait for ExCompareExchangeCallBack
+                 // 3 - add magic to get count
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 200; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    // check for call
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+      if ( !state && (caddr == aux_ExAllocateCallBack) )
+        state = 1;
+      else if ( (2 == state) && (caddr == aux_ExCompareExchangeCallBack) )
+        state = 3;
+    }
+    if ( is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( 1 == state )
+      {
+        if ( !in_section(what, ".data") )
+          used_regs.zero(get_reg(0));
+        else {
+          list = what;
+          state = 2;
+        }      
+      } else if ( 3 == state )
+      {
+        if ( !in_section(what, "PAGEDATA") )
+          used_regs.zero(get_reg(0));
+        else
+          state = 4;
+      } else if (4 == state)
+      {
+        count = what;
+        break;
+      }
+    }
+  }
+  return (list != NULL) && (count != NULL);
 }
 
 int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)

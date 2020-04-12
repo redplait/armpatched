@@ -78,6 +78,7 @@ class ntoskrnl_hack: public arm64_hack
       return 0;
     }
     void zero_data();
+    int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
     int hack_ex_cbs_aux(PBYTE psp);
@@ -114,6 +115,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KiServiceTable;
     // kernel notificators
     PBYTE m_PsWin32CallBack;
+    PBYTE m_PspLoadImageNotifyRoutine;
+    PBYTE m_PspLoadImageNotifyRoutineCount;
     // obtypes cookie & table
     PBYTE m_ObHeaderCookie;
     PBYTE m_ObTypeIndexTable;
