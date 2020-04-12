@@ -75,7 +75,7 @@ class arm64_hack
    }
    int disasm();
    int disasm(int state);
-   // variadic version
+   // variadic methods
    template <typename T>
    int is_xx(T op) const
    {

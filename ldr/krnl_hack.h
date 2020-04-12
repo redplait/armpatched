@@ -80,6 +80,7 @@ class ntoskrnl_hack: public arm64_hack
     void zero_data();
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
+    int hack_ex_cbs_aux(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
     int hack_x0_ldr(PBYTE psp, DWORD &off);
     // for ZwXXX functions - get index in sdt
@@ -95,7 +96,10 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ObReferenceObjectByHandle;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_memset;
-    // output data
+    // not exported
+    PBYTE aux_ExAllocateCallBack;
+    PBYTE aux_ExCompareExchangeCallBack;
+    // lookaside lists data
     PBYTE m_ExNPagedLookasideLock;
     PBYTE m_ExNPagedLookasideListHead;
     PBYTE m_ExPagedLookasideLock;
@@ -108,6 +112,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KeLoaderBlock;
     PBYTE m_KiServiceLimit;
     PBYTE m_KiServiceTable;
+    // kernel notificators
+    PBYTE m_PsWin32CallBack;
     // obtypes cookie & table
     PBYTE m_ObHeaderCookie;
     PBYTE m_ObTypeIndexTable;
