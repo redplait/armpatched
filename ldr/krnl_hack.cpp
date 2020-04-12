@@ -42,6 +42,7 @@ void ntoskrnl_hack::zero_data()
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
   m_PspCreateThreadNotifyRoutine = m_PspCreateThreadNotifyRoutineCount = NULL;
+  m_ExpHostListLock = m_ExpHostList = NULL;
 }
 
 void ntoskrnl_hack::dump() const
@@ -77,6 +78,10 @@ void ntoskrnl_hack::dump() const
     printf("AlpcPortObjectType: %p\n", m_AlpcPortObjectType - mz);
   if ( m_PsWin32CallBack != NULL )
     printf("PsWin32CallBack: %p\n", m_PsWin32CallBack - mz);
+  if ( m_ExpHostListLock != NULL )
+    printf("ExpHostListLock: %p\n", m_ExpHostListLock - mz);
+  if ( m_ExpHostList != NULL )
+    printf("ExpHostList: %p\n", m_ExpHostList - mz);
   if ( m_PspLoadImageNotifyRoutine != NULL )
     printf("PspLoadImageNotifyRoutine: %p\n", m_PspLoadImageNotifyRoutine - mz);
   if ( m_PspLoadImageNotifyRoutineCount != NULL )
@@ -146,6 +151,9 @@ int ntoskrnl_hack::hack(int verbose)
     if ( get_nt_addr("ZwQuerySymbolicLinkObject", addr) )
       res += hack_obref_type(addr, m_ObpSymbolicLinkObjectType, ".data");
   }
+  exp = m_ed->find("ExRegisterExtension");
+  if ( exp != NULL )
+    res += hack_reg_ext(mz + exp->rva);
   // kernel notifications
   exp = m_ed->find("PsEstablishWin32Callouts");
   if ( exp != NULL )
@@ -268,6 +276,45 @@ int ntoskrnl_hack::hack_x18(PBYTE psp, DWORD &off)
     }
   }
   return (off != 0);
+}
+
+int ntoskrnl_hack::hack_reg_ext(PBYTE psp)
+{
+  int state = 0; // 0 - expect some unexported lock, arg in x0 is lock
+                 // 1 - wait for ExpFindHost - located in PAGE section
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( !state && is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, "PAGEDATA") )
+        used_regs.zero(get_reg(0));
+    }
+    // check for call
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+      if ( !state )
+      {
+        m_ExpHostListLock = (PBYTE)used_regs.get(AD_REG_X0);
+        state = 1;
+        continue;
+      } else {
+        if ( !in_section(caddr, "PAGE") )
+          continue;
+        find_first_load(caddr, "PAGEDATA", m_ExpHostList);
+        break;
+      }
+    }
+  }
+  return (m_ExpHostListLock != NULL);
 }
 
 int ntoskrnl_hack::hack_ex_cbs_aux(PBYTE psp)

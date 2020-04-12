@@ -209,3 +209,30 @@ int arm64_hack::find_first_jmp(PBYTE addr, PBYTE &out)
   }
   return 0;
 }
+
+int arm64_hack::find_first_load(PBYTE addr, const char *s_name, PBYTE &out)
+{
+  out = NULL;
+  if ( !setup(addr) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 10; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, s_name) )
+        used_regs.zero(get_reg(0));
+      else {
+        out = what;
+        return 1;
+      }
+    }
+  }
+  return (out != NULL);
+}
+

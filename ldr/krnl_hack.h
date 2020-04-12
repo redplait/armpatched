@@ -91,6 +91,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_sdt(PBYTE psp);
     int hack_ob_types(PBYTE psp);
     int hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name);
+    int hack_reg_ext(PBYTE psp);
     // auxilary data
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
@@ -113,6 +114,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KeLoaderBlock;
     PBYTE m_KiServiceLimit;
     PBYTE m_KiServiceTable;
+    // extensions
+    PBYTE m_ExpHostListLock;
+    PBYTE m_ExpHostList; // from ExpFindHost
     // kernel notificators
     PBYTE m_PsWin32CallBack;
     PBYTE m_PspLoadImageNotifyRoutine;
