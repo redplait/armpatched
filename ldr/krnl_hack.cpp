@@ -41,6 +41,7 @@ void ntoskrnl_hack::zero_data()
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
+  m_PspCreateThreadNotifyRoutine = m_PspCreateThreadNotifyRoutineCount = NULL;
 }
 
 void ntoskrnl_hack::dump() const
@@ -80,6 +81,10 @@ void ntoskrnl_hack::dump() const
     printf("PspLoadImageNotifyRoutine: %p\n", m_PspLoadImageNotifyRoutine - mz);
   if ( m_PspLoadImageNotifyRoutineCount != NULL )
     printf("PspLoadImageNotifyRoutineCount: %p\n", m_PspLoadImageNotifyRoutineCount - mz);
+  if ( m_PspCreateThreadNotifyRoutine != NULL )
+    printf("PspCreateThreadNotifyRoutine: %p\n", m_PspCreateThreadNotifyRoutine - mz);
+  if ( m_PspCreateThreadNotifyRoutineCount != NULL )
+    printf("PspCreateThreadNotifyRoutineCount: %p\n", m_PspCreateThreadNotifyRoutineCount - mz);
   // thread offsets
   if ( m_stack_base_off )
     printf("KTHREAD.StackBase offset:  %X\n", m_stack_base_off);
@@ -148,6 +153,13 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsSetLoadImageNotifyRoutineEx");
   if ( exp != NULL )
     res += resolve_notify(mz + exp->rva, m_PspLoadImageNotifyRoutine, m_PspLoadImageNotifyRoutineCount);
+  exp = m_ed->find("PsSetCreateThreadNotifyRoutine");
+  if ( exp != NULL )
+  {
+    PBYTE next = NULL;
+    if ( find_first_jmp(mz + exp->rva, next) )
+      res += resolve_notify(next, m_PspCreateThreadNotifyRoutine, m_PspCreateThreadNotifyRoutineCount);
+  }
   exp = m_ed->find("ObReferenceObjectByPointerWithTag");
   if ( exp != NULL ) 
     res += hack_ob_types(mz + exp->rva);

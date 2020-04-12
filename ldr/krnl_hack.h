@@ -117,6 +117,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_PsWin32CallBack;
     PBYTE m_PspLoadImageNotifyRoutine;
     PBYTE m_PspLoadImageNotifyRoutineCount;
+    PBYTE m_PspCreateThreadNotifyRoutine;
+    PBYTE m_PspCreateThreadNotifyRoutineCount;
     // obtypes cookie & table
     PBYTE m_ObHeaderCookie;
     PBYTE m_ObTypeIndexTable;
