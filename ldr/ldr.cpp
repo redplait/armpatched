@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "pe_file.h"
+#include "imports_dict.h"
 #include "krnl_hack.h"
 #include "../source/armadillo.h"
 
@@ -9,6 +10,7 @@ void usage(const wchar_t *progname)
   printf("Options:\n");
   printf(" -dlc - dump load_config\n");
   printf(" -de - dump exports\n");
+  printf(" -di - dump imports\n");
   printf(" -dr - dump relocs\n");
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
@@ -16,11 +18,25 @@ void usage(const wchar_t *progname)
   exit(6);
 }
 
+void dump_import(module_import *mi)
+{
+   printf("IAT rva %X size %X count %X\n", mi->iat_rva, mi->iat_size, mi->iat_count);
+   if ( mi->iat_count )
+     for ( DWORD i = 0; i < mi->iat_count; i++ )
+     {
+       if ( mi->iat[i].name != NULL )
+         printf("%X %s.%s\n", i, mi->iat[i].modname, mi->iat[i].name);
+       else
+         printf("%X %s.%d\n", i, mi->iat[i].modname, mi->iat[i].ordinal);
+     }
+}
+
 typedef int (arm64_pe_file::*TDirGet)(DWORD &, DWORD &) const;
 
 int wmain(int argc, wchar_t **argv)
 {
    int dump_exp = 0;
+   int dump_imp = 0;
    int dump_sects = 0;
    int dump_relocs = 0;
    int dump_lc = 0;
@@ -48,6 +64,11 @@ int wmain(int argc, wchar_t **argv)
      if ( !wcscmp(argv[i], L"-de") )
      {
        dump_exp = 1;
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-di") )
+     {
+       dump_imp = 1;
        continue;
      }
      if ( !wcscmp(argv[i], L"-dr") )
@@ -172,6 +193,14 @@ int wmain(int argc, wchar_t **argv)
      }
      if ( f.map_pe(verb_mode) && ed != NULL )
      {
+       // check if we need to dump imports
+       if ( dump_imp )
+       {
+         inmem_import_holder ih;
+         module_import *mimp = ih.add(argv[i], &f);
+         if ( mimp != NULL )
+           dump_import(mimp);
+       }
        // apply relocs
        f.apply_relocs();
        // quick and dirty test
