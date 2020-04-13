@@ -60,8 +60,6 @@ class import_holder_intf
 
    dict_t *m_modules; // key - name of module, value - module_import
    dict_t *m_names;   // key - name of function
-   // for error reporting
-   const char *w_modname;
 };
 
 class inmem_import_holder: public import_holder_intf
@@ -71,8 +69,7 @@ class inmem_import_holder: public import_holder_intf
   ~inmem_import_holder();
    module_import *add(const wchar_t *, arm64_pe_file *);
   protected:
-   void fill_import(pIMPORT_DIRECTORY_ENTRY, DWORD size, module_import *);
-   DWORD get_import_size(pIMPORT_DIRECTORY_ENTRY, DWORD size, DWORD *min_addr);
+   void fill_import(PBYTE mz, pIMPORT_DIRECTORY_ENTRY, DWORD size, module_import *);
+   DWORD get_import_size(PBYTE mz, pIMPORT_DIRECTORY_ENTRY, DWORD size, DWORD *min_addr);
    DWORD calc_iat_size(PBYTE);
-   arm64_pe_file *m_pe;
 };

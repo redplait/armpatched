@@ -95,8 +95,6 @@ inmem_import_holder::inmem_import_holder()
   // create modules dictionary
   m_modules = dict_create(DICTCOUNT_T_MAX, cmp2modnames);
   dict_set_allocator(m_modules, NULL, kill_modules, NULL);
-  // zero all remained
-  m_pe = NULL;
 }
 
 inmem_import_holder::~inmem_import_holder()
@@ -111,9 +109,8 @@ DWORD inmem_import_holder::calc_iat_size(PBYTE ptr)
   return 1 + size;
 }
 
-void inmem_import_holder::fill_import(pIMPORT_DIRECTORY_ENTRY pdde, DWORD size, module_import *mi)
+void inmem_import_holder::fill_import(PBYTE mz, pIMPORT_DIRECTORY_ENTRY pdde, DWORD size, module_import *mi)
 {
-  PBYTE mz = m_pe->base_addr();
   for ( pIMPORT_DIRECTORY_ENTRY de = pdde;
         ((PBYTE)de < ((PBYTE)pdde + size)) && de->AddressTableRVA && de->NameRVA;
         ++de
@@ -139,9 +136,8 @@ void inmem_import_holder::fill_import(pIMPORT_DIRECTORY_ENTRY pdde, DWORD size, 
   }
 }
 
-DWORD inmem_import_holder::get_import_size(pIMPORT_DIRECTORY_ENTRY imp, DWORD size, DWORD *min_addr)
+DWORD inmem_import_holder::get_import_size(PBYTE mz, pIMPORT_DIRECTORY_ENTRY imp, DWORD size, DWORD *min_addr)
 {
-  PBYTE mz = m_pe->base_addr();
   *min_addr = NULL;
   DWORD iat_size = 0;
   DWORD max_addr = 0;
@@ -183,16 +179,17 @@ DWORD inmem_import_holder::get_import_size(pIMPORT_DIRECTORY_ENTRY imp, DWORD si
 
 module_import *inmem_import_holder::add(const wchar_t *modname, arm64_pe_file *pe)
 {
-  m_pe = pe;
-  PBYTE mz = m_pe->base_addr();
+  if ( NULL == pe )
+    return NULL;
+  PBYTE mz = pe->base_addr();
   // check if we have import
   DWORD imp_rva = 0;
   DWORD imp_size = 0;
-  if ( !m_pe->get_import(imp_rva, imp_size) )
+  if ( !pe->get_import(imp_rva, imp_size) )
     return NULL;
   // calc size of iat
   DWORD diat_min = 0;
-  DWORD total_size = get_import_size((pIMPORT_DIRECTORY_ENTRY)((PBYTE)mz + imp_rva), imp_size, &diat_min);
+  DWORD total_size = get_import_size(mz, (pIMPORT_DIRECTORY_ENTRY)((PBYTE)mz + imp_rva), imp_size, &diat_min);
   if ( !total_size )
     return NULL;
   // alloc module_import for return
@@ -211,11 +208,11 @@ module_import *inmem_import_holder::add(const wchar_t *modname, arm64_pe_file *p
   mi->iat = (struct import_item *)calloc(mi->iat_count, sizeof(struct import_item));
   if ( mi->iat == NULL )
   {
-    fprintf(stderr, "Cannot alloc %d bytes for imports\n", mi->iat_count * sizeof(struct import_item));
+    fprintf(stderr, "Cannot alloc %zd bytes for imports\n", mi->iat_count * sizeof(struct import_item));
     delete mi;
     return NULL;
   }
-  fill_import((pIMPORT_DIRECTORY_ENTRY)((PBYTE)mz + imp_rva), imp_size, mi);
+  fill_import(mz, (pIMPORT_DIRECTORY_ENTRY)((PBYTE)mz + imp_rva), imp_size, mi);
   // insert this new module_import object into dictionary
   dict_alloc_insert(m_modules, modname, mi);
   return mi;  
