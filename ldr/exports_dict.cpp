@@ -10,6 +10,7 @@ exports_dict::exports_dict()
   m_ptr = NULL;
   m_merged = NULL;
   mz = NULL;
+  export_name = 0;
 }
 
 exports_dict::~exports_dict()

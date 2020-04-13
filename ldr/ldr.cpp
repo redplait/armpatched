@@ -2,6 +2,7 @@
 #include "pe_file.h"
 #include "imports_dict.h"
 #include "krnl_hack.h"
+#include "ndis_hack.h"
 #include "../source/armadillo.h"
 
 void usage(const wchar_t *progname)
@@ -193,21 +194,41 @@ int wmain(int argc, wchar_t **argv)
      }
      if ( f.map_pe(verb_mode) && ed != NULL )
      {
+       inmem_import_holder ih;
+       module_import *mimp = ih.add(argv[i], &f);
        // check if we need to dump imports
        if ( dump_imp )
        {
-         inmem_import_holder ih;
-         module_import *mimp = ih.add(argv[i], &f);
          if ( mimp != NULL )
            dump_import(mimp);
        }
        // apply relocs
        f.apply_relocs();
        // quick and dirty test
-       ntoskrnl_hack nt(&f, ed);
-       ed = NULL; // will be killed inside ~arm64_hack
-       nt.hack(verb_mode);
-       nt.dump();
+       const char *exp_name = f.get_exp_name();
+       int krnl = 1;
+       if ( exp_name != NULL )
+       {
+         printf("%s\n", exp_name);
+         if ( !_stricmp(exp_name, "ndis.sys") )
+         {
+           krnl = 0;
+           if ( mimp != NULL )
+           {
+             ndis_hack ndis(&f, ed, mimp);
+             ed = NULL; // will be killed inside ~arm64_hack
+             ndis.hack(verb_mode);
+             ndis.dump();
+           }
+         }
+       }
+       if ( krnl )
+       {
+         ntoskrnl_hack nt(&f, ed);
+         ed = NULL; // will be killed inside ~arm64_hack
+         nt.hack(verb_mode);
+         nt.dump();
+       }
      }
      if ( ed != NULL )
        delete ed;

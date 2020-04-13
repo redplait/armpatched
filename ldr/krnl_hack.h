@@ -15,68 +15,6 @@ class ntoskrnl_hack: public arm64_hack
     int hack(int verbose);
     void dump() const;
   protected:
-    template <typename T>
-    int check_jmps(T &graph)
-    {
-      PBYTE addr = NULL;
-      if ( is_cbnz_jimm(addr) )
-      {
-        graph.add(addr);
-        return 1;
-      }
-      if ( is_cbz_jimm(addr) )
-      {
-        graph.add(addr);
-        return 1;
-      }
-      if ( is_tbz_jimm(addr) )
-      {
-        graph.add(addr);
-        return 1;
-      }
-      if ( is_tbnz_jimm(addr) )
-      {
-        graph.add(addr);
-        return 1;
-      }
-      if ( is_bxx_jimm(addr) )
-      {
-        graph.add(addr);
-        return 1;
-      }
-      return 0;
-    }
-    template <typename T>
-    int check_jmps(T &graph, int state)
-    {
-      PBYTE addr = NULL;
-      if ( is_cbnz_jimm(addr) )
-      {
-        graph.add(addr, state);
-        return 1;
-      }
-      if ( is_cbz_jimm(addr) )
-      {
-        graph.add(addr, state);
-        return 1;
-      }
-      if ( is_tbz_jimm(addr) )
-      {
-        graph.add(addr, state);
-        return 1;
-      }
-      if ( is_tbnz_jimm(addr) )
-      {
-        graph.add(addr, state);
-        return 1;
-      }
-      if ( is_bxx_jimm(addr) )
-      {
-        graph.add(addr, state);
-        return 1;
-      }
-      return 0;
-    }
     void zero_data();
     void init_aux(const char *, PBYTE &aux);
     int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);

@@ -320,6 +320,7 @@ int arm64_pe_file::read_exports()
       return 0;
   }
   m_exp_base = edir.Base;
+  m_exp_name = edir.Name;
   // read arrays of ordinals/names/RVAs
   PDWORD names = NULL;
   if ( edir.NumberOfNames )
@@ -503,6 +504,7 @@ exports_dict *arm64_pe_file::get_export_dict()
     delete res;
     return NULL;
   }
+  res->export_name = m_exp_name;
   return res;
 }
 

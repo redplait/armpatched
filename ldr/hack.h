@@ -39,6 +39,13 @@ class regs_pad
        m_regs[reg2] = 0;
      return m_regs[reg1];
    }
+   int ldar(int reg1, int reg2)
+   {
+     if ( (reg1 >= AD_REG_SP) || (reg2 >= AD_REG_SP) ) 
+       return 0;
+     m_regs[reg1] = m_regs[reg2];
+     return 1;
+   }
    inline reg64_t get(int reg)
    {
      if ( reg >= AD_REG_SP ) // hm
@@ -75,6 +82,68 @@ class arm64_hack
    }
    int disasm();
    int disasm(int state);
+    template <typename T>
+    int check_jmps(T &graph)
+    {
+      PBYTE addr = NULL;
+      if ( is_cbnz_jimm(addr) )
+      {
+        graph.add(addr);
+        return 1;
+      }
+      if ( is_cbz_jimm(addr) )
+      {
+        graph.add(addr);
+        return 1;
+      }
+      if ( is_tbz_jimm(addr) )
+      {
+        graph.add(addr);
+        return 1;
+      }
+      if ( is_tbnz_jimm(addr) )
+      {
+        graph.add(addr);
+        return 1;
+      }
+      if ( is_bxx_jimm(addr) )
+      {
+        graph.add(addr);
+        return 1;
+      }
+      return 0;
+    }
+    template <typename T>
+    int check_jmps(T &graph, int state)
+    {
+      PBYTE addr = NULL;
+      if ( is_cbnz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_cbz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_tbz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_tbnz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_bxx_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      return 0;
+    }
    // variadic methods
    template <typename T>
    int is_xx(T op) const
@@ -120,6 +189,17 @@ class arm64_hack
    int is_cbz_jimm(PBYTE &addr) const;
    int is_tbz_jimm(PBYTE &addr) const;
    int is_tbnz_jimm(PBYTE &addr) const;
+   inline int is_ldar() const
+   {
+     return (m_dis.instr_id == AD_INSTR_LDAR && m_dis.num_operands == 2 && m_dis.operands[0].type == AD_OP_REG && m_dis.operands[1].type == AD_OP_REG);
+   }
+   inline int is_ldar(regs_pad &used_regs) const
+   {
+     if ( !is_ldar() )
+       return 0;
+     used_regs.ldar(get_reg(0), get_reg(1));
+     return 1;
+   }
    int is_adrp() const;
    inline int is_adrp(regs_pad &used_regs) const
    {

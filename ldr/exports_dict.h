@@ -44,6 +44,7 @@ class exports_dict
    // for debug
    void dump() const;
    PVOID mz;
+   DWORD export_name;
   protected:
    size_t merge_with(std::map<DWORD, export_item> *);
 

@@ -315,13 +315,22 @@ class arm64_pe_file
    int map_pe(int verb_mode);
    int apply_relocs();
    // sanitizers
-   inline int is_inside(PBYTE psp)
+   inline int is_inside(PBYTE psp) const
    {
      if ( m_mz == NULL )
        return 0;
      if ( psp < m_mz )
        return 0;
      return (psp < m_mz + m_mz_size);
+   }
+   const char *get_exp_name() const
+   {
+     if ( NULL == m_mz || !m_exp_name )
+       return NULL;
+     PBYTE res = m_mz + m_exp_name;
+     if ( !is_inside(res) )
+       return NULL;
+     return (const char *)res;
    }
   protected:
     inline int get_xxx(DWORD &addr, DWORD &size, int idx) const
@@ -348,6 +357,7 @@ class arm64_pe_file
     DWORD m_pe_off;    
     // exports
     DWORD m_exp_base; // ordinal base
+    DWORD m_exp_name; // IMAGE_EXPORT_DIRECTORY.Name
     std::map<export_name, struct one_export *> m_enames;
     std::map<WORD, struct one_export *> m_eords;
     size_t m_exports_total_size;

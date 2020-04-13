@@ -161,6 +161,7 @@
     <ClCompile Include="imports_dict.cpp" />
     <ClCompile Include="krnl_hack.cpp" />
     <ClCompile Include="ldr.cpp" />
+    <ClCompile Include="ndis_hack.cpp" />
     <ClCompile Include="pe_file.cpp" />
   </ItemGroup>
   <ItemGroup>
