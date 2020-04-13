@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "pe_file.h"
-#include "imports_dict.h"
+#include "skci_hack.h"
 #include "krnl_hack.h"
 #include "ndis_hack.h"
 #include "../source/armadillo.h"
@@ -219,6 +219,16 @@ int wmain(int argc, wchar_t **argv)
              ed = NULL; // will be killed inside ~arm64_hack
              ndis.hack(verb_mode);
              ndis.dump();
+           }
+         } else if ( !_stricmp(exp_name, "skci.dll") )
+         {
+           krnl = 0;
+           if ( mimp != NULL )
+           {
+             skci_hack skci(&f, ed, mimp);
+             ed = NULL; // will be killed inside ~arm64_hack
+             skci.hack(verb_mode);
+             skci.dump();
            }
          }
        }

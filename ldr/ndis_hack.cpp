@@ -20,7 +20,7 @@ void ndis_hack::dump() const
     printf("ndisFilterDriverList: %p\n", PVOID(m_ndisFilterDriverList - mz));
 }
 
-int ndis_hack::is_inside_IAT(PBYTE psp) const
+int drv_hack::is_inside_IAT(PBYTE psp) const
 {
   if ( NULL == m_iat )
     return 0;
@@ -32,7 +32,7 @@ int ndis_hack::is_inside_IAT(PBYTE psp) const
   return 0;
 }
 
-int ndis_hack::is_iat_func(PBYTE psp, const char *name) const
+int drv_hack::is_iat_func(PBYTE psp, const char *name) const
 {
   if ( NULL == m_iat )
     return 0;

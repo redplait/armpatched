@@ -163,6 +163,7 @@
     <ClCompile Include="ldr.cpp" />
     <ClCompile Include="ndis_hack.cpp" />
     <ClCompile Include="pe_file.cpp" />
+    <ClCompile Include="skci_hack.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../armlib/armlib.vcxproj">

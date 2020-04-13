@@ -217,6 +217,17 @@ class arm64_hack
    {
      return (m_dis.instr_id == AD_INSTR_MOV && m_dis.num_operands == 2 && m_dis.operands[0].type == AD_OP_REG && m_dis.operands[1].type == AD_OP_IMM);
    }
+   inline int is_mov_rr() const
+   {
+     return (m_dis.instr_id == AD_INSTR_MOV && m_dis.num_operands == 2 && m_dis.operands[0].type == AD_OP_REG && m_dis.operands[1].type == AD_OP_REG);
+   }
+   inline int is_mov_rr(regs_pad &used_regs) const
+   {
+     if ( !is_mov_rr() )
+       return 0;
+     used_regs.ldar(get_reg(0), get_reg(1));
+     return 1;
+   }
    int in_section(PBYTE addr, const char *sname) const
    {
      ptrdiff_t off = addr - m_pe->base_addr();
