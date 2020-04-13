@@ -19,11 +19,13 @@ class ndis_hack: public arm64_hack
   protected:
     void zero_data();
     void collect_calls(PBYTE psp, std::set<PBYTE> &, const char *s_name);
-    int hack_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
+    int hack_lock_list(PBYTE psp, DWORD num, PBYTE &lock, PBYTE &list);
     int is_inside_IAT(PBYTE) const;
     int is_iat_func(PBYTE, const char *) const;
     module_import *m_iat;
     // output data
     PBYTE m_ndisProtocolListLock;
     PBYTE m_ndisProtocolList;
+    PBYTE m_ndisFilterDriverListLock;
+    PBYTE m_ndisFilterDriverList;
 };

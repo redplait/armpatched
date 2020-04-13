@@ -4,6 +4,7 @@
 void ndis_hack::zero_data()
 {
   m_ndisProtocolListLock = m_ndisProtocolList = NULL;
+  m_ndisFilterDriverListLock = m_ndisFilterDriverList = NULL;
 }
 
 void ndis_hack::dump() const
@@ -13,6 +14,10 @@ void ndis_hack::dump() const
     printf("ndisProtocolListLock: %p\n", PVOID(m_ndisProtocolListLock - mz));
   if ( m_ndisProtocolList != NULL )
     printf("ndisProtocolList: %p\n", PVOID(m_ndisProtocolList - mz));
+  if ( m_ndisFilterDriverListLock != NULL )
+    printf("ndisFilterDriverListLock: %p\n", PVOID(m_ndisFilterDriverListLock - mz));
+  if ( m_ndisFilterDriverList != NULL )
+    printf("ndisFilterDriverList: %p\n", PVOID(m_ndisFilterDriverList - mz));
 }
 
 int ndis_hack::is_inside_IAT(PBYTE psp) const
@@ -59,13 +64,16 @@ int ndis_hack::hack(int verbose)
     {
       if ( verbose )
         printf("Try function at %p\n", *citer);
-      if ( hack_lock_list(*citer, m_ndisProtocolListLock, m_ndisProtocolList) )
+      if ( hack_lock_list(*citer, 100, m_ndisProtocolListLock, m_ndisProtocolList) )
       {
         res++;
         break;
       }
     }
   }
+  exp = m_ed->find("NdisFRegisterFilterDriver");
+  if ( exp != NULL )
+    res += hack_lock_list(mz + exp->rva, 300, m_ndisFilterDriverListLock, m_ndisFilterDriverList);
   return res;
 }
 
@@ -92,7 +100,7 @@ void ndis_hack::collect_calls(PBYTE psp, std::set<PBYTE> &calls, const char *s_n
   }
 }
 
-int ndis_hack::hack_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
+int ndis_hack::hack_lock_list(PBYTE psp, DWORD num, PBYTE &lock, PBYTE &list)
 {
   lock = NULL;
   list = NULL;
@@ -101,7 +109,7 @@ int ndis_hack::hack_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
   regs_pad used_regs;
   int state = 0; // 0 - expect KeAcquireSpinLockRaiseToDpc call from IAT
                  // 1 - expect list loading
-  for ( DWORD i = 0; i < 100; i++ )
+  for ( DWORD i = 0; i < num; i++ )
   {
     if ( !disasm() || is_ret() )
       return 0;
