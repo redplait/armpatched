@@ -16,7 +16,10 @@ class ntoskrnl_hack: public arm64_hack
     void dump() const;
   protected:
     void zero_data();
+    void zero_sign_data();
+    void dump_sign_data() const;
     void init_aux(const char *, PBYTE &aux);
+    int try_find_PsKernelRangeList(PBYTE mz);
     int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
@@ -34,6 +37,10 @@ class ntoskrnl_hack: public arm64_hack
     int hack_reg_ext(PBYTE psp);
     int hask_se_logon(PBYTE psp);
     // auxilary data
+    PBYTE aux_MmUserProbeAddress;
+    PBYTE aux_MmSystemRangeStart;
+    PBYTE aux_MmHighestUserAddress;
+    PBYTE aux_MmBadPointer;
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
     PBYTE aux_ObReferenceObjectByHandle;
@@ -85,4 +92,23 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_proc_pid_off;
     DWORD m_proc_protection_off;
     DWORD m_proc_debport_off;
+    // data from PsKernelRangeList
+    PBYTE m_PspPicoProviderRoutines;
+    DWORD m_PspPicoProviderRoutines_size;
+    PBYTE m_HvcallCodeVa;
+    DWORD m_HvcallCodeVa_size;
+    PBYTE m_PsWin32NullCallBack;
+    DWORD m_PsWin32NullCallBack_size;
+    PBYTE m_PspSystemMitigationOptions;
+    DWORD m_PspSystemMitigationOptions_size;
+    PBYTE m_KdpBootedNodebug;
+    PBYTE m_KiDynamicTraceCallouts;
+    DWORD m_KiDynamicTraceCallouts_size;
+    // since 19603?
+    PBYTE m_BBTBuffer;
+    DWORD m_BBTBuffer_size;
+    PBYTE m_KeArm64VectorBase;
+    DWORD m_KeArm64VectorBase_size;
+    PBYTE m_PsAltSystemCallHandlers;
+    DWORD m_PsAltSystemCallHandlers_size;
 };

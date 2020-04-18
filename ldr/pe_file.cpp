@@ -67,6 +67,18 @@ arm64_pe_file::~arm64_pe_file()
   clean_exports();
 }
 
+const one_section *arm64_pe_file::find_section_by_name(const char *sname) const
+{
+  if ( sname == NULL )
+    return NULL;
+  for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )
+  {
+    if ( !strcmp(iter->name, sname) )
+     return &*iter;
+  }
+  return NULL;
+}
+
 const one_section *arm64_pe_file::find_section_rva(DWORD addr) const
 {
   for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )

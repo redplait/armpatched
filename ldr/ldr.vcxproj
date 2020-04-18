@@ -155,11 +155,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bm_search.cpp" />
     <ClCompile Include="dict.c" />
     <ClCompile Include="exports_dict.cpp" />
     <ClCompile Include="hack.cpp" />
     <ClCompile Include="imports_dict.cpp" />
     <ClCompile Include="krnl_hack.cpp" />
+    <ClCompile Include="krnl_sign.cpp" />
     <ClCompile Include="ldr.cpp" />
     <ClCompile Include="ndis_hack.cpp" />
     <ClCompile Include="pe_file.cpp" />

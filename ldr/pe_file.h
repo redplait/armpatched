@@ -300,6 +300,8 @@ class arm64_pe_file
    {
      return m_hdr64.OptionalHeader.ImageBase;
    }
+   // search section with name
+   const one_section *find_section_by_name(const char *) const;
    // search only in inited section data
    const one_section *find_section_rva(DWORD addr) const;
    // search in whole section content

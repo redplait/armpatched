@@ -21,6 +21,10 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExAcquireFastMutexUnsafe", aux_ExAcquireFastMutexUnsafe);
   init_aux("KfRaiseIrql", aux_KfRaiseIrql);
   init_aux("memset", aux_memset);
+  init_aux("MmUserProbeAddress", aux_MmUserProbeAddress);
+  init_aux("MmSystemRangeStart", aux_MmSystemRangeStart);
+  init_aux("MmHighestUserAddress", aux_MmHighestUserAddress);
+  init_aux("MmBadPointer", aux_MmBadPointer);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
   m_ExNPagedLookasideLock = NULL;
@@ -38,6 +42,7 @@ void ntoskrnl_hack::zero_data()
   m_SepRmNotifyMutex = m_SeFileSystemNotifyRoutinesExHead = NULL;
   m_ExpHostListLock = m_ExpHostList = NULL;
   m_KiWaitNever = m_KiWaitAlways = NULL;
+  zero_sign_data();
 }
 
 void ntoskrnl_hack::dump() const
@@ -111,6 +116,7 @@ void ntoskrnl_hack::dump() const
     printf("EPROCESS.Protection offset: %X\n", m_proc_protection_off);
   if ( m_proc_debport_off )
     printf("EPROCESS.DebugPort: %X\n", m_proc_debport_off);
+  dump_sign_data();
 }
 
 int ntoskrnl_hack::hack(int verbose)
@@ -215,6 +221,7 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsGetProcessDebugPort");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_debport_off);
+  res += try_find_PsKernelRangeList(mz);
   return res;
 }
 
