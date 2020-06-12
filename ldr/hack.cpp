@@ -7,6 +7,13 @@ arm64_hack::arm64_hack(arm64_pe_file *pe, exports_dict *ed)
   m_ed = ed;
   m_verbose = 0;
   fill_lc();
+  const one_section *s = pe->find_section_by_name(".pdata");
+  if ( s != NULL )
+  {
+    m_pdata_rva = s->va;
+    m_pdata_size = s->size;
+  } else
+   m_pdata_rva = m_pdata_size = 0;
 }
 
 arm64_hack::~arm64_hack()
@@ -154,6 +161,15 @@ int arm64_hack::is_ldr() const
   ;
 }
 
+int arm64_hack::is_ldr_off() const
+{
+  return (m_dis.instr_id == AD_INSTR_LDR) && 
+         (m_dis.num_operands == 2) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_IMM)
+  ;
+}
+
 int arm64_hack::is_str() const
 {
   return (m_dis.instr_id == AD_INSTR_STR) && 
@@ -250,3 +266,26 @@ int arm64_hack::find_first_load(PBYTE addr, const char *s_name, PBYTE &out)
   return (out != NULL);
 }
 
+struct pdata_item
+{
+  DWORD off;
+  DWORD seh_off;
+};
+
+PBYTE arm64_hack::find_pdata(PBYTE where)
+{
+  if ( where == NULL )
+    return NULL;
+  if ( !has_pdata() )
+    return NULL;
+  PBYTE mz = m_pe->base_addr();
+  DWORD diff = (DWORD)(where - mz);
+  const pdata_item *first = (const pdata_item *)(mz + m_pdata_rva);
+  const pdata_item *last = (const pdata_item *)(mz + m_pdata_rva + m_pdata_size);
+  const pdata_item *found = std::lower_bound(first, last, diff, [](const pdata_item &l, DWORD off) -> bool { return l.off < off; });
+  if (found == last)
+    return 0;
+  if (found == first)
+    return 0;
+  return mz + (found - 1)->off;
+}

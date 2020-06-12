@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "krnl_hack.h"
 #include "cf_graph.h"
+#include "bm_search.h"
 
 void ntoskrnl_hack::init_aux(const char *aux_name, PBYTE &aux)
 {
@@ -34,7 +35,8 @@ void ntoskrnl_hack::zero_data()
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
   m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = 0;
   m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = 0;
-  m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = NULL;
+  m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
+  m_SeCiCallbacks_size = 0;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
@@ -68,6 +70,8 @@ void ntoskrnl_hack::dump() const
     printf("KiServiceLimit: %p\n", PVOID(m_KiServiceLimit - mz));
   if ( m_KiServiceTable != NULL )
     printf("KiServiceTable: %p\n", PVOID(m_KiServiceTable - mz));
+  if ( m_SeCiCallbacks != NULL )
+    printf("SeCiCallbacks: %p size %X\n", PVOID(m_SeCiCallbacks - mz), m_SeCiCallbacks_size);
   if ( m_ObHeaderCookie != NULL )
     printf("ObHeaderCookie: %p\n", PVOID(m_ObHeaderCookie - mz));
   if ( m_ObTypeIndexTable != NULL )
@@ -160,6 +164,14 @@ int ntoskrnl_hack::hack(int verbose)
     if ( get_nt_addr("ZwQuerySymbolicLinkObject", addr) )
       res += hack_obref_type(addr, m_ObpSymbolicLinkObjectType, ".data");
   }
+  if ( m_KeLoaderBlock != NULL )
+  {
+    res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000009);
+    if ( m_SeCiCallbacks == NULL )
+      res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000008);
+    if ( m_SeCiCallbacks == NULL )
+      res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000007);
+  }
   exp = m_ed->find("ExRegisterExtension");
   if ( exp != NULL )
     res += hack_reg_ext(mz + exp->rva);
@@ -223,6 +235,83 @@ int ntoskrnl_hack::hack(int verbose)
     res += hack_x0_ldr(mz + exp->rva, m_proc_debport_off);
   res += try_find_PsKernelRangeList(mz);
   return res;
+}
+
+int ntoskrnl_hack::find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign)
+{
+  // try search in PAGE section
+  const one_section *s = m_pe->find_section_by_name("PAGE");
+  if ( NULL == s )
+    return 0;
+  PBYTE start = mz + s->va;
+  PBYTE end = start + s->size;
+  bm_search srch((const PBYTE)&sign, sizeof(sign));
+  PBYTE curr = start;
+  std::list<PBYTE> founds;
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    try
+    {
+      founds.push_back(fres);
+    } catch(std::bad_alloc)
+    { return 0; }
+    curr = fres + sizeof(sign);
+  }
+  if ( founds.empty() )
+    return 0;
+  for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
+  {
+    PBYTE func = find_pdata(*citer);
+#ifdef _DEBUG
+    printf("find_SepInitializeCodeIntegrity_by_sign: found at %p, func %p\n", *citer - mz, func);
+#endif/* _DEBUG */
+    if ( NULL == func )
+      continue;
+    if ( disasm_SepInitializeCodeIntegrity_by_sign(func, *citer) )
+      return 1;
+  }
+  return 0;
+}
+
+int ntoskrnl_hack::disasm_SepInitializeCodeIntegrity_by_sign(PBYTE psp, PBYTE found)
+{
+  if ( !setup(psp) )
+    return 0;
+  PBYTE last_data = NULL;
+  DWORD data_size = 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 50; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_mov_rimm() )
+    {
+      data_size = (DWORD)m_dis.operands[1].op_imm.bits;
+    }
+    if ( (last_data == NULL) && is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( in_section(what, ".data") )
+        last_data = what;
+      continue;
+    }
+    if ( is_ldr_off() )
+    {
+      if ( (PBYTE)m_dis.operands[1].op_imm.bits == found )
+      {
+        m_SeCiCallbacks = last_data;
+        m_SeCiCallbacks_size = data_size;
+        break;
+      }
+    }
+  }
+  return (m_SeCiCallbacks != NULL);
+
 }
 
 int ntoskrnl_hack::get_nt_addr(const char *name, PBYTE &addr)

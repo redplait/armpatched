@@ -356,7 +356,7 @@ class arm64_pe_file
     size_t m_mz_size;
     FILE *m_fp;
     IMAGE_NT_HEADERS64 m_hdr64;
-    DWORD m_pe_off;    
+    DWORD m_pe_off;
     // exports
     DWORD m_exp_base; // ordinal base
     DWORD m_exp_name; // IMAGE_EXPORT_DIRECTORY.Name

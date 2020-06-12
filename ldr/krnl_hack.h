@@ -36,6 +36,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name);
     int hack_reg_ext(PBYTE psp);
     int hask_se_logon(PBYTE psp);
+    int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
+    int disasm_SepInitializeCodeIntegrity_by_sign(PBYTE, PBYTE where);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -63,6 +65,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KeLoaderBlock;
     PBYTE m_KiServiceLimit;
     PBYTE m_KiServiceTable;
+    // from SepInitializeCodeIntegrity
+    PBYTE m_SeCiCallbacks;
+    DWORD m_SeCiCallbacks_size;
     // extensions
     PBYTE m_ExpHostListLock;
     PBYTE m_ExpHostList; // from ExpFindHost

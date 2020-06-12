@@ -55,6 +55,7 @@ arm64_pe_file::arm64_pe_file(const wchar_t *mod_name)
   m_mz_size = 0;
   m_fp = NULL;
   m_lc_readed = 0;
+  m_exp_name = m_exp_base = m_pe_off = 0;
   memset(&m_lc, 0, sizeof(m_lc));
 }
 

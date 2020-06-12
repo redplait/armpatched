@@ -210,6 +210,7 @@ class arm64_hack
    }
    int is_add() const;
    int is_ldr() const;
+   int is_ldr_off() const;
    int is_ldrb() const;
    int is_ldrsb() const;
    int is_str() const;
@@ -236,10 +237,18 @@ class arm64_hack
        return 0;
      return !strcmp(s->name, sname);
    }
+   inline int has_pdata() const
+   {
+     return (m_pdata_rva != 0) && (m_pdata_size != 0);
+   }
+   PBYTE find_pdata(PBYTE);
    // load config data
    PBYTE m_cookie;
    PBYTE m_GuardCFCheckFunctionPointer;
    PBYTE m_GuardCFDispatchFunctionPointer;
+   // pdata
+   DWORD m_pdata_rva;
+   DWORD m_pdata_size;
 
    // disasm data
    int m_verbose;

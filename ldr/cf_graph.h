@@ -327,7 +327,7 @@ class statefull_graph: public graph_ranges<T>
      } catch(std::bad_alloc)
      { }
      // sort vector
-     std::sort(vec.begin(), vec.end(), [](const Edge &l, const Edge &r) -> bool { return l.first < r.first;  });
+     std::sort(vec.begin(), vec.end(), [](const Edge &l, const Edge &r) -> bool { return l.first < r.first; });
      return vec.size();
    }
   protected:
