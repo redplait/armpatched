@@ -20,12 +20,15 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExAcquirePushLockExclusiveEx", aux_ExAcquirePushLockExclusiveEx);
   init_aux("ObReferenceObjectByHandle", aux_ObReferenceObjectByHandle);
   init_aux("ExAcquireFastMutexUnsafe", aux_ExAcquireFastMutexUnsafe);
+  init_aux("ExAcquireFastMutex", aux_ExAcquireFastMutex);
+  init_aux("KeAcquireGuardedMutex", aux_KeAcquireGuardedMutex);
   init_aux("KfRaiseIrql", aux_KfRaiseIrql);
   init_aux("memset", aux_memset);
   init_aux("MmUserProbeAddress", aux_MmUserProbeAddress);
   init_aux("MmSystemRangeStart", aux_MmSystemRangeStart);
   init_aux("MmHighestUserAddress", aux_MmHighestUserAddress);
   init_aux("MmBadPointer", aux_MmBadPointer);
+  init_aux("ExAllocatePoolWithTag", aux_ExAllocatePoolWithTag);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
   m_ExNPagedLookasideLock = NULL;
@@ -44,6 +47,8 @@ void ntoskrnl_hack::zero_data()
   m_SepRmNotifyMutex = m_SeFileSystemNotifyRoutinesExHead = NULL;
   m_ExpHostListLock = m_ExpHostList = NULL;
   m_KiWaitNever = m_KiWaitAlways = NULL;
+  m_pnp_item_size = 0;
+  m_PnpDeviceClassNotifyLock = m_PnpDeviceClassNotifyList = NULL;
   zero_sign_data();
 }
 
@@ -58,6 +63,12 @@ void ntoskrnl_hack::dump() const
     printf("ExPagedLookasideLock: %p\n", PVOID(m_ExPagedLookasideLock - mz));
   if ( m_ExPagedLookasideListHead != NULL )
     printf("ExPagedLookasideListHead: %p\n", PVOID(m_ExPagedLookasideListHead - mz));
+  // dump pnp data
+  if ( m_PnpDeviceClassNotifyLock != NULL )
+    printf("PnpDeviceClassNotifyLock: %p\n", PVOID(m_PnpDeviceClassNotifyLock - mz));
+  if ( m_PnpDeviceClassNotifyList != NULL )
+    printf("PnpDeviceClassNotifyList: %p, item_size %X\n", PVOID(m_PnpDeviceClassNotifyList - mz), m_pnp_item_size);
+  // dump tracepoints
   if ( m_KiDynamicTraceEnabled != NULL ) 
     printf("KiDynamicTraceEnabled: %p\n", PVOID(m_KiDynamicTraceEnabled - mz));
   if ( m_KiTpStateLock != NULL )
@@ -144,6 +155,9 @@ int ntoskrnl_hack::hack(int verbose)
     if ( find_first_jmp(mz + exp->rva, next) )
       res += find_lock_list(next, m_ExNPagedLookasideLock, m_ExNPagedLookasideListHead);
   }
+  exp = m_ed->find("IoRegisterPlugPlayNotification");
+  if ( exp != NULL )
+    res += disasm_IoRegisterPlugPlayNotification(mz + exp->rva);
   exp = m_ed->find("KeSetTracepoint");
   if ( exp != NULL ) 
    try

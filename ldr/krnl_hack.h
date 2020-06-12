@@ -38,6 +38,7 @@ class ntoskrnl_hack: public arm64_hack
     int hask_se_logon(PBYTE psp);
     int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
     int disasm_SepInitializeCodeIntegrity_by_sign(PBYTE, PBYTE where);
+    int disasm_IoRegisterPlugPlayNotification(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -47,6 +48,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExAcquirePushLockExclusiveEx;
     PBYTE aux_ObReferenceObjectByHandle;
     PBYTE aux_ExAcquireFastMutexUnsafe;
+    PBYTE aux_ExAcquireFastMutex;
+    PBYTE aux_KeAcquireGuardedMutex;
+    PBYTE aux_ExAllocatePoolWithTag;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_memset;
     // not exported
@@ -68,6 +72,10 @@ class ntoskrnl_hack: public arm64_hack
     // from SepInitializeCodeIntegrity
     PBYTE m_SeCiCallbacks;
     DWORD m_SeCiCallbacks_size;
+    // PlugPlayNotifications
+    DWORD m_pnp_item_size;
+    PBYTE m_PnpDeviceClassNotifyLock;
+    PBYTE m_PnpDeviceClassNotifyList;
     // extensions
     PBYTE m_ExpHostListLock;
     PBYTE m_ExpHostList; // from ExpFindHost
