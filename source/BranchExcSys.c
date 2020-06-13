@@ -204,8 +204,32 @@ static int DisassembleHintInstr(struct instruction *i, struct ad_insn *out){
     return 0;
 }
 
-static int DisassembleBarrierInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleTmeInstr(struct instruction *i, struct ad_insn *out)
+{
+  unsigned Rd = bits(i->opcode, 0, 4);
+  unsigned op2 = bits(i->opcode, 8, 11);
+  int instr_id = AD_NONE;
+
+  ADD_FIELD(out, Rd);
+  ADD_REG_OPERAND(out, Rd, _SZ(_64_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+  if (op2 == 1)
+  {
+    instr_id = AD_INSTR_TTEST;
+    concat(DECODE_STR(out), "ttest");
+  }
+  else if (op2 == 0)
+  {
+    instr_id = AD_INSTR_TSTART;
+    concat(DECODE_STR(out), "tstart");
+  }
+  else
+    return 1;
+  SET_INSTR_ID(out, instr_id);
+  return 0;
+}
+
+static int DisassembleBarrierInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned CRm = bits(i->opcode, 8, 11);
     unsigned op2 = bits(i->opcode, 5, 7);
     unsigned Rt = bits(i->opcode, 0, 4);
@@ -289,7 +313,7 @@ static int DisassembleBarrierInstr(struct instruction *i,
     {
       instr_id = AD_INSTR_TCOMMIT;
       concat(DECODE_STR(out), "tcommit");
-    } else{
+    } else {
         return 1;
     }
 
@@ -1533,6 +1557,8 @@ int BranchExcSysDisassemble(struct instruction *i, struct ad_insn *out){
             result = DisassembleHintInstr(i, out);
         else if(op1 == 0x1033)
             result = DisassembleBarrierInstr(i, out);
+        else if (op1 == 0x1233)
+            result = DisassembleTmeInstr(i, out);
         else if((op1 & ~0x70) == 0x1004)
             result = DisassemblePSTATEInstr(i, out);
         else if(((op1 >> 7) & ~4) == 0x21)
