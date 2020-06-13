@@ -446,6 +446,7 @@ static const char *const AD_INSTR_TABLE[] = {
     "AD_INSTR_SYSL",
     "AD_INSTR_TBNZ",
     "AD_INSTR_TBZ",
+    "AD_INSTR_TCOMMIT",
     "AD_INSTR_TLBI",
     "AD_INSTR_TSB_CSYNC",
     "AD_INSTR_TST",

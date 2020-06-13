@@ -285,8 +285,11 @@ static int DisassembleBarrierInstr(struct instruction *i,
         instr_id = AD_INSTR_SB;
 
         concat(DECODE_STR(out), "sb");
-    }
-    else{
+    } else if ( op2 == 3 )
+    {
+      instr_id = AD_INSTR_TCOMMIT;
+      concat(DECODE_STR(out), "tcommit");
+    } else{
         return 1;
     }
 
