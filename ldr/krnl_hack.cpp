@@ -29,8 +29,11 @@ void ntoskrnl_hack::zero_data()
   init_aux("MmHighestUserAddress", aux_MmHighestUserAddress);
   init_aux("MmBadPointer", aux_MmBadPointer);
   init_aux("ExAllocatePoolWithTag", aux_ExAllocatePoolWithTag);
+  init_aux("ExEnumHandleTable", aux_ExEnumHandleTable);
+  init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
+  eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
   m_ExNPagedLookasideLock = NULL;
   m_ExNPagedLookasideListHead = NULL;
   m_ExPagedLookasideLock = NULL;
@@ -131,6 +134,12 @@ void ntoskrnl_hack::dump() const
     printf("EPROCESS.Protection offset: %X\n", m_proc_protection_off);
   if ( m_proc_debport_off )
     printf("EPROCESS.DebugPort: %X\n", m_proc_debport_off);
+  if ( eproc_ObjectTable_off )
+    printf("EPROCESS.ObjectTable: %X\n", eproc_ObjectTable_off);
+  if ( eproc_ProcessLock_off )
+    printf("EPROCESS.RundownProtect: %X\n", eproc_ProcessLock_off);
+  if ( ObjectTable_pushlock_off )
+    printf("HANDLE_TABLE.HandleContentionEvent: %X\n", ObjectTable_pushlock_off);
   dump_sign_data();
 }
 
@@ -218,6 +227,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("ObReferenceObjectByPointerWithTag");
   if ( exp != NULL ) 
     res += hack_ob_types(mz + exp->rva);
+  exp = m_ed->find("ObFindHandleForObject");
+  if ( exp != NULL ) 
+    res += hack_ObFindHandleForObject(mz + exp->rva);
   exp = m_ed->find("NtRequestWaitReplyPort");
   if ( exp != NULL )
     res += hack_obref_type(mz + exp->rva, m_AlpcPortObjectType, "ALMOSTRO");
@@ -284,13 +296,13 @@ int ntoskrnl_hack::find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign)
 #endif/* _DEBUG */
     if ( NULL == func )
       continue;
-    if ( disasm_SepInitializeCodeIntegrity_by_sign(func, *citer) )
+    if ( disasm_SepInitializeCodeIntegrity(func, *citer) )
       return 1;
   }
   return 0;
 }
 
-int ntoskrnl_hack::disasm_SepInitializeCodeIntegrity_by_sign(PBYTE psp, PBYTE found)
+int ntoskrnl_hack::disasm_SepInitializeCodeIntegrity(PBYTE psp, PBYTE found)
 {
   if ( !setup(psp) )
     return 0;
@@ -686,7 +698,7 @@ int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name)
       for ( DWORD i = 0; i < 100; i++ )
       {
         if ( !disasm() || is_ret() )
-          return 0;
+          break;
         if ( check_jmps(cgraph) )
           continue;
         // check for last b xxx
@@ -727,44 +739,6 @@ end:
 
 }
 
-int ntoskrnl_hack::hack_ob_types(PBYTE psp)
-{
-  if ( !setup(psp) )
-    return 0;
-  int state = 0;
-  regs_pad used_regs;
-  for ( DWORD i = 0; i < 30; i++ )
-  {
-    if ( !disasm(state) || is_ret() )
-      return 0;
-    if ( is_adrp(used_regs) )
-      continue;
-    // ldrb for cookie
-    if ( !state && is_ldrb() ) 
-    {
-       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-       if ( !in_section(what, "ALMOSTRO") )
-         used_regs.zero(get_reg(0));
-       else {
-         m_ObHeaderCookie = what;
-         state = 1;
-       }
-    }
-    // add for index tab
-    if ( state && is_add() )
-    {
-       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-       if ( !in_section(what, "ALMOSTRO") )
-         used_regs.zero(get_reg(0));
-       else {
-         m_ObTypeIndexTable = what;
-         break;
-       }
-    }
-  }
-  return (m_ObHeaderCookie != NULL) && (m_ObTypeIndexTable != NULL);
-}
-
 int ntoskrnl_hack::hack_sdt(PBYTE psp)
 {
   if ( !setup(psp) )
@@ -790,7 +764,7 @@ int ntoskrnl_hack::hack_sdt(PBYTE psp)
       for ( DWORD i = 0; i < 100; i++ )
       {
         if ( !disasm() || is_ret() )
-          return 0;
+          break;
         if ( check_jmps(cgraph) )
           continue;
         // check for last b xxx

@@ -37,8 +37,11 @@ class ntoskrnl_hack: public arm64_hack
     int hack_reg_ext(PBYTE psp);
     int hask_se_logon(PBYTE psp);
     int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
-    int disasm_SepInitializeCodeIntegrity_by_sign(PBYTE, PBYTE where);
+    int disasm_SepInitializeCodeIntegrity(PBYTE, PBYTE where);
     int disasm_IoRegisterPlugPlayNotification(PBYTE);
+    int hack_ObFindHandleForObject(PBYTE);
+    int hack_enum_tab(PBYTE);
+    int hack_ObReferenceProcessHandleTable(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -53,6 +56,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExAllocatePoolWithTag;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_memset;
+    PBYTE aux_ExEnumHandleTable;
+    PBYTE aux_ExfUnblockPushLock;
     // not exported
     PBYTE aux_ExAllocateCallBack;
     PBYTE aux_ExCompareExchangeCallBack;
@@ -90,6 +95,11 @@ class ntoskrnl_hack: public arm64_hack
     // obtypes cookie & table
     PBYTE m_ObHeaderCookie;
     PBYTE m_ObTypeIndexTable;
+    // object tables data
+    DWORD eproc_ObjectTable_off;
+    DWORD ObjectTable_pushlock_off;
+    DWORD eproc_ProcessLock_off;
+    // symlinks data
     PBYTE m_ObpSymbolicLinkObjectType;
     PBYTE m_AlpcPortObjectType;
     // timers
