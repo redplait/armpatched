@@ -49,6 +49,15 @@ static int DisassembleExcGenInstr(struct instruction *i, struct ad_insn *out){
     if(op2 != 0)
         return 1;
 
+    if (opc == 3 && !LL)
+    {
+      ADD_FIELD(out, imm16);
+      ADD_IMM_OPERAND(out, AD_IMM_UINT, *(unsigned int *)&imm16);
+      concat(DECODE_STR(out), "tcancel #%#x", imm16);
+      SET_INSTR_ID(out, AD_INSTR_TCANCEL);
+      return 0;
+    }
+
     ADD_FIELD(out, opc);
     ADD_FIELD(out, imm16);
     ADD_FIELD(out, op2);
@@ -209,18 +218,19 @@ static int DisassembleTmeInstr(struct instruction *i, struct ad_insn *out)
   unsigned Rd = bits(i->opcode, 0, 4);
   unsigned op2 = bits(i->opcode, 8, 11);
   int instr_id = AD_NONE;
+  const char *Rd_s = GET_GEN_REG(AD_RTBL_GEN_64, Rd, NO_PREFER_ZR);
 
   ADD_FIELD(out, Rd);
   ADD_REG_OPERAND(out, Rd, _SZ(_64_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
   if (op2 == 1)
   {
     instr_id = AD_INSTR_TTEST;
-    concat(DECODE_STR(out), "ttest");
+    concat(DECODE_STR(out), "ttest %s", Rd_s);
   }
   else if (op2 == 0)
   {
     instr_id = AD_INSTR_TSTART;
-    concat(DECODE_STR(out), "tstart");
+    concat(DECODE_STR(out), "tstart %s", Rd_s);
   }
   else
     return 1;
