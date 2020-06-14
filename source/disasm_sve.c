@@ -33,6 +33,47 @@ static const struct itab max_min[] = {
 /* 10 U1 */ { "uabd", AD_INSTR_UABD },
 };
 
+static const struct itab bshift_tab[] = {
+/* 00 0 0 */ { "asr", AD_INSTR_ASR },
+/* 00 0 1 */ { "lsr", AD_INSTR_LSR },
+/* 00 0 1 */ { NULL, AD_NONE },
+/* 00 1 1 */ { "lsl", AD_INSTR_LSL },
+/* 01 0 0 */ { "asrd", AD_INSTR_ASRD },
+/* 01 0 1 */ { NULL, AD_NONE },
+/* 01 1 0 */ { "sqshl", AD_INSTR_SQSHL },
+/* 01 1 1 */ { "uqshl", AD_INSTR_UQSHL },
+/* 10 0 0 */ { NULL, AD_NONE },
+/* 10 0 1 */ { NULL, AD_NONE },
+/* 10 1 0 */ { NULL, AD_NONE },
+/* 10 1 1 */ { NULL, AD_NONE },
+/* 11 0 0 */ { "srshr", AD_INSTR_SRSHR },
+/* 11 0 1 */ { "urshr", AD_INSTR_URSHR },
+/* 11 1 0 */ { NULL, AD_NONE },
+/* 11 1 1 */ { "sqshlu", AD_INSTR_SQSHLU },
+};
+
+static const struct itab bshift_tab2[] = {
+/* 0 0 0 */ { "asr", AD_INSTR_ASR },
+/* 0 0 1 */ { "lsr", AD_INSTR_LSR },
+/* 0 1 0 */ { NULL, AD_NONE },
+/* 0 1 1 */ { "lsl", AD_INSTR_LSL },
+/* 1 0 0 */ { "asrr", AD_INSTR_ASRR },
+/* 1 0 1 */ { "lsrr", AD_INSTR_LSRR },
+/* 1 1 0 */ { NULL, AD_NONE },
+/* 1 1 1 */ { "lslr", AD_INSTR_LSLR },
+};
+
+static const struct itab bun_tab[] = {
+/* 0 0 0 */ { "cls", AD_INSTR_CLS },
+/* 0 0 1 */ { "clz", AD_INSTR_CLZ },
+/* 0 1 0 */ { "cnt", AD_INSTR_CNT },
+/* 0 1 1 */ { "cnot", AD_INSTR_CNOT },
+/* 1 0 0 */ { "fabs", AD_INSTR_FABS },
+/* 1 0 1 */ { "fneg", AD_INSTR_FNEG },
+/* 1 1 0 */ { "not", AD_INSTR_NOT },
+/* 1 1 1 */ { NULL, AD_NONE },
+};
+
 static int op00_op10_op20(struct instruction *i, struct ad_insn *out)
 {
   unsigned op3 = bits(i->opcode, 10, 15);
@@ -396,9 +437,119 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out)
     unsigned op0 = bits(i->opcode, 19, 20);
     unsigned size = bits(i->opcode, 22, 23);
     unsigned Pg = bits(i->opcode, 10, 12);
-    unsigned Zn = bits(i->opcode, 5, 9);
+    unsigned Zdn = bits(i->opcode, 0, 4);
     int sz = get_sz(size);
-//    if ( !(op0 & 2) )
+    if ( !(op0 & 2) )
+    {
+      unsigned opc = bits(i->opcode, 16, 19);
+      unsigned imm3 = bits(i->opcode, 5, 7);
+      unsigned tszh = bits(i->opcode, 22, 23);
+      unsigned tszl = bits(i->opcode, 8, 9);
+      const char *instr_s = NULL;
+
+      if ( bshift_tab[opc].instr_s == NULL )
+         return 1;
+      size = (tszh << 2) | tszl;
+      sz = get_sz(size);
+      instr_s = bshift_tab[opc].instr_s;
+      SET_INSTR_ID(out, bshift_tab[opc].instr_id);
+
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, imm3);
+      ADD_FIELD(out, Zdn);
+
+      ADD_ZREG_OPERAND(out, Zdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm3);
+
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", instr_s, AD_RTBL_Z_128[Zdn], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zdn], imm3);
+      return 0;
+    }
+    if ( op0 == 2 )
+    {
+      unsigned opc = bits(i->opcode, 16, 18);
+      unsigned Zm = bits(i->opcode, 5, 9);
+      const char *instr_s = NULL;
+
+      if ( bshift_tab2[opc].instr_s == NULL )
+         return 1;
+
+      instr_s = bshift_tab2[opc].instr_s;
+      SET_INSTR_ID(out, bshift_tab2[opc].instr_id);
+
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Zdn);
+
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Zdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", instr_s, AD_RTBL_Z_128[Zdn], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zdn], AD_RTBL_Z_128[Zm]);
+      return 0;
+    }
+    if ( op0 == 3 )
+    {
+      unsigned opc = bits(i->opcode, 16, 18);
+      unsigned Zm = bits(i->opcode, 5, 9);
+      const char *instr_s = NULL;
+      if ( opc > 3 )
+        return 1;
+      instr_s = bshift_tab2[opc].instr_s;
+      SET_INSTR_ID(out, bshift_tab2[opc].instr_id);
+
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Zdn);
+
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Zdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", instr_s, AD_RTBL_Z_128[Zdn], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zdn], AD_RTBL_Z_128[Zm]);
+      return 0;
+    }
+    return 1;
+  } // op3 101xxx
+  if ( 5 == (op3 >> 3) )
+  {
+    // SVE Integer Unary Arithmetic - Predicated 
+    unsigned op0 = bits(i->opcode, 19, 20);
+    unsigned Pg = bits(i->opcode, 10, 12);
+    unsigned size = bits(i->opcode, 22, 23);
+    int sz = get_sz(size);
+
+    if ( op0 < 2 )
+      return 1;
+    if ( op0 == 3 )
+    {
+      // bitwise unary
+      unsigned opc = bits(i->opcode, 16, 18);
+      unsigned Zn = bits(i->opcode, 5, 9);
+      unsigned Zd = bits(i->opcode, 0, 4);
+      const char *instr_s = NULL;
+
+      if ( NULL == bun_tab[opc].instr_s )
+        return 1;
+      instr_s = bun_tab[opc].instr_s;
+      SET_INSTR_ID(out, bun_tab[opc].instr_id);
+
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zn);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+
+      concat(DECODE_STR(out), "%s %s, %s, %s", instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+      return 0;
+    }
   }
   return 1;
 }
