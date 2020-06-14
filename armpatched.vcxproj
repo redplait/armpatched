@@ -26,6 +26,7 @@
     <ClCompile Include="source\DataProcessingFloatingPoint.c" />
     <ClCompile Include="source\DataProcessingImmediate.c" />
     <ClCompile Include="source\DataProcessingRegister.c" />
+    <ClCompile Include="source\disasm_sve.c" />
     <ClCompile Include="source\LoadsAndStores.c" />
     <ClCompile Include="source\strext.c" />
     <ClCompile Include="source\utils.c" />

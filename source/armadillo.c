@@ -13,6 +13,7 @@
 #include "DataProcessingFloatingPoint.h"
 #include "DataProcessingRegister.h"
 #include "LoadsAndStores.h"
+#include "disasm_sve.h"
 
 static int _ArmadilloDisassemble(struct instruction *i, struct ad_insn *out)
 {
@@ -40,8 +41,11 @@ static int _ArmadilloDisassemble(struct instruction *i, struct ad_insn *out)
         SET_INSTR_ID(out, AD_INSTR_UDF);
         }
         return 0;
-    }
-    else if(op0 > 0 && op0 <= 3){
+    } else if ( op0 == 2 )
+    {
+        out->group = AD_G_SVE;
+        return Disassemble_SVE(i, out);
+    } else if(op0 > 0 && op0 <= 3){
         return 1;
     }
     else if((op0 >> 1) == 4){

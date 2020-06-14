@@ -1643,7 +1643,7 @@ static const char *const AD_IMM_TYPE_TABLE[] = {
 
 static const char *const AD_GROUP_TABLE[] = {
     "AD_G_Reserved", "AD_G_DataProcessingImmediate", "AD_G_BranchExcSys", "AD_G_LoadsAndStores",
-    "AD_G_DataProcessingRegister", "AD_G_DataProcessingFloatingPoint"
+    "AD_G_DataProcessingRegister", "AD_G_DataProcessingFloatingPoint", "AD_G_SVE"
 };
 
 static const char *const AD_COND_TABLE[] = {
@@ -1663,7 +1663,8 @@ static const char *GET_GEN_REG(const char *const *rtbl, unsigned int idx,
     return rtbl[idx];
 }
 
-static const char *GET_FP_REG(const char *const *rtbl, unsigned int idx){
+static const char *GET_FP_REG(const char *const *rtbl, unsigned int idx)
+{
     if(idx > 30)
         return "reg idx oob";
 

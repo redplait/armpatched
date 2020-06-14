@@ -8,8 +8,8 @@
 #include "utils.h"
 #include "strext.h"
 
-static int DisassemblePCRelativeAddressingInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassemblePCRelativeAddressingInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned op = bits(i->opcode, 31, 31);
     unsigned immlo = bits(i->opcode, 29, 30);
     unsigned immhi = bits(i->opcode, 5, 23);
@@ -58,8 +58,8 @@ static int DisassemblePCRelativeAddressingInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleAddSubtractImmediateInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleAddSubtractImmediateInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -205,8 +205,8 @@ static int DisassembleAddSubtractImmediateInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleAddSubtractImmediateWithTagsInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleAddSubtractImmediateWithTagsInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -265,8 +265,8 @@ static int DisassembleAddSubtractImmediateWithTagsInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleLogicalImmediateInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleLogicalImmediateInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned opc = bits(i->opcode, 29, 30);
     unsigned N = bits(i->opcode, 22, 22);
@@ -398,8 +398,8 @@ static int DisassembleLogicalImmediateInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleMoveWideImmediateInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleMoveWideImmediateInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned opc = bits(i->opcode, 29, 30);
     unsigned hw = bits(i->opcode, 21, 22);
@@ -522,8 +522,8 @@ static int DisassembleMoveWideImmediateInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleBitfieldInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleBitfieldInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned opc = bits(i->opcode, 29, 30);
     unsigned N = bits(i->opcode, 22, 22);
@@ -758,8 +758,8 @@ static int DisassembleBitfieldInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleExtractInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleExtractInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op21 = bits(i->opcode, 29, 30);
     unsigned N = bits(i->opcode, 22, 22);
@@ -834,8 +834,8 @@ static int DisassembleExtractInstr(struct instruction *i,
     return 0;
 }
 
-int DataProcessingImmediateDisassemble(struct instruction *i,
-        struct ad_insn *out){
+int DataProcessingImmediateDisassemble(struct instruction *i, struct ad_insn *out)
+{
     unsigned op0 = bits(i->opcode, 23, 25);
 
     int result = 0;

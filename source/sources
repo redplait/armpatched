@@ -3,4 +3,4 @@ TARGETNAME=armadildo
 
 C_DEFINES= $(C_DEFINES) -DWDK_BUILD
 
-SOURCES=	armadillo.c bits.c BranchExcSys.c DataProcessingFloatingPoint.c DataProcessingImmediate.c DataProcessingRegister.c LoadsAndStores.c strext.c utils.c
+SOURCES=	armadillo.c bits.c BranchExcSys.c DataProcessingFloatingPoint.c DataProcessingImmediate.c DataProcessingRegister.c LoadsAndStores.c strext.c utils.c disasm_sve.c

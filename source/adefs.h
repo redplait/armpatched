@@ -86,7 +86,7 @@ enum {
 enum {
     AD_G_Reserved = 0, AD_G_DataProcessingImmediate, AD_G_BranchExcSys,
     AD_G_LoadsAndStores, AD_G_DataProcessingRegister,
-    AD_G_DataProcessingFloatingPoint
+    AD_G_DataProcessingFloatingPoint, AD_G_SVE
 };
 
 enum {
@@ -367,6 +367,41 @@ enum {
     AD_REG_V28,
     AD_REG_V29,
     AD_REG_V30
+};
+
+enum {
+    AD_REG_Z0 = 0,
+    AD_REG_Z1,
+    AD_REG_Z2,
+    AD_REG_Z3,
+    AD_REG_Z4,
+    AD_REG_Z5,
+    AD_REG_Z6,
+    AD_REG_Z7,
+    AD_REG_Z8,
+    AD_REG_Z9,
+    AD_REG_Z10,
+    AD_REG_Z11,
+    AD_REG_Z12,
+    AD_REG_Z13,
+    AD_REG_Z14,
+    AD_REG_Z15,
+    AD_REG_Z16,
+    AD_REG_Z17,
+    AD_REG_Z18,
+    AD_REG_Z19,
+    AD_REG_Z20,
+    AD_REG_Z21,
+    AD_REG_Z22,
+    AD_REG_Z23,
+    AD_REG_Z24,
+    AD_REG_Z25,
+    AD_REG_Z26,
+    AD_REG_Z27,
+    AD_REG_Z28,
+    AD_REG_Z29,
+    AD_REG_Z30,
+    AD_REG_Z31
 };
 
 enum {

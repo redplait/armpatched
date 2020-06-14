@@ -8,8 +8,8 @@
 #include "utils.h"
 #include "strext.h"
 
-static int DisassembleCryptographicAESInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleCryptographicAESInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned size = bits(i->opcode, 22, 23);
     unsigned opcode = bits(i->opcode, 12, 16);
     unsigned Rn = bits(i->opcode, 5, 9);
@@ -5105,7 +5105,8 @@ static int DisassembleFloatingPointDataProcessingThreeSourceInstr(struct instruc
     return 0;
 }
 
-int DataProcessingFloatingPointDisassemble(struct instruction *i, struct ad_insn *out){
+int DataProcessingFloatingPointDisassemble(struct instruction *i, struct ad_insn *out)
+{
     int result = 0;
 
     unsigned op0 = bits(i->opcode, 28, 31);
