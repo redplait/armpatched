@@ -15,8 +15,8 @@
 #define REGISTER 0
 #define IMMEDIATE 1
 
-static int DisassembleDataProcessingTwoSourceInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleDataProcessingTwoSourceInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned S = bits(i->opcode, 29, 29);
     unsigned Rm = bits(i->opcode, 16, 20); 
@@ -153,8 +153,8 @@ static int DisassembleDataProcessingTwoSourceInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleDataProcessingOneSourceInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleDataProcessingOneSourceInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned S = bits(i->opcode, 29, 29);
     unsigned opcode2 = bits(i->opcode, 16, 20);
@@ -282,8 +282,8 @@ static const char *decode_shift(unsigned op){
     };
 }
 
-static int DisassembleLogicalShiftedRegisterInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleLogicalShiftedRegisterInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned opc = bits(i->opcode, 29, 30);
     unsigned shift = bits(i->opcode, 22, 23);
@@ -424,8 +424,8 @@ static char *get_extended_extend_string(char *extend_string, unsigned option, un
     return extend_string;
 }
 
-static int DisassembleAddSubtractShiftedOrExtendedInstr(struct instruction *i,
-        struct ad_insn *out, int kind){
+static int DisassembleAddSubtractShiftedOrExtendedInstr(struct instruction *i, struct ad_insn *out, int kind)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -588,8 +588,8 @@ static int DisassembleAddSubtractShiftedOrExtendedInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleAddSubtractCarryInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleAddSubtractCarryInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -651,8 +651,8 @@ static int DisassembleAddSubtractCarryInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleRotateRightIntoFlagsInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleRotateRightIntoFlagsInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -684,8 +684,8 @@ static int DisassembleRotateRightIntoFlagsInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleEvaluateIntoFlagsInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleEvaluateIntoFlagsInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -719,8 +719,8 @@ static int DisassembleEvaluateIntoFlagsInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleConditionalCompareInstr(struct instruction *i,
-        struct ad_insn *out, int kind){
+static int DisassembleConditionalCompareInstr(struct instruction *i, struct ad_insn *out, int kind)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -796,8 +796,8 @@ static int DisassembleConditionalCompareInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleConditionalSelectInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleConditionalSelectInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 30, 30);
     unsigned S = bits(i->opcode, 29, 29);
@@ -891,8 +891,8 @@ static int DisassembleConditionalSelectInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleDataProcessingThreeSourceInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleDataProcessingThreeSourceInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op54 = bits(i->opcode, 29, 30);
     unsigned op31 = bits(i->opcode, 21, 23);
@@ -1030,8 +1030,8 @@ static int DisassembleDataProcessingThreeSourceInstr(struct instruction *i,
     return 0;
 }
 
-int DataProcessingRegisterDisassemble(struct instruction *i,
-        struct ad_insn *out){
+int DataProcessingRegisterDisassemble(struct instruction *i, struct ad_insn *out)
+{
     int result = 0;
     
     unsigned op0 = bits(i->opcode, 30, 30);

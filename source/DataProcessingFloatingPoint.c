@@ -51,8 +51,8 @@ static int DisassembleCryptographicAESInstr(struct instruction *i, struct ad_ins
     return 0;
 }
 
-static int DisassembleCryptographicThreeRegisterSHAInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleCryptographicThreeRegisterSHAInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned size = bits(i->opcode, 22, 23);
     unsigned Rm = bits(i->opcode, 16, 20);
     unsigned opcode = bits(i->opcode, 12, 14);
@@ -126,8 +126,8 @@ static int DisassembleCryptographicThreeRegisterSHAInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleCryptographicTwoRegisterSHAInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleCryptographicTwoRegisterSHAInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned size = bits(i->opcode, 22, 23);
     unsigned opcode = bits(i->opcode, 12, 16);
     unsigned Rn = bits(i->opcode, 5, 9);
@@ -182,8 +182,8 @@ static int DisassembleCryptographicTwoRegisterSHAInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleAdvancedSIMDCopyInstr(struct instruction *i,
-        struct ad_insn *out, int scalar){
+static int DisassembleAdvancedSIMDCopyInstr(struct instruction *i, struct ad_insn *out, int scalar)
+{
     unsigned Q = bits(i->opcode, 30, 30);
     unsigned op = bits(i->opcode, 29, 29);
     unsigned imm5 = bits(i->opcode, 16, 20);

@@ -8,8 +8,8 @@
 #include "utils.h"
 #include "strext.h"
 
-static int DisassembleConditionalImmediateBranchInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleConditionalImmediateBranchInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned o1 = bits(i->opcode, 24, 24);
     unsigned imm19 = bits(i->opcode, 5, 23);
     unsigned o0 = bits(i->opcode, 4, 4);
@@ -40,7 +40,8 @@ static int DisassembleConditionalImmediateBranchInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleExcGenInstr(struct instruction *i, struct ad_insn *out){
+static int DisassembleExcGenInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned opc = bits(i->opcode, 21, 23);
     unsigned imm16 = bits(i->opcode, 5, 20);
     unsigned op2 = bits(i->opcode, 2, 4);
@@ -150,7 +151,8 @@ static const struct itab fourth[] = {
         { "autibsp", AD_INSTR_AUTIBSP }
     };
 
-static int DisassembleHintInstr(struct instruction *i, struct ad_insn *out){
+static int DisassembleHintInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned CRm = bits(i->opcode, 8, 11);
     unsigned op2 = bits(i->opcode, 5, 7);
     int instr_id = AD_NONE;
@@ -332,7 +334,8 @@ static int DisassembleBarrierInstr(struct instruction *i, struct ad_insn *out)
     return 0;
 }
 
-static int DisassemblePSTATEInstr(struct instruction *i, struct ad_insn *out){
+static int DisassemblePSTATEInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned op1 = bits(i->opcode, 16, 18);
     unsigned CRm = bits(i->opcode, 8, 11);
     unsigned op2 = bits(i->opcode, 5, 7);
@@ -605,7 +608,8 @@ static const char *tlbi_op(unsigned encoding){
     };
 }
 
-static int DisassembleSystemInstr(struct instruction *i, struct ad_insn *out){
+static int DisassembleSystemInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned L = bits(i->opcode, 21, 21);
     unsigned op1 = bits(i->opcode, 16, 18);
     unsigned CRn = bits(i->opcode, 12, 15);
@@ -1256,8 +1260,8 @@ static const char *get_sysreg(unsigned encoding){
     };
 }
 
-static int DisassembleSystemRegisterMoveInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleSystemRegisterMoveInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned L = bits(i->opcode, 21, 21);
     unsigned o0 = bits(i->opcode, 19, 19);
     unsigned op1 = bits(i->opcode, 16, 18);
@@ -1315,8 +1319,7 @@ static int DisassembleSystemRegisterMoveInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleUnconditionalBranchRegisterInstr(struct instruction *i,
-        struct ad_insn *out)
+static int DisassembleUnconditionalBranchRegisterInstr(struct instruction *i, struct ad_insn *out)
 {
     unsigned opc = bits(i->opcode, 21, 24);
     unsigned op2 = bits(i->opcode, 16, 20);
@@ -1427,8 +1430,8 @@ static int DisassembleUnconditionalBranchRegisterInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleUnconditionalBranchImmInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleUnconditionalBranchImmInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned op = bits(i->opcode, 31, 31);
     unsigned imm26 = bits(i->opcode, 0, 25);
     const char *instr_s = NULL;
@@ -1460,8 +1463,8 @@ static int DisassembleUnconditionalBranchImmInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleCompareAndBranchImmediateInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleCompareAndBranchImmediateInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned sf = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 24, 24);
     unsigned imm19 = bits(i->opcode, 5, 23);
@@ -1503,8 +1506,8 @@ static int DisassembleCompareAndBranchImmediateInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleTestAndBranchImmediateInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleTestAndBranchImmediateInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned b5 = bits(i->opcode, 31, 31);
     unsigned op = bits(i->opcode, 24, 24);
     unsigned b40 = bits(i->opcode, 19, 23);
@@ -1551,7 +1554,8 @@ static int DisassembleTestAndBranchImmediateInstr(struct instruction *i,
     return 0;
 }
 
-int BranchExcSysDisassemble(struct instruction *i, struct ad_insn *out){
+int BranchExcSysDisassemble(struct instruction *i, struct ad_insn *out)
+{
     unsigned op0 = bits(i->opcode, 29, 31);
     unsigned op1 = bits(i->opcode, 12, 25);
     unsigned op2 = bits(i->opcode, 0, 4);
