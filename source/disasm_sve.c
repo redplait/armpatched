@@ -51,7 +51,7 @@ static const struct itab max_min[] = {
 static const struct itab bshift_tab[] = {
 /* 00 0 0 */ { "asr", AD_INSTR_ASR },
 /* 00 0 1 */ { "lsr", AD_INSTR_LSR },
-/* 00 0 1 */ { NULL, AD_NONE },
+/* 00 1 0 */ { NULL, AD_NONE },
 /* 00 1 1 */ { "lsl", AD_INSTR_LSL },
 /* 01 0 0 */ { "asrd", AD_INSTR_ASRD },
 /* 01 0 1 */ { NULL, AD_NONE },
@@ -5046,6 +5046,881 @@ static int op03_op0_op14(struct instruction *i, struct ad_insn *out, unsigned op
   return 1;
 }
 
+static const struct itab fcm_tab[] = {
+/* 0 0 0 */ { "fcmge", AD_INSTR_FCMGE },
+/* 0 0 1 */ { "fcmgt", AD_INSTR_FCMGT },
+/* 0 1 0 */ { "fcmeq", AD_INSTR_FCMEQ },
+/* 0 1 1 */ { "fcmne", AD_INSTR_FCMNE },
+/* 1 0 0 */ { "fcmuo", AD_INSTR_FCMUO },
+/* 1 0 1 */ { "facge", AD_INSTR_FACGE },
+/* 1 1 0 */ { NULL, AD_NONE },
+/* 1 1 1 */ { "facgt", AD_INSTR_FACGT },
+};
+
+static const struct itab fari_tab[] = {
+/* 0 0 0 */ { "fadd", AD_INSTR_FADD },
+/* 0 0 1 */ { "fsub", AD_INSTR_FSUB },
+/* 0 1 0 */ { "fmul", AD_INSTR_FMUL },
+/* 0 1 1 */ { "ftsmul", AD_INSTR_FTSMUL },
+/* 1 0 0 */ { NULL, AD_NONE },
+/* 1 0 1 */ { NULL, AD_NONE },
+/* 1 1 0 */ { "frecps", AD_INSTR_FRECPS },
+/* 1 1 1 */ { "frsqrts", AD_INSTR_FRSQRTS },
+};
+
+static const struct itab fari2_tab[] = {
+/* 0 0 0 0 */ { "fadd", AD_INSTR_FADD },
+/* 0 0 0 1 */ { "fsub", AD_INSTR_FSUB },
+/* 0 0 0 1 */ { "fmul", AD_INSTR_FMUL },
+/* 0 0 1 1 */ { "fsubr", AD_INSTR_FSUBR },
+/* 0 1 0 0 */ { "fmaxnm", AD_INSTR_FMAXNM },
+/* 0 1 0 1 */ { "fminnm", AD_INSTR_FMINNM },
+/* 0 1 1 0 */ { "fmax", AD_INSTR_FMAX },
+/* 0 1 1 1 */ { "fmin", AD_INSTR_FMIN },
+/* 1 0 0 0 */ { "fabd", AD_INSTR_FABD },
+/* 1 0 0 1 */ { "fscale", AD_INSTR_FSCALE },
+/* 1 0 1 0 */ { "fmulx", AD_INSTR_FMULX },
+/* 1 0 1 1 */ { NULL, AD_NONE },
+/* 1 1 0 0 */ { "fdivr", AD_INSTR_FDIVR },
+/* 1 1 0 1 */ { "fdiv", AD_INSTR_FDIV },
+/* 1 1 1 0 */ { NULL, AD_NONE },
+/* 1 1 1 1 */ { NULL, AD_NONE },
+};
+
+static const struct itab fari3_tab[] = {
+/* 0 0 0 */ { "fadd", AD_INSTR_FADD },
+/* 0 0 1 */ { "fsub", AD_INSTR_FSUB },
+/* 0 1 0 */ { "fmul", AD_INSTR_FMUL },
+/* 0 1 1 */ { "fsubr", AD_INSTR_FSUBR },
+/* 1 0 0 */ { "fmaxnm", AD_INSTR_FMAXNM },
+/* 1 0 1 */ { "fminnm", AD_INSTR_FMINNM },
+/* 1 1 0 */ { "fmax", AD_INSTR_FMAX },
+/* 1 1 1 */ { "fmin", AD_INSTR_FMIN },
+};
+
+static const struct itab frint_tab[] = {
+/* 0 0 0 */ { "frintn", AD_INSTR_FRINTN },
+/* 0 0 1 */ { "frintp", AD_INSTR_FRINTP },
+/* 0 1 0 */ { "frintm", AD_INSTR_FRINTM },
+/* 0 1 1 */ { "frintz", AD_INSTR_FRINTZ },
+/* 1 0 0 */ { "frinta", AD_INSTR_FRINTA },
+/* 1 0 1 */ { NULL, AD_NONE },
+/* 1 1 0 */ { "frintx", AD_INSTR_FRINTX },
+/* 1 1 1 */ { "frintx", AD_INSTR_FRINTI },
+};
+
+static const struct itab fcv_tab[] = {
+/* 0 0 0 0 */ { NULL, AD_NONE },
+/* 0 0 0 1 */ { NULL, AD_NONE },
+/* 0 0 1 0 */ { "fcvtx", AD_INSTR_FCVTX },
+/* 0 0 1 1 */ { NULL, AD_NONE },
+/* 0 1 0 0 */ { NULL, AD_NONE },
+/* 0 1 0 1 */ { NULL, AD_NONE },
+/* 0 1 1 0 */ { NULL, AD_NONE },
+/* 0 1 1 1 */ { NULL, AD_NONE },
+/* 1 0 0 0 */ { "fcvt", AD_INSTR_FCVT },
+/* 1 0 0 1 */ { "fcvt", AD_INSTR_FCVT },
+/* 1 0 1 0 */ { "bfcvt", AD_INSTR_FCVT },
+/* 1 0 1 1 */ { NULL, AD_NONE },
+/* 1 1 0 0 */ { "fcvt", AD_INSTR_FCVT },
+/* 1 1 0 1 */ { "fcvt", AD_INSTR_FCVT },
+/* 1 1 1 0 */ { "fcvt", AD_INSTR_FCVT },
+/* 1 1 1 1 */ { "fcvt", AD_INSTR_FCVT },
+};
+
+static int op03_op1_op40(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  unsigned size = bits(i->opcode, 22, 23);
+  int sz = get_sz(size);
+  unsigned Zn = bits(i->opcode, 5, 9);
+  unsigned Zm = bits(i->opcode, 16, 20);
+  unsigned Zd = bits(i->opcode, 0, 4);
+  // x1xxxx
+  if ( 1 & (op3 >> 4) )
+  {
+    // SVE floating-point compare vectors - page 2805
+    unsigned Pd = bits(i->opcode, 0, 3);
+    unsigned Pg = bits(i->opcode, 10, 12);
+    unsigned o3 = bits(i->opcode, 4, 4);
+    unsigned o2 = bits(i->opcode, 13, 13);
+    unsigned op = bits(i->opcode, 15, 15);
+    int idx = (op << 2) | (o2 << 1) | o3;
+    if ( NULL == fcm_tab[idx].instr_s )
+      return 1;
+
+    SET_INSTR_ID(out, fcm_tab[idx].instr_id);
+    ADD_FIELD(out, size);
+    ADD_FIELD(out, Zm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Zn);
+    ADD_FIELD(out, Pd);
+
+    ADD_ZREG_OPERAND(out, Pd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+
+    concat(DECODE_STR(out), "%s %s, %s, %s, %s", fcm_tab[idx].instr_s, AD_RTBL_PG_128[Pd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], AD_RTBL_Z_128[Zm]);
+    return 0;
+  }
+  // 000xxx
+  if ( !(op3 >> 3) ) 
+  {
+    // SVE Floating Point Arithmetic - Predicated - page 2805
+    unsigned opc = bits(i->opcode, 10, 12);
+
+    if ( NULL == fari_tab[opc].instr_s )
+      return 1;
+
+    SET_INSTR_ID(out, fari_tab[opc].instr_id);
+    ADD_FIELD(out, size);
+    ADD_FIELD(out, Zm);
+    ADD_FIELD(out, Zn);
+    ADD_FIELD(out, Zd);
+
+    ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    concat(DECODE_STR(out), "%s %s, %s, %s", fari_tab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_Z_128[Zn], AD_RTBL_Z_128[Zm]);
+    return 0;
+  }
+  // 100xxx
+  if ( 4 == (op3 >> 3) ) 
+  {
+    // SVE Floating Point Arithmetic - Predicated - page 2805
+    unsigned op0 = bits(i->opcode, 19, 20);
+    unsigned op1 = bits(i->opcode, 13, 15);
+    unsigned op2 = bits(i->opcode, 6, 9);
+    if ( !(op0 & 2) ) 
+    {
+      // SVE floating-point arithmetic (predicated) - page 
+      unsigned opc = bits(i->opcode, 16, 19);
+      unsigned Pg = bits(i->opcode, 10, 12);
+      if ( NULL == fari2_tab[opc].instr_s )
+        return 1;
+      SET_INSTR_ID(out, fari2_tab[opc].instr_id);
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", fari2_tab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zd], AD_RTBL_Z_128[Zm]);
+      return 0;
+    }
+    if ( (2 == op0) && !op1 )
+    {
+      // ftmad
+      unsigned imm3 = bits(i->opcode, 16, 18);
+      SET_INSTR_ID(out, AD_INSTR_FTMAD);
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, imm3);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm3);
+      concat(DECODE_STR(out), "ftmad %s, %s, %s, #%x", AD_RTBL_Z_128[Zd], AD_RTBL_Z_128[Zd], AD_RTBL_Z_128[Zm], imm3);
+      return 0;
+    }
+    if ( (3 == op0 ) && !op2 )
+    {
+      // SVE floating-point arithmetic with immediate (predicated) - page 2806
+      unsigned opc = bits(i->opcode, 16, 19);
+      unsigned Pg = bits(i->opcode, 10, 12);
+      unsigned imm = bits(i->opcode, 5, 5);
+
+      if ( NULL == fari3_tab[opc].instr_s )
+        return 1;
+      SET_INSTR_ID(out, fari3_tab[opc].instr_id);
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, imm);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm);
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", fari3_tab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zd], imm);
+      return 0;
+    }
+    return 1;
+  }
+  // 101xxx
+  if ( 5 == (op3 >> 3) ) 
+  {
+    // SVE Floating Point Unary Operations - Predicated - page 2807
+    unsigned op0 = bits(i->opcode, 18, 20);
+    if ( !(op0 >> 1) )
+    {
+      // SVE floating-point round to integral value - page 2807
+      unsigned Pg = bits(i->opcode, 10, 12);
+      unsigned opc = bits(i->opcode, 16, 18);
+      if ( NULL == frint_tab[opc].instr_s )
+        return 1;
+      SET_INSTR_ID(out, frint_tab[opc].instr_id);
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zn);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      concat(DECODE_STR(out), "%s %s, %s, %s", frint_tab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+      return 0;
+    }
+    if ( 2 == op0 )
+    {
+      // SVE floating-point convert precision - page 2807
+      unsigned Pg = bits(i->opcode, 10, 12);
+      unsigned opc = bits(i->opcode, 22, 23);
+      unsigned opc2 = bits(i->opcode, 16, 17);
+      sz = get_sz(opc);
+
+      if ( NULL == fcv_tab[opc].instr_s )
+        return 1;
+      SET_INSTR_ID(out, fcv_tab[opc].instr_id);
+      ADD_FIELD(out, opc);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zn);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      concat(DECODE_STR(out), "%s %s, %s, %s", fcv_tab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+      return 0;
+    }
+    if ( 3 == op0 )
+    {
+      // SVE floating-point unary operations - page 2807
+      unsigned opc = bits(i->opcode, 16, 17);
+      unsigned Pg = bits(i->opcode, 10, 12);
+      const char *instr_s = NULL;
+      if ( opc > 1 )
+        return 1;
+      if ( !opc )
+      {
+        instr_s = "frecpx";
+        SET_INSTR_ID(out, AD_INSTR_FRECPX);
+      } else {
+        instr_s = "fsqrt";
+        SET_INSTR_ID(out, AD_INSTR_FSQRT);
+      }
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zn);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      concat(DECODE_STR(out), "%s %s, %s, %s", instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+      return 0;
+    }
+    if ( 2 == (op0 >> 1) )
+    {
+      // SVE integer convert to floating-point - page 2802
+      unsigned opc = bits(i->opcode, 22, 23);
+      unsigned opc2 = bits(i->opcode, 17, 18);
+      unsigned U = bits(i->opcode, 16, 16);
+      unsigned Pg = bits(i->opcode, 10, 12);
+      unsigned idx = (opc << 3) | (opc2 << 1) | U;
+      const char *instr_s = NULL;
+      if ( !opc )
+        return 1;
+      sz = get_sz(opc);
+      switch(idx)
+      {
+        case 0x1E:
+        case 0x1C:
+        case 0x18:
+        case 0x14:
+        case 0xE:
+        case 0xC:
+        case 0xA: instr_s = "scvtf";
+                   SET_INSTR_ID(out, AD_INSTR_SCVTF);
+          break;
+
+        case 0x1f:
+        case 0x1d:
+        case 0x19:
+        case 0x15:
+        case 0xf:
+        case 0xd:
+        case 0xB: instr_s = "ucvtf";
+                   SET_INSTR_ID(out, AD_INSTR_UCVTF);
+          break;
+        default: return 1;
+      }
+      ADD_FIELD(out, opc);
+      ADD_FIELD(out, opc2);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zn);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      concat(DECODE_STR(out), "%s %s, %s, %s", instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+      return 0;
+    }
+    if ( 3 == (op0 >> 1) )
+    {
+      // SVE floating-point convert to integer - page 2808
+      unsigned opc = bits(i->opcode, 22, 23);
+      unsigned opc2 = bits(i->opcode, 17, 18);
+      unsigned U = bits(i->opcode, 16, 16);
+      unsigned Pg = bits(i->opcode, 10, 12);
+      unsigned idx = (opc << 3) | (opc2 << 1) | U;
+      const char *instr_s = NULL;
+      if ( !opc )
+        return 1;
+      sz = get_sz(opc);
+      if ( !opc && !U )
+      {
+        instr_s = "flogb";
+        SET_INSTR_ID(out, AD_INSTR_FLOGB);
+      }
+      switch(idx)
+      {
+        case 0x1E:
+        case 0x1C:
+        case 0x18:
+        case 0x14:
+        case 0xE:
+        case 0xC:
+        case 0xA: instr_s = "fcvtzs";
+                   SET_INSTR_ID(out, AD_INSTR_FCVTZS);
+          break;
+
+        case 0x1f:
+        case 0x1d:
+        case 0x19:
+        case 0x15:
+        case 0xf:
+        case 0xd:
+        case 0xB: instr_s = "fcvtzu";
+                   SET_INSTR_ID(out, AD_INSTR_FCVTZU);
+          break;
+      }
+      if ( NULL == instr_s )
+        return 1;
+
+      ADD_FIELD(out, opc);
+      ADD_FIELD(out, opc2);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zn);
+      ADD_FIELD(out, Zd);
+
+      ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      concat(DECODE_STR(out), "%s %s, %s, %s", instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+      return 0;
+    }
+    return 1;
+  }
+  return 1;
+}
+
+static const struct itab fmv_tab[] = {
+/* 0 0 0 */ { "fadd", AD_INSTR_FADD },
+/* 0 0 1 */ { NULL, AD_NONE },
+/* 0 1 0 */ { NULL, AD_NONE },
+/* 0 1 1 */ { NULL, AD_NONE },
+/* 1 0 0 */ { "fmaxnmv", AD_INSTR_FMAXNMV },
+/* 1 0 1 */ { "fminnmv", AD_INSTR_FMINNMV },
+/* 1 1 0 */ { "fmaxv", AD_INSTR_FMAXV },
+/* 1 1 1 */ { "fminv", AD_INSTR_FMINV },
+};
+
+static int op03_op1_op20(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  unsigned size = bits(i->opcode, 22, 23);
+  int sz = get_sz(size);
+  unsigned Zn = bits(i->opcode, 5, 9);
+  unsigned Pg = bits(i->opcode, 10, 12);
+  unsigned Vd = bits(i->opcode, 0, 4);
+  unsigned opc = bits(i->opcode, 16, 18);
+  // SVE floating-point recursive reduction - page 2809
+  if ( 1 != (op3 >> 3) )
+    return 1;
+  if ( NULL == fmv_tab[opc].instr_s )
+    return 1;
+
+  SET_INSTR_ID(out, fmv_tab[opc].instr_id);
+  ADD_FIELD(out, size);
+  ADD_FIELD(out, Pg);
+  ADD_FIELD(out, Zn);
+  ADD_FIELD(out, Vd);
+
+  ADD_REG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+  ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+  ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  concat(DECODE_STR(out), "%s %s, %s, %s", fmv_tab[opc].instr_s, AD_RTBL_FP_V_128[Vd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+  return 0;
+}
+
+static int op03_op1_op21(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  unsigned op0 = bits(i->opcode, 10, 11);
+  unsigned size = bits(i->opcode, 22, 23);
+  unsigned Zn = bits(i->opcode, 5, 9);
+  unsigned Zd = bits(i->opcode, 0, 4);
+  int sz = get_sz(size);
+  const char *instr_s = NULL;
+  unsigned opc = bits(i->opcode, 16, 18);
+  // SVE Floating Point Unary Operations - Unpredicated - page 2809
+  if ( 3 != (op3 >> 2) )
+    return 1;
+  if ( op0 )
+    return 1;
+  if ( opc == 6 )
+  {
+    instr_s = "frecpe";
+    SET_INSTR_ID(out, AD_INSTR_FRECPE);
+  } else if ( opc == 7 )
+  {
+    instr_s = "frsqrte";
+    SET_INSTR_ID(out, AD_INSTR_FRSQRTE);
+  } else
+    return 1;
+
+  ADD_FIELD(out, size);
+  ADD_FIELD(out, Zn);
+  ADD_FIELD(out, Zd);
+
+  ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  concat(DECODE_STR(out), "%s %s, %s", instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_Z_128[Zn]);
+  return 0;
+
+}
+
+static int op03_op1_op22(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  // SVE Floating Point Compare - with Zero - page 2810
+  unsigned op0 = bits(i->opcode, 18, 18);
+  unsigned Pd = bits(i->opcode, 0, 3);
+  unsigned Pg = bits(i->opcode, 10, 12);
+  unsigned size = bits(i->opcode, 22, 23);
+  int sz = get_sz(size);
+  unsigned Zn = bits(i->opcode, 5, 9);
+  unsigned ne = bits(i->opcode, 4, 4);
+  unsigned lt = bits(i->opcode, 16, 16);
+  unsigned eq = bits(i->opcode, 17, 17);
+  int idx = (eq << 2) | (lt << 1) | ne;
+  if ( 1 != (op3 >> 3) ) 
+    return 1;
+  if ( op0 )
+    return 1;
+  if ( NULL == fcm_tab[idx].instr_s )
+    return 1;
+
+  SET_INSTR_ID(out, fcm_tab[idx].instr_id);
+  ADD_FIELD(out, size);
+  ADD_FIELD(out, Pg);
+  ADD_FIELD(out, Zn);
+  ADD_FIELD(out, Pd);
+
+  ADD_ZREG_OPERAND(out, Pd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+  ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+  ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  concat(DECODE_STR(out), "%s %s, %s, %s, #0.0", fcm_tab[idx].instr_s, AD_RTBL_PG_128[Pd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+  return 0;
+}
+
+static int op03_op1_op23(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  // SVE floating-point serial reduction (predicated) - page 2810
+  unsigned opc = bits(i->opcode, 16, 18);
+  unsigned size = bits(i->opcode, 22, 23);
+  int sz = get_sz(size);
+  unsigned Pg = bits(i->opcode, 10, 12);
+  unsigned Zm = bits(i->opcode, 5, 9);
+  unsigned Vdn = bits(i->opcode, 0, 4);
+  if ( 1 != (op3 >> 3) ) 
+    return 1;
+  if ( opc )
+    return 1;
+  SET_INSTR_ID(out, AD_INSTR_FADDA);
+  ADD_FIELD(out, size);
+  ADD_FIELD(out, Pg);
+  ADD_FIELD(out, Zm);
+  ADD_FIELD(out, Vdn);
+
+  ADD_REG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+  ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+  ADD_REG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+  ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  concat(DECODE_STR(out), "fadda %s %s, %s, %s", AD_RTBL_FP_V_128[Vdn], AD_RTBL_PG_128[Pg], AD_RTBL_FP_V_128[Vdn], AD_RTBL_Z_128[Zm]);
+  return 0;
+}
+
+static const struct itab fmla_tab2[] = {
+/* 0 0 */ { "fmla", AD_INSTR_FMLA },
+/* 0 1 */ { "fmls", AD_INSTR_FMLS },
+/* 1 0 */ { "fnmla", AD_INSTR_FNMLA },
+/* 1 1 */ { "fnmls", AD_INSTR_FNMLS },
+};
+
+static const struct itab fmad_tab[] = {
+/* 0 0 */ { "fmad", AD_INSTR_FMAD },
+/* 0 1 */ { "fmsb", AD_INSTR_FMSB },
+/* 1 0 */ { "fnmad", AD_INSTR_FNMAD },
+/* 1 1 */ { "fnmsb", AD_INSTR_FNMSB },
+};
+
+static int op03_op1_op14(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  // SVE Floating Point Multiply-Add - page 2811
+  unsigned op0 = bits(i->opcode, 15, 15);
+  unsigned size = bits(i->opcode, 22, 23);
+  int sz = get_sz(size);
+  unsigned Zm = bits(i->opcode, 16, 20);
+  unsigned Pg = bits(i->opcode, 10, 12);
+  unsigned Zn = bits(i->opcode, 5, 9);
+  unsigned Zd = bits(i->opcode, 0, 4);
+  unsigned opc = bits(i->opcode, 13, 14);
+  const char *instr_s = NULL;
+  if ( !op0 )
+  {
+    instr_s = fmla_tab2[opc].instr_s;
+    SET_INSTR_ID(out, fmla_tab2[opc].instr_id);
+  } else {
+    instr_s = fmad_tab[opc].instr_s;
+    SET_INSTR_ID(out, fmad_tab[opc].instr_id);
+  }
+  ADD_FIELD(out, size);
+  ADD_FIELD(out, Zm);
+  ADD_FIELD(out, Pg);
+  ADD_FIELD(out, Zn);
+  ADD_FIELD(out, Zd);
+
+  ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+  ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+  concat(DECODE_STR(out), "%s %s, %s, %s, %s", instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zm], AD_RTBL_Z_128[Zn]);
+  return 0;
+}
+
+static const struct itab prf_tab[] = {
+/* 0 0 */ { "prfb", AD_INSTR_PRFB },
+/* 0 1 */ { "prfh", AD_INSTR_PRFH },
+/* 1 0 */ { "prfw", AD_INSTR_PRFW },
+/* 1 1 */ { "prfd", AD_INSTR_PRFD },
+};
+
+// ripped from page 2057
+static const char *const prfop_name[] = {
+/* 0 0 0 0 */ "PLDL1KEEP",
+/* 0 0 0 1 */ "PLDL1STRM",
+/* 0 0 1 0 */ "PLDL2KEEP",
+/* 0 0 1 1 */ "PLDL2STRM",
+/* 0 1 0 0 */ "PLDL3KEEP",
+/* 0 1 0 1 */ "PLDL3STRM",
+/* 0 1 1 0 */ NULL,
+/* 0 1 1 1 */ NULL,
+/* 1 0 0 0 */ "PSTL1KEEP",
+/* 1 0 0 1 */ "PSTL1STRM",
+/* 1 0 1 0 */ "PSTL2KEEP",
+/* 1 0 1 1 */ "PSTL2STRM",
+/* 1 1 0 0 */ "PSTL3KEEP",
+/* 1 1 0 1 */ "PSTL3STRM",
+/* 1 1 1 0 */ NULL,
+/* 1 1 1 1 */ NULL
+};
+
+static const struct itab ld1_tab[] = {
+/* 0 0 */ { "ld1sh", AD_INSTR_LD1SH },
+/* 0 1 */ { "ldff1sh", AD_INSTR_LDFF1SH },
+/* 1 0 */ { "ld1h", AD_INSTR_LD1H },
+/* 1 1 */ { "ldff1h", AD_INSTR_LDFF1H },
+};
+
+static const struct itab ld1_tab2[] = {
+/* 0 0 */ { NULL, AD_NONE },
+/* 0 1 */ { NULL, AD_NONE },
+/* 1 0 */ { "ld1w", AD_INSTR_LD1W },
+/* 1 1 */ { "ldff1w", AD_INSTR_LDFF1W },
+};
+
+static const struct itab ld1_tab3[] = {
+/* 00 0 0 */ { "ld1sb", AD_INSTR_LD1SB },
+/* 00 0 1 */ { "ldff1sb", AD_INSTR_LDFF1SB },
+/* 00 1 0 */ { "ld1b", AD_INSTR_LD1B },
+/* 00 1 1 */ { "ldff1b", AD_INSTR_LDFF1B },
+/* 01 0 0 */ { "ld1sh", AD_INSTR_LD1SH },
+/* 01 0 1 */ { "ldff1sh", AD_INSTR_LDFF1SH },
+/* 01 1 0 */ { "ld1h", AD_INSTR_LD1H },
+/* 01 1 1 */ { "ldff1h", AD_INSTR_LDFF1H },
+/* 10 0 0 */ { NULL, AD_NONE },
+/* 10 0 1 */ { NULL, AD_NONE },
+/* 10 1 0 */ { "ld1w", AD_INSTR_LD1W },
+/* 10 1 1 */ { "ldff1w", AD_INSTR_LDFF1W },
+};
+
+static const struct itab ldn_tab[] = {
+/* 0 0 0 */ { "ldnt1sb", AD_INSTR_LDNT1SB },
+/* 0 0 1 */ { "ldnt1b", AD_INSTR_LDNT1B },
+/* 0 1 0 */ { "ldnt1sh", AD_INSTR_LDNT1SH },
+/* 0 1 1 */ { "ldnt1h", AD_INSTR_LDNT1H },
+/* 1 0 0 */ { NULL, AD_NONE },
+/* 1 0 1 */ { "ldnt1w", AD_INSTR_LDNT1W },
+/* 1 1 0 */ { NULL, AD_NONE },
+/* 1 1 1 */ { NULL, AD_NONE },
+};
+
+
+static int op04(struct instruction *i, struct ad_insn *out)
+{
+  // SVE Memory - 32-bit Gather and Unsized Contiguous - page 2811
+  unsigned op0 = bits(i->opcode, 23, 24);
+  unsigned op1 = bits(i->opcode, 21, 22);
+  unsigned op2 = bits(i->opcode, 13, 15);
+  unsigned op3 = bits(i->opcode, 4, 4);
+
+  unsigned xs = bits(i->opcode, 22, 22);
+  unsigned Pg = bits(i->opcode, 10, 12);
+  unsigned Rn = bits(i->opcode, 5, 9);
+  unsigned Zm = bits(i->opcode, 16, 20);
+
+  if ( !op0 )
+  {
+    if ( (op1 & 1) && !(op2 >> 2) && !op3 )
+    {
+      // SVE 32-bit gather prefetch (scalar plus 32-bit scaled offsets) - page 2812
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      unsigned prfop = bits(i->opcode, 0, 3);
+      unsigned msz = bits(i->opcode, 13, 14);
+
+      SET_INSTR_ID(out, prf_tab[msz].instr_id);
+      ADD_FIELD(out, xs);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, prfop);
+
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&prfop);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
+      if ( prfop_name[prfop] != NULL )
+        concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop_name[prfop], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      else
+        concat(DECODE_STR(out), "%s #%x, %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop, AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      return 0;
+    }
+  }
+  if ( 1 == op0 )
+  {
+    if ( (op1 & 1) && !(op2 >> 2) )
+    {
+      // SVE 32-bit gather load halfwords (scalar plus 32-bit scaled offsets) - page 2812
+      unsigned U = bits(i->opcode, 14, 14);
+      unsigned ff = bits(i->opcode, 13, 13);
+      unsigned Zt = bits(i->opcode, 0, 4);
+      unsigned idx = (U << 1) | ff;
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+
+      SET_INSTR_ID(out, ld1_tab[idx].instr_id);
+      ADD_FIELD(out, xs);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      return 0;
+    }
+  }
+  if ( 2 == op0 )
+  {
+    if ( (op1 & 1) && !(op2 >> 2) )
+    {
+      // SVE 32-bit gather load words (scalar plus 32-bit scaled offsets) - page 2812
+      unsigned U = bits(i->opcode, 14, 14);
+      unsigned ff = bits(i->opcode, 13, 13);
+      unsigned Zt = bits(i->opcode, 0, 4);
+      unsigned idx = (U << 1) | ff;
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+
+      if ( NULL == ld1_tab2[idx].instr_s )
+        return 1;
+      SET_INSTR_ID(out, ld1_tab2[idx].instr_id);
+      ADD_FIELD(out, xs);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab2[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      return 0;
+    }
+  }
+  if ( 3 == op0 )
+  {
+    if ( !(2 & op1) && !op2 && !op3 )
+    {
+      // ldr
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      unsigned Pt = bits(i->opcode, 0, 3);
+      unsigned imm9h = bits(i->opcode, 16, 21);
+      unsigned imm9l = bits(i->opcode, 10, 12);
+      unsigned imm = (imm9h << 3) | imm9l;
+
+      SET_INSTR_ID(out, AD_INSTR_LDR);
+      ADD_FIELD(out, imm9h);
+      ADD_FIELD(out, imm9l);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Pt);
+
+      ADD_ZREG_OPERAND(out, Pt, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm);
+      concat(DECODE_STR(out), "ldr %s, %s, #%x", AD_RTBL_PG_128[Pt], Rn_s, imm);
+      return 0;
+    }
+    if ( !(2 & op1) && (2 == op2) )
+    {
+      // ldr vector
+      unsigned Zt = bits(i->opcode, 0, 4);
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      unsigned imm9h = bits(i->opcode, 16, 21);
+      unsigned imm9l = bits(i->opcode, 10, 12);
+      unsigned imm = (imm9h << 3) | imm9l;
+
+      SET_INSTR_ID(out, AD_INSTR_LDR);
+      ADD_FIELD(out, imm9h);
+      ADD_FIELD(out, imm9l);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm);
+      concat(DECODE_STR(out), "ldr %s, %s, #%x", AD_RTBL_Z_128[Zt], Rn_s, imm);
+      return 0;
+    }
+    if ( (2 & op1) && !(op2 >> 2) && !op3 )
+    {
+      // SVE contiguous prefetch (scalar plus immediate) - page 2812
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      unsigned prfop = bits(i->opcode, 0, 3);
+      unsigned msz = bits(i->opcode, 13, 14);
+      unsigned imm = bits(i->opcode, 16, 21);
+
+      SET_INSTR_ID(out, prf_tab[msz].instr_id);
+      ADD_FIELD(out, imm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, prfop);
+
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&prfop);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
+      if ( prfop_name[prfop] != NULL )
+        concat(DECODE_STR(out), "%s %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop_name[prfop], AD_RTBL_PG_128[Pg], Rn_s, imm);
+      else
+        concat(DECODE_STR(out), "%s #%x, %s, %s, #%x", prf_tab[msz].instr_s, prfop, AD_RTBL_PG_128[Pg], Rn_s, imm);
+      return 0;
+    }
+  }
+  if ( 3 != op0 )
+  {
+    if ( !(op1 & 1) && !(op2 >> 2) )
+    {
+      // SVE 32-bit gather load (scalar plus 32-bit unscaled offsets) - page 2813
+      unsigned opc = bits(i->opcode, 23, 24);
+      unsigned U = bits(i->opcode, 14, 14);
+      unsigned ff = bits(i->opcode, 13, 13);
+      unsigned Zt = bits(i->opcode, 0, 4);
+      unsigned idx = (opc << 2) | (U << 1) | ff;
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      if ( OOB(idx, ld1_tab3) )
+        return 1;
+      if ( NULL == ld1_tab3[idx].instr_s )
+        return 1;
+
+      SET_INSTR_ID(out, ld1_tab3[idx].instr_id);
+      ADD_FIELD(out, xs);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab3[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      return 0;
+    }
+  }
+  if ( !op1 && (2 == (op2 >> 1)) )
+  {
+    // SVE2 32-bit gather non-temporal load (scalar plus 32-bit unscaled offsets) - page 2813
+    unsigned msz = bits(i->opcode, 23, 24);
+    unsigned U = bits(i->opcode, 13, 13);
+    unsigned Rm = bits(i->opcode, 16, 20);
+    unsigned Zt = bits(i->opcode, 0, 4);
+    unsigned Zn = bits(i->opcode, 5, 9);
+    const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+    unsigned idx = (msz << 1) | U;
+    if ( OOB(idx, ldn_tab) )
+      return 1;
+    if ( NULL == ldn_tab[idx].instr_s )
+      return 1;
+
+    SET_INSTR_ID(out, ldn_tab[idx].instr_id);
+    ADD_FIELD(out, Rm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Zn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_ZREG_OPERAND(out, Zn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_REG_OPERAND(out, Rm, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    concat(DECODE_STR(out), "%s %s, %s, %s, %s", ldn_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], Rm_s);
+    return 0;
+  }
+  return 1;
+}
+
+static int op05(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  // SVE Memory - Contiguous Load - page
+  return 1;
+}
+
+static int op06(struct instruction *i, struct ad_insn *out, unsigned op3)
+{
+  // SVE Memory - 64-bit Gather - page 
+  return 1;
+}
+
 int Disassemble_SVE(struct instruction *i, struct ad_insn *out)
 {
     int result = 0;
@@ -5133,16 +6008,43 @@ int Disassemble_SVE(struct instruction *i, struct ad_insn *out)
       if ( !(op1 >> 1) && !op2 )
         return op03_op0_op20(i, out, op3);
       // 011 0x 0010x
-      if ( !(op1 >> 1) && ( 2 == (op2 >> 1)) )
+      if ( !(op1 >> 1) && (2 == (op2 >> 1)) )
         return op03_op0_op21(i, out, op3);
       // 011 0x 010xx
-      if ( !(op1 >> 1) && ( 2 == (op2 >> 2)) )
+      if ( !(op1 >> 1) && (2 == (op2 >> 2)) )
         return op03_op0_op22(i, out, op3);
       // 011 0x 1xxxx
-      if ( !(op1 >> 1) && ( 1 == (op2 >> 4)) )
+      if ( !(op1 >> 1) && (1 == (op2 >> 4)) )
         return op03_op0_op14(i, out, op3);
+      // 011 1x 0xxxx
+      if ( (op1 >> 1) && !(op2 >> 4) )
+        return op03_op1_op40(i, out, op3);
+      // 011 1x 000xx
+      if ( (op1 >> 1) && !(op2 >> 2) )
+        return op03_op1_op20(i, out, op3);
+      // 011 1x 001xx
+      if ( (op1 >> 1) && (1 == (op2 >> 2)) )
+        return op03_op1_op21(i, out, op3);
+      // 011 1x 010xx
+      if ( (op1 >> 1) && (2 == (op2 >> 2)) )
+        return op03_op1_op22(i, out, op3);
+      // 011 1x 011xx
+      if ( (op1 >> 1) && (3 == (op2 >> 2)) )
+        return op03_op1_op23(i, out, op3);
+      // 011 1x 1xxxx
+      if ( (op1 >> 1) && (1 == (op2 >> 4)) )
+        return op03_op1_op14(i, out, op3);
       return 1;
     }
+
+    if ( 4 == op0 )
+      return op04(i, out);
+
+    if ( 5 == op0 )
+      return op05(i, out, op3);
+
+    if ( 6 == op0 )
+      return op06(i, out, op3);
 
     return 1;
 }
