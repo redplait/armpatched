@@ -1,10 +1,22 @@
 #include "bits.h"
 
-unsigned int bits(unsigned int number, unsigned int start, unsigned int end){
-    unsigned int amount = (end - start) + 1;
-    unsigned int mask = ((1 << amount) - 1) << start;
+unsigned int bits(unsigned int number, unsigned int start, unsigned int end)
+{
+    if ( end == start )
+    {
+      return (number >> start) & 1;
+    } else if ( end == start + 1 )
+    {
+      return (number >> start) & 3;
+    } else if ( end == start + 2 )
+    {
+      return (number >> start) & 7;
+    } else {
+      unsigned int amount = (end - start) + 1;
+      unsigned int mask = ((1 << amount) - 1) << start;
 
-    return (number & mask) >> start;
+      return (number & mask) >> start;
+   }
 }
 
 unsigned int sign_extend(unsigned int number, int numbits){

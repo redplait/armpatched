@@ -173,7 +173,8 @@ static const char *const AD_RTBL_Z_128[] = {
 };
 
 static const char *const AD_RTBL_PG_128[] = {
-  "pg0",   "pg1",  "pg2",  "pg3",  "pg4",  "pg5",  "pg6", "pg7", 
+  "p0",  "p1",  "p2",  "p3",  "p4",  "p5",  "p6",  "p7", 
+  "p8",  "p9",  "p10", "p11", "p12", "p13", "p14", "p15"
 };
 
 static unsigned long AD_RTBL_GEN_32_SZ = sizeof(AD_RTBL_GEN_32) / sizeof(*AD_RTBL_GEN_32);

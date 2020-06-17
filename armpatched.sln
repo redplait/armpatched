@@ -18,6 +18,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "arm64sw", "arm64sw\arm64sw.
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testgen", "testgen\testgen.vcxproj", "{A5387886-5D2B-432B-8F82-15B54349D5D3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4B195CA1-58D0-46FE-AE62-9B813F37B291} = {4B195CA1-58D0-46FE-AE62-9B813F37B291}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
