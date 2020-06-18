@@ -1,21 +1,32 @@
 #include "bits.h"
 
+static const unsigned bit_mask[] = {
+ 1,    // 0
+ 3,    // 1
+ 7,    // 2
+ 0xf,  // 3
+ 0x1f, // 4
+ 0x3f, // 5
+ 0x7f, // 6
+ 0xff, // 7
+};
+
 unsigned int bits(unsigned int number, unsigned int start, unsigned int end)
 {
-    if ( end == start )
-    {
-      return (number >> start) & 1;
-    } else if ( end == start + 1 )
-    {
-      return (number >> start) & 3;
-    } else if ( end == start + 2 )
-    {
-      return (number >> start) & 7;
-    } else {
-      unsigned int amount = (end - start) + 1;
-      unsigned int mask = ((1 << amount) - 1) << start;
+    unsigned int amount = end - start;
+#ifdef _DEBUG
+    if ( end < start )
+      abort();
+#endif /* _DEBUG */
+    if ( amount < 8 )
+      return (number >> start) & bit_mask[amount];
+    else {
+      ++amount;
+      {
+        unsigned int mask = ((1 << amount) - 1) << start;
 
-      return (number & mask) >> start;
+        return (number & mask) >> start;
+      }
    }
 }
 

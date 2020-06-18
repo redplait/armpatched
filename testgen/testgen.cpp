@@ -96,7 +96,7 @@ int main(int argc, char **argv)
       if ( i == 0xffffffff )
         break;
     }
-    printf("total %d, good %d, false good %d, bad %d\n", total, good, false_good, bad);
+    printf("total %X, good %X, false good %X, bad %X\n", total, good, false_good, bad);
   }
   return 1;
 }

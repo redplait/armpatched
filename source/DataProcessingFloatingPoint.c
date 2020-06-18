@@ -3161,10 +3161,8 @@ static int DisassembleAdvancedSIMDShiftByImmediateInstr(struct instruction *i, s
 
             shift = (2 * (8 << hsb)) - ((immh << 3) | immb);
 
-            if(OOB(hsb, rtbls) || OOB(hsb, sizes) || OOB(hsb + 1, rtbls) ||
-                    OOB(hsb + 1, sizes)){
+            if (OOB(hsb, rtbls) || OOB(hsb, sizes) || OOB(hsb + 1, rtbls) || OOB(hsb + 1, sizes))
                 return 1;
-            }
 
             Rd_Rtbl = rtbls[hsb];
             Rn_Rtbl = rtbls[hsb + 1];
@@ -4791,8 +4789,8 @@ static int DisassembleFloatingPointCompareInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleFloatingPointImmediateInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleFloatingPointImmediateInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned M = bits(i->opcode, 31, 31);
     unsigned S = bits(i->opcode, 29, 29);
     unsigned ptype = bits(i->opcode, 22, 23);
@@ -4845,8 +4843,8 @@ static int DisassembleFloatingPointImmediateInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleFloatingPointConditionalCompare(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleFloatingPointConditionalCompare(struct instruction *i, struct ad_insn *out)
+{
     unsigned M = bits(i->opcode, 31, 31);
     unsigned S = bits(i->opcode, 29, 29);
     unsigned ptype = bits(i->opcode, 22, 23);

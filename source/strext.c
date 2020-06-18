@@ -14,7 +14,7 @@ static int _concat_internal(char *dst, const char *src, va_list args)
     srclen = strlen(src);
     if (dst[0])
       dstlen = strlen(dst);
-    w = vsprintf_s(dst + dstlen, 159 - dstlen, src, args);
+    w = vsprintf_s(dst + dstlen, 79 - dstlen, src, args);
     return w;
 }
 

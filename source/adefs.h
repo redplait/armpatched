@@ -48,7 +48,7 @@ struct ad_operand {
    };
 };
 
-#define AD_DECODED_LEN	160
+#define AD_DECODED_LEN	80
 
 struct ad_insn {
     /* instruction disassembly */
