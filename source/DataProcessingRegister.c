@@ -400,7 +400,8 @@ static int get_extended_Rm(unsigned option, char *regstr, unsigned Rm,
 }
 
 static char *get_extended_extend_string(char *extend_string, unsigned option, unsigned sf,
-        unsigned Rd, unsigned Rn, unsigned imm3){
+        unsigned Rd, unsigned Rn, unsigned imm3)
+{
     const char *extend = decode_reg_extend(option);
     unsigned amount = imm3;
     int is_lsl = 0;
@@ -493,7 +494,7 @@ static int DisassembleAddSubtractShiftedOrExtendedInstr(struct instruction *i, s
                 _RTBL(registers));
         {
         const char *Rn_s = GET_GEN_REG(registers, Rn, prefer_zr_Rd_Rn);
-        char rm_buf[80];
+        char rm_buf[AD_DECODED_LEN] = { 0 };
         char *Rm_s = rm_buf;
 
         if(kind == SHIFTED || (kind == EXTENDED && sf == 0)){
@@ -540,7 +541,7 @@ static int DisassembleAddSubtractShiftedOrExtendedInstr(struct instruction *i, s
         {
         const char *Rd_s = GET_GEN_REG(registers, Rd, prefer_zr_Rd_Rn);
         const char *Rn_s = GET_GEN_REG(registers, Rn, prefer_zr_Rd_Rn);
-        char rm_buf[80];
+        char rm_buf[AD_DECODED_LEN]  = { 0 };
         char *Rm_s = rm_buf;
 
         if(kind == SHIFTED || (kind == EXTENDED && sf == 0)){
@@ -576,7 +577,7 @@ static int DisassembleAddSubtractShiftedOrExtendedInstr(struct instruction *i, s
        }
     }
     else{
-        char extend_string[80] = { 0 };
+        char extend_string[AD_DECODED_LEN] = { 0 };
         const char *ex = get_extended_extend_string(extend_string, option, sf, Rd, Rn, imm3);
 
         if(ex)

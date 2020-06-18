@@ -3027,11 +3027,15 @@ static int DisassembleAdvancedSIMDShiftByImmediateInstr(struct instruction *i, s
         if(OOB(opcode, tab_u0))
             return 1;
 
-        if ( !U )
+        if (!U)
+        {
           instr_s = tab_u0[opcode].instr_s;
-        else
+          instr_id = tab_u0[opcode].instr_id;
+        }
+        else {
           instr_s = tab_u1[opcode].instr_s;
-        
+          instr_id = tab_u1[opcode].instr_id;
+        }
         if(!instr_s)
             return 1;
 

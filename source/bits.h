@@ -7,8 +7,16 @@
 # define uint64 unsigned long
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 unsigned int bits(unsigned int, unsigned int start, unsigned int end);
 unsigned int sign_extend(unsigned int number, int numbits);
 uint64 sign_ext64(uint64 number, int numbits);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif

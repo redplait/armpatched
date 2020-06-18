@@ -50,7 +50,7 @@ struct itab {
 
 #define ADD_REG_OPERAND(i, rn_, sz_, zr_, sysreg_, rtbl_) \
     do { \
-        if ( ++i->num_operands > 5 ) abort(); \
+        if ( ++i->num_operands > 7 ) abort(); \
         i->operands[i->num_operands - 1].type = AD_OP_REG; \
         i->operands[i->num_operands - 1].op_reg.rn = rn_; \
         i->operands[i->num_operands - 1].op_reg.sz = sz_; \
@@ -65,7 +65,7 @@ struct itab {
 
 #define ADD_SHIFT_OPERAND(i, type_, amt_) \
     do { \
-        if ( ++i->num_operands > 5 ) abort(); \
+        if ( ++i->num_operands > 7 ) abort(); \
         i->operands[i->num_operands - 1].type = AD_OP_SHIFT; \
         i->operands[i->num_operands - 1].op_shift.type = type_; \
         i->operands[i->num_operands - 1].op_shift.amt = amt_; \
@@ -73,7 +73,7 @@ struct itab {
 
 #define ADD_IMM_OPERAND(i, type_, bits_) \
     do { \
-        if ( ++i->num_operands > 5 ) abort(); \
+        if ( ++i->num_operands > 7 ) abort(); \
         i->operands[i->num_operands - 1].type = AD_OP_IMM; \
         i->operands[i->num_operands - 1].op_imm.type = type_; \
         i->operands[i->num_operands - 1].op_imm.bits = bits_; \

@@ -5680,6 +5680,24 @@ static const struct itab ldn_tab[] = {
 /* 1 1 1 */ { NULL, AD_NONE },
 };
 
+static const struct itab ld1_tab4[] = {
+/* 0 0 0 0 */ { "ld1rb", AD_INSTR_LD1RB },
+/* 0 0 0 1 */ { "ld1rb", AD_INSTR_LD1RB },
+/* 0 0 1 0 */ { "ld1rb", AD_INSTR_LD1RB },
+/* 0 0 1 1 */ { "ld1rb", AD_INSTR_LD1RB },
+/* 0 1 0 0 */ { "ld1rsw", AD_INSTR_LD1RSW },
+/* 0 1 0 1 */ { "ld1rh", AD_INSTR_LD1RH },
+/* 0 1 1 0 */ { "ld1rh", AD_INSTR_LD1RH },
+/* 0 1 1 1 */ { "ld1rh", AD_INSTR_LD1RH },
+/* 1 0 0 0 */ { "ld1rsh", AD_INSTR_LD1RSH },
+/* 1 0 0 1 */ { "ld1rsh", AD_INSTR_LD1RSH },
+/* 1 0 1 0 */ { "ld1rw", AD_INSTR_LD1RW },
+/* 1 0 1 1 */ { "ld1rw", AD_INSTR_LD1RW },
+/* 1 1 0 0 */ { "ld1rsb", AD_INSTR_LD1RSB },
+/* 1 1 0 1 */ { "ld1rsb", AD_INSTR_LD1RSB },
+/* 1 1 1 0 */ { "ld1rsb", AD_INSTR_LD1RSB },
+/* 1 1 1 1 */ { "ld1rd", AD_INSTR_LD1RD },
+};
 
 static int op04(struct instruction *i, struct ad_insn *out)
 {
@@ -5906,18 +5924,552 @@ static int op04(struct instruction *i, struct ad_insn *out)
     concat(DECODE_STR(out), "%s %s, %s, %s, %s", ldn_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], Rm_s);
     return 0;
   }
+  if ( !op1 && (6 == op2) && !op3 )
+  {
+    // SVE contiguous prefetch (scalar plus scalar) - page 2814
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    unsigned prfop = bits(i->opcode, 0, 3);
+    unsigned Rm = Zm;
+    unsigned msz = bits(i->opcode, 23, 24);
+    const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+    SET_INSTR_ID(out, prf_tab[msz].instr_id);
+    ADD_FIELD(out, Rm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, prfop);
+
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&prfop);
+    ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_REG_OPERAND(out, Rm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    if ( prfop_name[prfop] != NULL )
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", prf_tab[msz].instr_s, prfop_name[prfop], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+    else
+      concat(DECODE_STR(out), "%s #%x, %s, %s, %s", prf_tab[msz].instr_s, prfop, AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+    return 0;
+  }
+  if ( !op1 && (7 == op2) && !op3 )
+  {
+    // SVE 32-bit gather prefetch (vector plus immediate) - page 2814
+    unsigned msz = bits(i->opcode, 23, 24);
+    unsigned Zn = Rn;
+    unsigned prfop = bits(i->opcode, 0, 3);
+    unsigned imm5 = bits(i->opcode, 16, 20);
+
+    SET_INSTR_ID(out, prf_tab[msz].instr_id);
+    ADD_FIELD(out, imm5);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Zn);
+    ADD_FIELD(out, prfop);
+
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&prfop);
+    ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_ZREG_OPERAND(out, Zn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm5);
+    if ( prfop_name[prfop] != NULL )
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop_name[prfop], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], imm5);
+    else
+      concat(DECODE_STR(out), "%s #%x, %s, %s, #%x", prf_tab[msz].instr_s, prfop, AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], imm5);
+    return 0;
+  }
+  if ( (1 == op1) && (1 == (op2 >> 2)) )
+  {
+    // SVE 32-bit gather load (vector plus immediate) - page 2814
+    unsigned msz = bits(i->opcode, 23, 24);
+    unsigned Zn = Rn;
+    unsigned U = bits(i->opcode, 14, 14);
+    unsigned ff = bits(i->opcode, 13, 13);
+    unsigned Zt = bits(i->opcode, 0, 4);
+    unsigned idx = (msz << 2) | (U << 1) | ff;
+    unsigned imm5 = bits(i->opcode, 16, 20);
+
+    if ( OOB(idx, ld1_tab3) )
+      return 1;
+    if ( NULL == ld1_tab3[idx].instr_s )
+      return 1;
+ 
+    SET_INSTR_ID(out, ld1_tab3[idx].instr_id);
+    ADD_FIELD(out, imm5);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Zn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_ZREG_OPERAND(out, Zn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm5);
+    concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab3[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], imm5);
+    return 0;
+  }
+  if ( (2 & op1) && (1 == (op2 >> 2)) )
+  {
+    // SVE load and broadcast element - page 2814
+    unsigned imm6 = bits(i->opcode, 16, 21);
+    unsigned dtypeh = bits(i->opcode, 23, 24);
+    unsigned dtypel = bits(i->opcode, 13, 14);
+    unsigned Zt = bits(i->opcode, 0, 4);
+    unsigned idx = (dtypeh << 2) | dtypel;
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    int sz = get_sz(dtypel);
+
+    SET_INSTR_ID(out, ld1_tab4[idx].instr_id);
+    ADD_FIELD(out, dtypeh);
+    ADD_FIELD(out, imm6);
+    ADD_FIELD(out, dtypel);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm6);
+    concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab4[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm6);
+    return 0;
+  }
   return 1;
 }
 
-static int op05(struct instruction *i, struct ad_insn *out, unsigned op3)
+static const struct itab ldn_tab2[] = {
+/* 0 0 */ { "ldnt1b", AD_INSTR_LDNT1B },
+/* 0 1 */ { "ldnt1h", AD_INSTR_LDNT1H },
+/* 1 0 */ { "ldnt1w", AD_INSTR_LDNT1W },
+/* 1 1 */ { "ldnt1d", AD_INSTR_LDNT1D },
+};
+
+static const struct itab ld2_tab[] = {
+/* 0 0 0 0 */ { NULL, AD_NONE },
+/* 0 0 0 1 */ { "ld2b", AD_INSTR_LD2B },
+/* 0 0 1 0 */ { "ld3b", AD_INSTR_LD3B },
+/* 0 0 1 1 */ { "ld4b", AD_INSTR_LD4B },
+/* 0 1 0 0 */ { NULL, AD_NONE },
+/* 0 1 0 1 */ { "ld2h", AD_INSTR_LD2H },
+/* 0 1 1 0 */ { "ld3h", AD_INSTR_LD3H },
+/* 0 1 1 1 */ { "ld4h", AD_INSTR_LD4H },
+/* 1 0 0 0 */ { NULL, AD_NONE },
+/* 1 0 0 1 */ { "ld2w", AD_INSTR_LD2W },
+/* 1 0 1 0 */ { "ld3w", AD_INSTR_LD3W },
+/* 1 0 1 1 */ { "ld4w", AD_INSTR_LD4W },
+/* 1 1 0 0 */ { NULL, AD_NONE },
+/* 1 1 0 1 */ { "ld2d", AD_INSTR_LD2D },
+/* 1 1 1 0 */ { "ld3d", AD_INSTR_LD3D },
+/* 1 1 1 1 */ { "ld4d", AD_INSTR_LD4D },
+};
+
+static const struct itab ld1r_tab[] = {
+/* 0 0 0 0 */ { "ld1rqb", AD_INSTR_LD1RQB },
+/* 0 0 0 1 */ { "ld1rob", AD_INSTR_LD1ROB },
+/* 0 0 1 0 */ { NULL, AD_NONE },
+/* 0 0 1 1 */ { NULL, AD_NONE },
+/* 0 1 0 0 */ { "ld1rqh", AD_INSTR_LD1RQH },
+/* 0 1 0 1 */ { "ld1roh", AD_INSTR_LD1ROH },
+/* 0 1 1 0 */ { NULL, AD_NONE },
+/* 0 1 1 1 */ { NULL, AD_NONE },
+/* 1 0 0 0 */ { "ld1rqw", AD_INSTR_LD1RQW },
+/* 1 0 0 1 */ { "ld1row", AD_INSTR_LD1ROW },
+/* 1 0 1 0 */ { NULL, AD_NONE },
+/* 1 0 1 1 */ { NULL, AD_NONE },
+/* 1 1 0 0 */ { "ld1rqd", AD_INSTR_LD1RQD },
+/* 1 1 0 1 */ { "ld1rod", AD_INSTR_LD1ROD },
+/* 1 1 1 0 */ { NULL, AD_NONE },
+/* 1 1 1 1 */ { NULL, AD_NONE },
+};
+
+static const struct itab ld1_tab5[] = {
+/* 0 0 0 0 */ { "ld1b", AD_INSTR_LD1B },
+/* 0 0 0 1 */ { "ld1b", AD_INSTR_LD1B },
+/* 0 0 1 0 */ { "ld1b", AD_INSTR_LD1B },
+/* 0 0 1 1 */ { "ld1b", AD_INSTR_LD1B },
+/* 0 1 0 0 */ { "ld1sw", AD_INSTR_LD1SW },
+/* 0 1 0 1 */ { "ld1h", AD_INSTR_LD1H },
+/* 0 1 1 0 */ { "ld1h", AD_INSTR_LD1H },
+/* 0 1 1 1 */ { "ld1h", AD_INSTR_LD1H },
+/* 1 0 0 0 */ { "ld1sh", AD_INSTR_LD1SH },
+/* 1 0 0 1 */ { "ld1sh", AD_INSTR_LD1SH },
+/* 1 0 1 0 */ { "ld1w", AD_INSTR_LD1W },
+/* 1 0 1 1 */ { "ld1w", AD_INSTR_LD1W },
+/* 1 1 0 0 */ { "ld1sb", AD_INSTR_LD1SB },
+/* 1 1 0 1 */ { "ld1sb", AD_INSTR_LD1SB },
+/* 1 1 1 0 */ { "ld1sb", AD_INSTR_LD1SB },
+/* 1 1 1 1 */ { "ld1d", AD_INSTR_LD1D },
+};
+
+static const struct itab ldnf_tab[] = {
+/* 0 0 0 0 */ { "ldnf1b", AD_INSTR_LDNF1B },
+/* 0 0 0 1 */ { "ldnf1b", AD_INSTR_LDNF1B },
+/* 0 0 1 0 */ { "ldnf1b", AD_INSTR_LDNF1B },
+/* 0 0 1 1 */ { "ldnf1b", AD_INSTR_LDNF1B },
+/* 0 1 0 0 */ { "ldnf1sw", AD_INSTR_LDNF1SW },
+/* 0 1 0 1 */ { "ldnf1h", AD_INSTR_LDNF1H },
+/* 0 1 1 0 */ { "ldnf1h", AD_INSTR_LDNF1H },
+/* 0 1 1 1 */ { "ldnf1h", AD_INSTR_LDNF1H },
+/* 1 0 0 0 */ { "ldnf1sh", AD_INSTR_LDNF1SH },
+/* 1 0 0 1 */ { "ldnf1sh", AD_INSTR_LDNF1SH },
+/* 1 0 1 0 */ { "ldnf1w", AD_INSTR_LDNF1W },
+/* 1 0 1 1 */ { "ldnf1w", AD_INSTR_LDNF1W },
+/* 1 1 0 0 */ { "ld1nfsb", AD_INSTR_LDNF1SB },
+/* 1 1 0 1 */ { "ld1nfsb", AD_INSTR_LDNF1SB },
+/* 1 1 1 0 */ { "ld1nfsb", AD_INSTR_LDNF1SB },
+/* 1 1 1 1 */ { "ld1nfd", AD_INSTR_LDNF1D },
+};
+
+static const struct itab ldff1_tab[] = {
+/* 0 0 0 0 */ { "ldff1b", AD_INSTR_LDFF1B },
+/* 0 0 0 1 */ { "ldff1b", AD_INSTR_LDFF1B },
+/* 0 0 1 0 */ { "ldff1b", AD_INSTR_LDFF1B },
+/* 0 0 1 1 */ { "ldff1b", AD_INSTR_LDFF1B },
+/* 0 1 0 0 */ { "ldff1sw", AD_INSTR_LDFF1SW },
+/* 0 1 0 1 */ { "ldff1h", AD_INSTR_LDFF1H },
+/* 0 1 1 0 */ { "ldff1h", AD_INSTR_LDFF1H },
+/* 0 1 1 1 */ { "ldff1h", AD_INSTR_LDFF1H },
+/* 1 0 0 0 */ { "ldff1sh", AD_INSTR_LDFF1SH },
+/* 1 0 0 1 */ { "ldff1sh", AD_INSTR_LDFF1SH },
+/* 1 0 1 0 */ { "ldff1w", AD_INSTR_LDFF1W },
+/* 1 0 1 1 */ { "ldff1w", AD_INSTR_LDFF1W },
+/* 1 1 0 0 */ { "ldff1sb", AD_INSTR_LDFF1SB },
+/* 1 1 0 1 */ { "ldff1sb", AD_INSTR_LDFF1SB },
+/* 1 1 1 0 */ { "ldff1sb", AD_INSTR_LDFF1SB },
+/* 1 1 1 1 */ { "ldff1d", AD_INSTR_LDFF1D },
+};
+
+static int op05(struct instruction *i, struct ad_insn *out)
 {
-  // SVE Memory - Contiguous Load - page
+  // SVE Memory - Contiguous Load - page 2815
+  unsigned op0 = bits(i->opcode, 21, 22);
+  unsigned op1 = bits(i->opcode, 20, 20);
+  unsigned op2 = bits(i->opcode, 13, 15);
+
+  unsigned Pg = bits(i->opcode, 10, 12);
+  unsigned Rn = bits(i->opcode, 5, 9);
+  unsigned Zt = bits(i->opcode, 0, 4);
+
+  if ( !op0 && !op1 && (7 == op2) )
+  {
+    // SVE contiguous non-temporal load (scalar plus immediate) - page 2815
+    unsigned msz = bits(i->opcode, 23, 24);
+    int sz = get_sz(msz);
+    unsigned imm4 = bits(i->opcode, 16, 19);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+
+    SET_INSTR_ID(out, ldn_tab2[msz].instr_id);
+    ADD_FIELD(out, imm4);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm4);
+    concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ldn_tab2[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
+    return 0;
+  }
+  if ( !op0 && (6 == op2) )
+  {
+    // SVE contiguous non-temporal load (scalar plus scalar) - page 2816
+    unsigned msz = bits(i->opcode, 23, 24);
+    int sz = get_sz(msz);
+    unsigned Rm = bits(i->opcode, 16, 20);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+    SET_INSTR_ID(out, ldn_tab2[msz].instr_id);
+    ADD_FIELD(out, Rm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_REG_OPERAND(out, Rm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    concat(DECODE_STR(out), "%s %s, %s, %s, %s", ldn_tab2[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+    return 0;
+  }
+  if ( op0 && !op1 && (7 == op2) )
+  {
+    // SVE load multiple structures (scalar plus immediate) - page 2816
+    unsigned msz = bits(i->opcode, 23, 24);
+    int sz = get_sz(msz);
+    unsigned opc = bits(i->opcode, 21, 22);
+    unsigned imm4 = bits(i->opcode, 16, 19);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    unsigned idx = (msz << 2) | opc;
+
+    if ( NULL == ld2_tab[idx].instr_s )
+      return 1;
+
+    SET_INSTR_ID(out, ld2_tab[idx].instr_id);
+    ADD_FIELD(out, imm4);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm4);
+    concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld2_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
+    return 0;
+  }
+  if ( op0 && (6 == op2) )
+  {
+    // SVE load multiple structures (scalar plus scalar) - page 2816
+    unsigned msz = bits(i->opcode, 23, 24);
+    int sz = get_sz(msz);
+    unsigned Rm = bits(i->opcode, 16, 20);
+    unsigned opc = bits(i->opcode, 21, 22);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+    unsigned idx = (msz << 2) | opc;
+    if ( NULL == ld2_tab[idx].instr_s )
+      return 1;
+
+    SET_INSTR_ID(out, ld2_tab[idx].instr_id);
+    ADD_FIELD(out, Rm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_REG_OPERAND(out, Rm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    concat(DECODE_STR(out), "%s %s, %s, %s, %s", ld2_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+    return 0;
+  }
+  if ( !op1 && (1 == op2) )
+  {
+    // SVE load and broadcast quadword (scalar plus immediate) - page 2817
+    unsigned msz = bits(i->opcode, 23, 24);
+    int sz = get_sz(msz);
+    unsigned ssz = bits(i->opcode, 21, 22);
+    unsigned imm4 = bits(i->opcode, 16, 19);
+    unsigned idx = (msz << 2) | ssz;
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    if ( NULL == ld1r_tab[idx].instr_s )
+      return 1;
+
+    SET_INSTR_ID(out, ld1r_tab[idx].instr_id);
+    ADD_FIELD(out, msz);
+    ADD_FIELD(out, ssz);
+    ADD_FIELD(out, imm4);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm4);
+    concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1r_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
+    return 0;
+  }
+  if ( !op1 && (5 == op2) )
+  {
+    // SVE contiguous load (scalar plus immediate) - page 2817
+    unsigned dtype = bits(i->opcode, 21, 24);
+    int sz = get_sz(dtype & 3);
+    unsigned imm4 = bits(i->opcode, 16, 19);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+
+    SET_INSTR_ID(out, ld1_tab5[dtype].instr_id);
+    ADD_FIELD(out, dtype);
+    ADD_FIELD(out, imm4);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm4);
+    concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab5[dtype].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
+    return 0;
+  }
+  if ( op1 && (5 == op2) )
+  {
+    // SVE contiguous non-fault load (scalar plus immediate) - page 2818
+    unsigned dtype = bits(i->opcode, 21, 24);
+    int sz = get_sz(dtype & 3);
+    unsigned imm4 = bits(i->opcode, 16, 19);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    SET_INSTR_ID(out, ldnf_tab[dtype].instr_id);
+    ADD_FIELD(out, dtype);
+    ADD_FIELD(out, imm4);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm4);
+    concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ldnf_tab[dtype].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
+    return 0;
+  }
+  if ( !op2 )
+  {
+    // SVE load and broadcast quadword (scalar plus scalar) - page 2818
+    unsigned msz = bits(i->opcode, 23, 24);
+    int sz = get_sz(msz);
+    unsigned ssz = bits(i->opcode, 21, 22);
+    unsigned idx = (msz << 2) | ssz;
+    unsigned Rm = bits(i->opcode, 16, 20);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+
+    if ( NULL == ld1r_tab[idx].instr_s )
+      return 1;
+
+    SET_INSTR_ID(out, ld1r_tab[idx].instr_id);
+    ADD_FIELD(out, msz);
+    ADD_FIELD(out, ssz);
+    ADD_FIELD(out, Rm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_REG_OPERAND(out, Rm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    concat(DECODE_STR(out), "%s %s, %s, %s, %s", ld1r_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+    return 0;
+  }
+  if ( 2 == op2 )
+  {
+    // SVE contiguous load (scalar plus scalar) - page 2818
+    unsigned dtype = bits(i->opcode, 21, 24);
+    int sz = get_sz(dtype & 3);
+    unsigned Rm = bits(i->opcode, 16, 20);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+
+    SET_INSTR_ID(out, ld1_tab5[dtype].instr_id);
+    ADD_FIELD(out, dtype);
+    ADD_FIELD(out, Rm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_REG_OPERAND(out, Rm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    concat(DECODE_STR(out), "%s %s, %s, %s, %s", ld1_tab5[dtype].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+    return 0;
+  }
+  if ( 3 == op2 )
+  {
+    // SVE contiguous first-fault load (scalar plus scalar) - page 2819
+    unsigned dtype = bits(i->opcode, 21, 24);
+    int sz = get_sz(dtype & 3);
+    unsigned Rm = bits(i->opcode, 16, 20);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+
+    SET_INSTR_ID(out, ldff1_tab[dtype].instr_id);
+    ADD_FIELD(out, dtype);
+    ADD_FIELD(out, Rm);
+    ADD_FIELD(out, Pg);
+    ADD_FIELD(out, Rn);
+    ADD_FIELD(out, Zt);
+
+    ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+    ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+    ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    ADD_REG_OPERAND(out, Rm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+    concat(DECODE_STR(out), "%s %s, %s, %s, %s", ldff1_tab[dtype].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+    return 0;
+  }
   return 1;
 }
 
-static int op06(struct instruction *i, struct ad_insn *out, unsigned op3)
+static const struct itab ld1_tab6[] = {
+/* 00 0 0 */ { NULL, AD_NONE },
+/* 00 0 1 */ { NULL, AD_NONE },
+/* 00 1 0 */ { NULL, AD_NONE },
+/* 00 1 1 */ { NULL, AD_NONE },
+/* 01 0 0 */ { "ld1sh", AD_INSTR_LD1SH },
+/* 01 0 1 */ { "ld1ffsh", AD_INSTR_LDFF1SH },
+/* 01 1 0 */ { "ld1h", AD_INSTR_LD1H },
+/* 01 1 1 */ { "ld1ffh", AD_INSTR_LDFF1H },
+/* 10 0 0 */ { "ld1sw", AD_INSTR_LD1SW },
+/* 10 0 1 */ { "ld1ffsw", AD_INSTR_LDFF1SW },
+/* 10 1 0 */ { "ld1w", AD_INSTR_LD1W },
+/* 10 1 1 */ { "ld1ffw", AD_INSTR_LDFF1W },
+/* 11 0 0 */ { NULL, AD_NONE },
+/* 11 0 1 */ { NULL, AD_NONE },
+/* 11 1 0 */ { "ld1d", AD_INSTR_LD1D },
+/* 11 1 1 */ { "ldff1d", AD_INSTR_LDFF1D },
+};
+
+static int op06(struct instruction *i, struct ad_insn *out)
 {
   // SVE Memory - 64-bit Gather - page 
+  unsigned op3 = bits(i->opcode, 4, 4);
+  unsigned op2 = bits(i->opcode, 13, 15);
+  unsigned op1 = bits(i->opcode, 21, 22);
+  unsigned op0 = bits(i->opcode, 23, 24);
+
+  unsigned Zm = bits(i->opcode, 16, 20);
+  unsigned Pg = bits(i->opcode, 10, 12);
+  unsigned Rn = bits(i->opcode, 5, 9);
+  unsigned Zt = bits(i->opcode, 0, 4);
+
+  if ( !op0 )
+  {
+    unsigned msz = bits(i->opcode, 13, 14);
+    unsigned prfop = bits(i->opcode, 0, 3);
+    unsigned xs = bits(i->opcode, 22, 22);
+    const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    if ( (3 == op1) && (1 == (op2 >> 2)) && !op3 )
+    {
+      // SVE 64-bit gather prefetch (scalar plus 64-bit scaled offsets) - page 2820
+      SET_INSTR_ID(out, prf_tab[msz].instr_id);
+      ADD_FIELD(out, xs);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, prfop);
+
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&prfop);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
+      if ( prfop_name[prfop] != NULL )
+        concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop_name[prfop], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      else
+        concat(DECODE_STR(out), "%s #%x, %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop, AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      return 0;
+    }
+    if ( (op1 & 1) && !(op2 >> 2) && !op3 ) 
+    {
+      // SVE 64-bit gather prefetch (scalar plus unpacked 32-bit scaled offsets) - page 2821
+      SET_INSTR_ID(out, prf_tab[msz].instr_id);
+      ADD_FIELD(out, xs);
+      ADD_FIELD(out, Zm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, prfop);
+
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&prfop);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
+      if ( prfop_name[prfop] != NULL )
+        concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop_name[prfop], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      else
+        concat(DECODE_STR(out), "%s #%x, %s, %s, %s, #%x", prf_tab[msz].instr_s, prfop, AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      return 0;
+    }
+  }
+  if ( op0 && (3 == op1) && (1 == (op2 >> 2)) )
+  {
+    // SVE 64-bit gather load (scalar plus 64-bit scaled offsets) - page 2821
+  }
   return 1;
 }
 
@@ -6041,10 +6593,10 @@ int Disassemble_SVE(struct instruction *i, struct ad_insn *out)
       return op04(i, out);
 
     if ( 5 == op0 )
-      return op05(i, out, op3);
+      return op05(i, out);
 
     if ( 6 == op0 )
-      return op06(i, out, op3);
+      return op06(i, out);
 
     return 1;
 }

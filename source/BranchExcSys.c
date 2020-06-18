@@ -1289,7 +1289,7 @@ static int DisassembleSystemRegisterMoveInstr(struct instruction *i, struct ad_i
     sreg |= op2;
 
     {
-      char sreg_buf[80] = { 0 };
+      char sreg_buf[AD_DECODED_LEN] = { 0 };
       const char *sreg_s = get_sysreg(sreg);
       int free_sreg_s = 0;
       const char *Rt_s = GET_GEN_REG(AD_RTBL_GEN_64, Rt, PREFER_ZR);

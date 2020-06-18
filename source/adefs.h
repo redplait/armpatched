@@ -48,9 +48,11 @@ struct ad_operand {
    };
 };
 
+#define AD_DECODED_LEN	160
+
 struct ad_insn {
     /* instruction disassembly */
-    char decoded[80];
+    char decoded[AD_DECODED_LEN];
 
     /* which top level decode group this instruction belongs to (AD_G_*) */
     int group;
@@ -62,7 +64,7 @@ struct ad_insn {
     int num_fields;
 
     /* array of ad_operand structs, going from left to right (according to the disassembly) */
-    struct ad_operand operands[5];
+    struct ad_operand operands[7];
     int num_operands;
 
     /* code condition, if any (AD_CC_*) */
