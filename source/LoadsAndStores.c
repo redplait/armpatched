@@ -129,8 +129,32 @@ static int get_post_idx_immediate_offset(int regamount, unsigned int Q){
     return -1;
 }
 
-static int DisassembleLoadStoreMultStructuresInstr(struct instruction *i,
-        struct ad_insn *out, int postidxed){
+const int stx_id[5] = {
+  AD_NONE,
+  AD_INSTR_ST1,
+  AD_INSTR_ST2,
+  AD_INSTR_ST3,
+  AD_INSTR_ST4
+};
+
+const int ldx_id[5] = {
+  AD_NONE,
+  AD_INSTR_LD1,
+  AD_INSTR_LD2,
+  AD_INSTR_LD3,
+  AD_INSTR_LD4
+};
+
+const int ldrx_id[5] = {
+  AD_NONE,
+  AD_INSTR_LD1R,
+  AD_INSTR_LD2R,
+  AD_INSTR_LD3R,
+  AD_INSTR_LD4R
+};
+
+static int DisassembleLoadStoreMultStructuresInstr(struct instruction *i, struct ad_insn *out, int postidxed)
+{
     unsigned Q = bits(i->opcode, 30, 30);
     unsigned L = bits(i->opcode, 22, 22);
     unsigned Rm = bits(i->opcode, 16, 20);
@@ -140,6 +164,7 @@ static int DisassembleLoadStoreMultStructuresInstr(struct instruction *i,
     unsigned Rt = bits(i->opcode, 0, 4);
     const char *instr_s = NULL;
     int instr_id = AD_NONE;
+    int last_Rt;
     unsigned regcnt, selem;
     const char *T = get_arrangement(size, Q);
     unsigned int j;
@@ -174,25 +199,25 @@ static int DisassembleLoadStoreMultStructuresInstr(struct instruction *i,
     };
 
     if(L == 0)
-        instr_id = (AD_INSTR_ST1 - 1) + selem;
+        instr_id = stx_id[selem];
     else
         /* the way the AD_INSTR_* enum is set up makes this more complicated */
-        instr_id = (AD_INSTR_LD1 - 1) + ((selem * 2) - 1);
+        instr_id = ldx_id[selem];
 
     concat(DECODE_STR(out), "%s%d { ", instr_s, selem);
 
     for(j=Rt; j<(Rt+regcnt)-1; j++){
-        ADD_REG_OPERAND(out, j, _SZ(_128_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+        ADD_REG_OPERAND(out, j & 0x1f, _SZ(_128_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
         {
           const char *Ri_s = GET_FP_REG(AD_RTBL_FP_V_128, j);
           concat(DECODE_STR(out), "%s.%s, ", Ri_s, T);
         }
     }
-
-    ADD_REG_OPERAND(out, (Rt+regcnt)-1, _SZ(_128_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE),
+    last_Rt = (Rt + regcnt) - 1;
+    ADD_REG_OPERAND(out, last_Rt & 0x1f, _SZ(_128_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE),
             _RTBL(AD_RTBL_FP_V_128));
     {
-    const char *last_Rt_s = GET_FP_REG(AD_RTBL_FP_V_128, (Rt+regcnt)-1);
+    const char *last_Rt_s = GET_FP_REG(AD_RTBL_FP_V_128, last_Rt & 0x1f);
 
     ADD_REG_OPERAND(out, Rn, _SZ(_64_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
      {
@@ -297,16 +322,16 @@ static int DisassembleLoadStoreSingleStructuresInstr(struct instruction *i,
     };
 
     if(replicate)
-        instr_id = (AD_INSTR_LD1R - 1) + ((selem * 2) - 1);
+        instr_id = ldrx_id[selem];
     else if(L == 0)
-        instr_id = (AD_INSTR_ST1 - 1) + selem;
+        instr_id = stx_id[selem];
     else if(L == 1)
-        instr_id = (AD_INSTR_LD1 - 1) + ((selem * 2) - 1);
+        instr_id = ldx_id[selem];
 
     concat(DECODE_STR(out), "%s%d%s { ", instr_s, selem, replicate ? "r" : "");
 
     for(j=Rt; j<(Rt+selem)-1; j++){
-        ADD_REG_OPERAND(out, j, _SZ(_128_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE),
+        ADD_REG_OPERAND(out, j & 0x1f, _SZ(_128_BIT), NO_PREFER_ZR, _SYSREG(AD_NONE),
                 _RTBL(AD_RTBL_FP_V_128));
         {
           const char *Ri_s = GET_FP_REG(AD_RTBL_FP_V_128, j);
@@ -2763,7 +2788,8 @@ static int DisassembleLoadAndStorePACInstr(struct instruction *i,
     return 0;
 }
 
-int LoadsAndStoresDisassemble(struct instruction *i, struct ad_insn *out){
+int LoadsAndStoresDisassemble(struct instruction *i, struct ad_insn *out)
+{
     int result = 0;
 
     unsigned op0 = bits(i->opcode, 28, 31);

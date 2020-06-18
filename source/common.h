@@ -91,8 +91,8 @@ struct itab {
         i->cc = cc_; \
     } while (0)
 
-static const char *GET_GEN_REG(const char *const *rtbl, unsigned int idx,
-        int prefer_zr){
+static const char *GET_GEN_REG(const char *const *rtbl, unsigned int idx, int prefer_zr)
+{
     if(idx > 31)
         return "(reg idx oob)";
 
@@ -102,11 +102,13 @@ static const char *GET_GEN_REG(const char *const *rtbl, unsigned int idx,
     return rtbl[idx];
 }
 
-static const char *GET_FP_REG(const char *const *rtbl, unsigned int idx){
-    if(idx > 31)
-        return "(reg idx oob)";
+static const char *GET_FP_REG(const char *const *rtbl, unsigned int idx)
+{
+  // page 1172 - rt + N modulo 32
+  if (idx > 31)
+    idx &= 0x1f;
 
-    return rtbl[idx];
+  return rtbl[idx];
 }
 
 static const char *const AD_RTBL_GEN_32[] = {

@@ -3723,8 +3723,8 @@ static int DisassembleAdvancedSIMDXIndexedElementInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleAdvancedSIMDTableLookupInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleAdvancedSIMDTableLookupInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned Q = bits(i->opcode, 30, 30);
     unsigned op2 = bits(i->opcode, 22, 23);
     unsigned Rm = bits(i->opcode, 16, 20);
@@ -3763,7 +3763,7 @@ static int DisassembleAdvancedSIMDTableLookupInstr(struct instruction *i,
 
     for(j=Rn; j<(Rn+len); j++){
         const char *Rn_s = GET_FP_REG(rtbl, j);
-        ADD_REG_OPERAND(out, j, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), rtbl);
+        ADD_REG_OPERAND(out, j & 0x1f, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), rtbl);
 
         if(j == (Rn+len) - 1)
             concat(DECODE_STR(out), " %s.16b", Rn_s);
@@ -3781,8 +3781,8 @@ static int DisassembleAdvancedSIMDTableLookupInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleAdvancedSIMDPermuteInstr(struct instruction *i,
-        struct ad_insn *out){
+static int DisassembleAdvancedSIMDPermuteInstr(struct instruction *i, struct ad_insn *out)
+{
     unsigned Q = bits(i->opcode, 30, 30);
     unsigned size = bits(i->opcode, 22, 23);
     unsigned Rm = bits(i->opcode, 16, 20);

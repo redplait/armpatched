@@ -1668,7 +1668,7 @@ static const char *GET_GEN_REG(const char *const *rtbl, unsigned int idx,
 
 static const char *GET_FP_REG(const char *const *rtbl, unsigned int idx)
 {
-    if(idx > 30)
+    if(idx > 31)
         return "reg idx oob";
 
     return rtbl[idx];
