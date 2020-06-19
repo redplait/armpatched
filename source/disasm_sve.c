@@ -101,11 +101,11 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     unsigned size = bits(i->opcode, 22, 23);
     unsigned op = bits(i->opcode, 13, 13);
     int sz = get_sz(size);
+    const char *instr_s = NULL;
     if ( !op0 )
     {
       unsigned Zn = bits(i->opcode, 5, 9);
       unsigned Zda = bits(i->opcode, 0, 4);
-      const char *instr_s = NULL;
 
       ADD_FIELD(out, size);
       ADD_FIELD(out, Zm);
@@ -134,7 +134,6 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     } else {
       unsigned Za = bits(i->opcode, 5, 9);
       unsigned Zdn = bits(i->opcode, 0, 4);
-      const char *instr_s = NULL;
 
       ADD_FIELD(out, size);
       ADD_FIELD(out, Zm);
@@ -169,14 +168,14 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     unsigned size = bits(i->opcode, 22, 23);
     unsigned Pg = bits(i->opcode, 10, 12);
     unsigned Zm = bits(i->opcode, 5, 9);
+    unsigned Zdn = bits(i->opcode, 0, 4);
     int sz = get_sz(size);
+    const char *instr_s = NULL;
 
     // 00x
     if ( !(op0 & 6) )
     {
-      unsigned Zdn = bits(i->opcode, 0, 4);
       unsigned opc = bits(i->opcode, 16, 18);
-      const char *instr_s = NULL;
       switch(opc)
       {
         case 0: instr_s = "add";
@@ -206,7 +205,6 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     if ( 2 == (op0 & 6) )
     {
       unsigned opcu = bits(i->opcode, 16, 18);
-      unsigned Zdn = bits(i->opcode, 0, 4);
       if ( OOB(opcu, max_min) )
         return 1;
       SET_INSTR_ID(out, max_min[opcu].instr_id);
@@ -224,9 +222,7 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     // 100 - page 2756
     if ( 4 == op0 )
     {
-      unsigned Zdn = bits(i->opcode, 0, 4);
       unsigned hu = bits(i->opcode, 16, 17);
-      const char *instr_s = NULL;
       switch(hu)
       {
         case 0: instr_s = "mul";
@@ -255,9 +251,7 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     // 101 - page 2756
     if ( 5 == op0 )
     {
-      unsigned Zdn = bits(i->opcode, 0, 4);
       unsigned ru = bits(i->opcode, 16, 17);
-      const char *instr_s = NULL;
       switch(ru)
       {
         case 0: instr_s = "sdiv";
@@ -289,9 +283,7 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     // 11x - page 2756
     if ( 6 == (op0 & 6) )
     {
-      unsigned Zdn = bits(i->opcode, 0, 4);
       unsigned opc = bits(i->opcode, 16, 18);
-      const char *instr_s = NULL;
       switch(opc)
       {
         case 0: instr_s = "orr";
@@ -330,10 +322,10 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     unsigned Pg = bits(i->opcode, 10, 12);
     unsigned Zn = bits(i->opcode, 5, 9);
     int sz = get_sz(size);
+    unsigned Vd = bits(i->opcode, 0, 4);
     if ( !op0 )
     {
       // SVE integer add reduction (predicated)
-      unsigned Vd = bits(i->opcode, 0, 4);
       unsigned opc = bits(i->opcode, 16, 18);
       const char *instr_s = NULL;
       switch(opc)
@@ -361,7 +353,6 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     if ( 1 == op0 )
     {
       // SVE integer min/max reduction (predicated)
-      unsigned Vd = bits(i->opcode, 0, 4);
       unsigned opc = bits(i->opcode, 16, 18);
       const char *instr_s = NULL;
       switch(opc)
@@ -415,7 +406,6 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
     if ( 3 == op0 )
     {
       // SVE bitwise logical reduction (predicated)
-      unsigned Vd = bits(i->opcode, 0, 4);
       unsigned opc = bits(i->opcode, 16, 18);
       const char *instr_s = NULL;
       switch(opc)
@@ -1476,7 +1466,7 @@ static const struct itab zip_tab[] = {
 /* 10 1 */ { "trn2", AD_INSTR_TRN2 },
 };
 
-static const struct itab rev_tab[] = {
+static const struct itab rev_ftab[] = {
 /* 0 0 */ { "revb", AD_INSTR_REVB },
 /* 0 1 */ { "revh", AD_INSTR_REVH },
 /* 1 0 */ { "revw", AD_INSTR_REVW },
@@ -1493,11 +1483,12 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
     unsigned op2 = bits(i->opcode, 16, 16);
     unsigned op1 = bits(i->opcode, 17, 18);
     unsigned op0 = bits(i->opcode, 19, 20);
+
+    unsigned Zn = bits(i->opcode, 5, 9);
+    unsigned Zd = bits(i->opcode, 0, 4);
     if ( !op3 )
     {
       // dup
-      unsigned Zn = bits(i->opcode, 5, 9);
-      unsigned Zd = bits(i->opcode, 0, 4);
       unsigned tsz = bits(i->opcode, 16, 20);
       unsigned imm2 = bits(i->opcode, 22, 23);
       int sz = get_tsz(tsz);
@@ -1518,8 +1509,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
     if ( 4 == op3 )
     {
       // tbl
-      unsigned Zn = bits(i->opcode, 5, 9);
-      unsigned Zd = bits(i->opcode, 0, 4);
       unsigned Zm = bits(i->opcode, 16, 20);
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
@@ -1539,8 +1528,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
     }
     if ( 1 == (op3 >> 1) )
     {
-      unsigned Zn = bits(i->opcode, 5, 9);
-      unsigned Zd = bits(i->opcode, 0, 4);
       unsigned Zm = bits(i->opcode, 16, 20);
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
@@ -1569,14 +1556,14 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
     }
     if ( 6 == op3 )
     {
+      unsigned Zd = bits(i->opcode, 0, 4);
+      unsigned size = bits(i->opcode, 22, 23);
+      int sz = get_sz(size);
       if ( !op0 && !op1 && !op2 )
       {
         // dup scalar
-        unsigned Zd = bits(i->opcode, 0, 4);
         unsigned Rn = bits(i->opcode, 5, 9);
         const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
-        unsigned size = bits(i->opcode, 22, 23);
-        int sz = get_sz(size);
 
         SET_INSTR_ID(out, AD_INSTR_DUP);
         ADD_FIELD(out, size);
@@ -1591,11 +1578,8 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       if ( !op0 && (2 == op1) && !op2 )
       {
         // insr
-        unsigned Zd = bits(i->opcode, 0, 4);
         unsigned Rm = bits(i->opcode, 5, 9);
         const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
-        unsigned size = bits(i->opcode, 22, 23);
-        int sz = get_sz(size);
 
         SET_INSTR_ID(out, AD_INSTR_INSR);
         ADD_FIELD(out, size);
@@ -1610,9 +1594,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       if ( (2 == op0) && !(op1 >> 1) )
       {
         unsigned Zn = bits(i->opcode, 5, 9);
-        unsigned Zd = bits(i->opcode, 0, 4);
-        unsigned size = bits(i->opcode, 22, 23);
-        int sz = get_sz(size);
         unsigned U = bits(i->opcode, 17, 17);
         unsigned H = bits(i->opcode, 16, 16);
         int idx = (U << 1) | H;
@@ -1634,8 +1615,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
         unsigned Zdn = bits(i->opcode, 0, 4);
         unsigned Vm = bits(i->opcode, 5, 9);
         const char *Vm_s = GET_GEN_REG(AD_RTBL_FP_V_128, Vm, NO_PREFER_ZR);
-        unsigned size = bits(i->opcode, 22, 23);
-        int sz = get_sz(size);
 
         SET_INSTR_ID(out, AD_INSTR_INSR);
         ADD_FIELD(out, size);
@@ -1651,9 +1630,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       {
         // rev (vector)
         unsigned Zn = bits(i->opcode, 5, 9);
-        unsigned Zd = bits(i->opcode, 0, 4);
-        unsigned size = bits(i->opcode, 22, 23);
-        int sz = get_sz(size);
         SET_INSTR_ID(out, AD_INSTR_REV);
         ADD_FIELD(out, size);
         ADD_FIELD(out, Zn);
@@ -1699,10 +1675,10 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
         ADD_FIELD(out, Pn);
         ADD_FIELD(out, Pd);
 
+        SET_INSTR_ID(out, zip_tab[idx].instr_id);
         ADD_ZREG_OPERAND(out, Pd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
         ADD_ZREG_OPERAND(out, Pn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
         ADD_ZREG_OPERAND(out, Pm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
-        SET_INSTR_ID(out, zip_tab[idx].instr_id);
         concat(DECODE_STR(out), "%s %s, %s, %s", zip_tab[idx].instr_s, AD_RTBL_PG_128[Pd], AD_RTBL_PG_128[Pn], AD_RTBL_PG_128[Pm]);
         return 0;
       }
@@ -1765,10 +1741,10 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
     ADD_FIELD(out, Zn);
     ADD_FIELD(out, Zd);
 
+    SET_INSTR_ID(out, zip_tab[opc].instr_id);
     ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
     ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
     ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-    SET_INSTR_ID(out, zip_tab[opc].instr_id);
     concat(DECODE_STR(out), "%s %s, %s, %s", zip_tab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_Z_128[Zn], AD_RTBL_Z_128[Zm]);
     return 0;
   } else
@@ -1781,13 +1757,15 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
     unsigned op2 = bits(i->opcode, 17, 19);
     unsigned op1 = bits(i->opcode, 20, 20);
     unsigned op0 = bits(i->opcode, 23, 23);
+
+    unsigned Pg = bits(i->opcode, 10, 12);
+    unsigned Zn = bits(i->opcode, 5, 9);
+    unsigned Zd = bits(i->opcode, 0, 4);
     if ( (1 == op0) && !op1 && !op2 && (1 == op3) && !op4 )
     {
+      // compact - page 1486
       unsigned size = bits(i->opcode, 22, 22);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
-      unsigned Zn = bits(i->opcode, 5, 9);
-      unsigned Zd = bits(i->opcode, 0, 4);
 
       SET_INSTR_ID(out, AD_INSTR_COMPACT);
       ADD_FIELD(out, size);
@@ -1803,11 +1781,10 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
     }
     if ( !op1 && !op2 && !op3 && !op4 )
     {
+      // cpy - page 1494
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
       unsigned Vn = bits(i->opcode, 5, 9);
-      unsigned Zd = bits(i->opcode, 0, 4);
 
       SET_INSTR_ID(out, AD_INSTR_CPY);
       ADD_FIELD(out, size);
@@ -1826,8 +1803,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SVE extract element to general register - page 2772
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
-      unsigned Zn = bits(i->opcode, 5, 9);
       unsigned Rd = bits(i->opcode, 0, 4);
       const char *Rd_s = GET_GEN_REG(AD_RTBL_GEN_64, Rd, NO_PREFER_ZR);
       unsigned M = bits(i->opcode, 16, 16);
@@ -1856,8 +1831,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SVE extract element to SIMD&FP scalar register - page 2772
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
-      unsigned Zn = bits(i->opcode, 5, 9);
       unsigned Vd = bits(i->opcode, 0, 4);
       unsigned B = bits(i->opcode, 16, 16);
       const char *instr_s = NULL;
@@ -1885,12 +1858,9 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SVE reverse within elements - page 2771
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
-      unsigned Zn = bits(i->opcode, 5, 9);
-      unsigned Zd = bits(i->opcode, 0, 4);
       unsigned opc = bits(i->opcode, 16, 17);
 
-      SET_INSTR_ID(out, rev_tab[opc].instr_id);
+      SET_INSTR_ID(out, rev_ftab[opc].instr_id);
       ADD_FIELD(out, size);
       ADD_FIELD(out, Pg);
       ADD_FIELD(out, Zn);
@@ -1899,7 +1869,7 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-      concat(DECODE_STR(out), "%s %s %s, %s", rev_tab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
+      concat(DECODE_STR(out), "%s %s %s, %s", rev_ftab[opc].instr_s, AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
       return 0;
     }
     if ( !op1 && (4 == op2) && !op3 && op4 )
@@ -1907,8 +1877,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // cpy (scalar)
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
-      unsigned Zd = bits(i->opcode, 0, 4);
       unsigned Rn = bits(i->opcode, 5, 9);
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
       SET_INSTR_ID(out, AD_INSTR_CPY);
@@ -1928,7 +1896,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SVE conditionally broadcast element to vector - page 2773
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
       unsigned Zm = bits(i->opcode, 5, 9);
       unsigned Zdn = bits(i->opcode, 0, 4);
       unsigned B = bits(i->opcode, 16, 16);
@@ -1957,7 +1924,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SVE conditionally extract element to SIMD&FP scalar - page 2773
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
       unsigned Zm = bits(i->opcode, 5, 9);
       unsigned Vdn = bits(i->opcode, 0, 4);
       unsigned B = bits(i->opcode, 16, 16);
@@ -1986,7 +1952,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SPLICE - Destructive - page 2223
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
       unsigned Zm = bits(i->opcode, 5, 9);
       unsigned Zdn = bits(i->opcode, 0, 4);
 
@@ -2007,9 +1972,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SPLICE - Constructive - page 2223
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
-      unsigned Zn = bits(i->opcode, 5, 9);
-      unsigned Zd = bits(i->opcode, 0, 4);
 
       SET_INSTR_ID(out,AD_INSTR_SPLICE);
       ADD_FIELD(out, size);
@@ -2028,7 +1990,6 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       // SVE conditionally extract element to general register - page 2773
       unsigned size = bits(i->opcode, 22, 23);
       int sz = get_sz(size);
-      unsigned Pg = bits(i->opcode, 10, 12);
       unsigned Zm = bits(i->opcode, 5, 9);
       unsigned Rdn = bits(i->opcode, 0, 4);
       const char *Rdn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rdn, NO_PREFER_ZR);
@@ -2634,7 +2595,7 @@ static int op1_op1_op31(struct instruction *i, struct ad_insn *out, unsigned op3
   return 1;
 }
 
-static const struct itab while_tab[] = {
+static const struct itab while_ftab[] = {
 /* 0 0 0 */ { "whilege", AD_INSTR_WHILEGE },
 /* 0 0 1 */ { "whilegt", AD_INSTR_WHILEGT },
 /* 0 1 0 */ { "whilelt", AD_INSTR_WHILELT },
@@ -2682,7 +2643,7 @@ static int op1_op1_op41(struct instruction *i, struct ad_insn *out, unsigned op3
       unsigned eq = bits(i->opcode, 4, 4);
       int idx = (U << 2) | (lt << 1) | eq;
 
-      SET_INSTR_ID(out, while_tab[idx].instr_id);
+      SET_INSTR_ID(out, while_ftab[idx].instr_id);
       ADD_FIELD(out, size);
       ADD_FIELD(out, Rm);
       ADD_FIELD(out, Rn);
@@ -2692,7 +2653,7 @@ static int op1_op1_op41(struct instruction *i, struct ad_insn *out, unsigned op3
       ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_REG_OPERAND(out, Rm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
 
-      concat(DECODE_STR(out), "%s %s, %s, %s", while_tab[idx].instr_s, AD_RTBL_PG_128[Pd], Rn_s, Rm_s);
+      concat(DECODE_STR(out), "%s %s, %s, %s", while_ftab[idx].instr_s, AD_RTBL_PG_128[Pd], Rn_s, Rm_s);
       return 0;
     }
     if ( op1 )
@@ -2761,11 +2722,11 @@ static int op1_op1_op41(struct instruction *i, struct ad_insn *out, unsigned op3
     // SVE Integer Wide Immediate - Unpredicated - page 2779
     unsigned op0 = bits(i->opcode, 19, 20);
     unsigned op1 = bits(i->opcode, 16, 16);
+    unsigned size = bits(i->opcode, 22, 23);
+    int sz = get_sz(size);
     if ( !op0 )
     {
       // SVE integer add/subtract immediate (unpredicated) - page 2781
-      unsigned size = bits(i->opcode, 22, 23);
-      int sz = get_sz(size);
       unsigned opc = bits(i->opcode, 16, 18);
       unsigned imm8 = bits(i->opcode, 5, 12);
       unsigned Zdn = bits(i->opcode, 0, 4);
@@ -2784,8 +2745,6 @@ static int op1_op1_op41(struct instruction *i, struct ad_insn *out, unsigned op3
     if ( 1 == op0 )
     {
       // SVE integer min/max immediate (unpredicated) - page 2781
-      unsigned size = bits(i->opcode, 22, 23);
-      int sz = get_sz(size);
       unsigned opc = bits(i->opcode, 16, 18);
       unsigned imm8 = bits(i->opcode, 5, 12);
       unsigned Zdn = bits(i->opcode, 0, 4);
@@ -2808,8 +2767,6 @@ static int op1_op1_op41(struct instruction *i, struct ad_insn *out, unsigned op3
     if ( 2 == op0 )
     {
       // SVE integer multiply immediate (unpredicated) - page 2780
-      unsigned size = bits(i->opcode, 22, 23);
-      int sz = get_sz(size);
       unsigned opc = bits(i->opcode, 16, 18);
       unsigned imm8 = bits(i->opcode, 5, 12);
       unsigned Zdn = bits(i->opcode, 0, 4);
@@ -2832,8 +2789,6 @@ static int op1_op1_op41(struct instruction *i, struct ad_insn *out, unsigned op3
     if ( 3 == op0 && !op1 )
     {
       // SVE broadcast integer immediate (unpredicated) - page 2782
-      unsigned size = bits(i->opcode, 22, 23);
-      int sz = get_sz(size);
       unsigned opc = bits(i->opcode, 17, 18);
       unsigned imm8 = bits(i->opcode, 5, 12);
       unsigned Zdn = bits(i->opcode, 0, 4);
@@ -2853,8 +2808,6 @@ static int op1_op1_op41(struct instruction *i, struct ad_insn *out, unsigned op3
     }
     if ( 3 == op0 && op1 )
     {
-      unsigned size = bits(i->opcode, 22, 23);
-      int sz = get_sz(size);
       unsigned opc = bits(i->opcode, 17, 18);
       unsigned imm8 = bits(i->opcode, 5, 12);
       unsigned Zd = bits(i->opcode, 0, 4);
@@ -2946,6 +2899,7 @@ static int op1_op1_op52(struct instruction *i, struct ad_insn *out, unsigned op3
     unsigned D = bits(i->opcode, 17, 17);
     unsigned U = bits(i->opcode, 16, 16);
     unsigned Pm = bits(i->opcode, 5, 8);
+    const char *instr_s = NULL;
     if ( !op0 && !op1 )
     {
       // SVE saturating inc/dec vector by predicate count - page 2783
@@ -2991,7 +2945,6 @@ static int op1_op1_op52(struct instruction *i, struct ad_insn *out, unsigned op3
       unsigned D = bits(i->opcode, 16, 16);
       unsigned opc2 = bits(i->opcode, 9, 10);
       unsigned Zdn = bits(i->opcode, 0, 4);
-      const char *instr_s = NULL;
       if ( op || opc2 )
         return 1;
       if ( !D )
@@ -3019,7 +2972,6 @@ static int op1_op1_op52(struct instruction *i, struct ad_insn *out, unsigned op3
       unsigned opc2 = bits(i->opcode, 9, 10);
       unsigned Rdn = bits(i->opcode, 0, 4);
       const char *Rdn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rdn, NO_PREFER_ZR);
-      const char *instr_s = NULL;
       if ( op || opc2 )
         return 1;
       if ( !D )
@@ -4147,6 +4099,7 @@ static int op02_op1_op20(struct instruction *i, struct ad_insn *out, unsigned op
     unsigned op1 = bits(i->opcode, 10, 13);
     unsigned Zn = bits(i->opcode, 5, 9);
     unsigned Zd = bits(i->opcode, 0, 4);
+    unsigned Zm = bits(i->opcode, 16, 20);
 
     if ( !op0 && (2 == (op1 >> 2)) )
     {
@@ -4175,7 +4128,6 @@ static int op02_op1_op20(struct instruction *i, struct ad_insn *out, unsigned op
     if ( !(op1 >> 2) )
     {
       // SVE2 integer add/subtract interleaved long - page 2795
-      unsigned Zm = bits(i->opcode, 16, 20);
       unsigned S = bits(i->opcode, 11, 11);
       unsigned tb = bits(i->opcode, 10, 10);
       unsigned idx = (S << 1) | tb;
@@ -4197,7 +4149,6 @@ static int op02_op1_op20(struct instruction *i, struct ad_insn *out, unsigned op
     if ( 2 == (op1 >> 1) )
     {
       // SVE2 bitwise exclusive-or interleaved - page 2795
-      unsigned Zm = bits(i->opcode, 16, 20);
       unsigned tb = bits(i->opcode, 10, 10);
 
       if ( !tb )
@@ -4223,7 +4174,6 @@ static int op02_op1_op20(struct instruction *i, struct ad_insn *out, unsigned op
     if ( 6 == op1 )
     {
       // SVE integer matrix multiply accumulate - page 2796
-      unsigned Zm = bits(i->opcode, 16, 20);
       unsigned idx = bits(i->opcode, 22, 23);
       if ( NULL == mla_tab[idx].instr_s )
         return 1;
@@ -4241,7 +4191,6 @@ static int op02_op1_op20(struct instruction *i, struct ad_insn *out, unsigned op
     if ( 3 == (op1 >> 2) )
     {
       // SVE2 bitwise permute - page 2796
-      unsigned Zm = bits(i->opcode, 16, 20);
       unsigned opc = bits(i->opcode, 10, 11);
 
       if ( NULL == bitperm_tab[opc].instr_s )
@@ -6477,7 +6426,6 @@ static int op06(struct instruction *i, struct ad_insn *out)
     if ( (op1 & 1) && !(op2 >> 2) && !op3 ) 
     {
       // SVE 64-bit gather prefetch (scalar plus unpacked 32-bit scaled offsets) - page 2821
-      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
       SET_INSTR_ID(out, prf_tab[msz].instr_id);
       ADD_FIELD(out, xs);
       ADD_FIELD(out, Zm);
@@ -6677,7 +6625,7 @@ static int op06(struct instruction *i, struct ad_insn *out)
   return 1;
 }
 
-static const struct itab st1_tab[] = {
+static const struct itab st1_ftab[] = {
 /* 0 0 */ { "st1b", AD_INSTR_ST1B },
 /* 0 1 */ { "st1h", AD_INSTR_ST1H },
 /* 1 0 */ { "st1w", AD_INSTR_ST1W },
@@ -6741,7 +6689,96 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
   // 0x0xxx
   if ( !(op3 & 0x28) )
   {
-    // SVE Memory - Contiguous Store and Unsized Contiguous
+    // SVE Memory - Contiguous Store and Unsized Contiguous - page 2824
+    unsigned op1 = bits(i->opcode, 14, 14);
+    unsigned op2 = bits(i->opcode, 4, 4);
+    op0 = bits(i->opcode, 22, 24);
+    if ( 3 == op0 && !op1 && !op1 )
+    {
+      // str (predicate) - page 2491
+      unsigned imm9h = bits(i->opcode, 16, 21);
+      unsigned imm9l = bits(i->opcode, 10, 12);
+      unsigned Pt = bits(i->opcode, 0, 3);
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      unsigned imm = (imm9h << 3) | imm9l;
+      SET_INSTR_ID(out, AD_INSTR_STR);
+
+      ADD_FIELD(out, imm9h);
+      ADD_FIELD(out, imm9l);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Pt);
+
+      ADD_ZREG_OPERAND(out, Pt, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm);
+      concat(DECODE_STR(out), "str %s, %s, #%x", AD_RTBL_PG_128[Pt], Rn_s, imm);
+      return 0;
+    }
+    if ( 3 == op0 && op1 )
+    {
+      // str (vector) - page 2492
+      unsigned imm9h = bits(i->opcode, 16, 21);
+      unsigned imm9l = bits(i->opcode, 10, 12);
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      unsigned imm = (imm9h << 3) | imm9l;
+      SET_INSTR_ID(out, AD_INSTR_STR);
+
+      ADD_FIELD(out, imm9h);
+      ADD_FIELD(out, imm9l);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm);
+      concat(DECODE_STR(out), "str %s, %s, #%x", AD_RTBL_Z_128[Zt], Rn_s, imm);
+      return 0;
+    }
+    if ( (3 != op0) && op1 )
+    {
+      // SVE contiguous store (scalar plus scalar) - page 2824
+      const char *instr_s = NULL;
+      unsigned opc = bits(i->opcode, 22, 24);
+      unsigned o2 = bits(i->opcode, 21, 21);
+      unsigned size = bits(i->opcode, 21, 22);
+      int sz = get_sz(size);
+      unsigned Rm = Zm;
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      const char *Rm_s = GET_GEN_REG(AD_RTBL_GEN_64, Rm, NO_PREFER_ZR);
+      if ( 3 == opc )
+        return 1;
+      if ( !(opc >> 1) )
+      {
+        instr_s = "st1b";
+        SET_INSTR_ID(out, AD_INSTR_ST1B);
+      } else if ( 1 == (opc >> 1) )
+      {
+        instr_s = "st1h";
+        SET_INSTR_ID(out, AD_INSTR_ST1H);
+      } else if ( 2 == (opc >> 1) )
+      {
+        instr_s = "st1w";
+        SET_INSTR_ID(out, AD_INSTR_ST1W);
+      } else if ( 7 == opc && o2 )
+      {
+        instr_s = "st1d";
+        SET_INSTR_ID(out, AD_INSTR_ST1D);
+      } else
+        return 1;
+      ADD_FIELD(out, size);
+      ADD_FIELD(out, Rm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_REG_OPERAND(out, Rm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+      return 0;
+    }
+    return 1;
   }
   // 0x1xxx
   if ( 1 == ((op3 >> 3) & 5) )
@@ -6769,6 +6806,64 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       concat(DECODE_STR(out), "%s %s, %s, %s, %s", stnt1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], Rm_s);
       return 0;
     }
+    if ( !op0 && op1 )
+    {
+      // SVE contiguous non-temporal store (scalar plus scalar) - page 2825
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      SET_INSTR_ID(out, stnt1_tab[msz].instr_id);
+      ADD_FIELD(out, msz);
+      ADD_FIELD(out, Rm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_REG_OPERAND(out, Rm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", stnt1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+      return 0;
+    }
+    if ( (2 == op0) && !op1 )
+    {
+      // SVE2 32-bit scatter non-temporal store (vector plus scalar) - page 2825
+      if ( 3 == msz )
+        return 1;
+      SET_INSTR_ID(out, stnt1_tab[msz].instr_id);
+      ADD_FIELD(out, msz);
+      ADD_FIELD(out, Rm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Zn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_ZREG_OPERAND(out, Zn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_REG_OPERAND(out, Rm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", stnt1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], Rm_s);
+      return 0;
+    }
+    if ( op0 && op1 )
+    {
+      // SVE store multiple structures (scalar plus scalar) - page 2825
+      const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+      unsigned opc = bits(i->opcode, 21, 22);
+      unsigned idx = (msz << 2) | opc;
+      if ( NULL == stN_tab[idx].instr_s )
+        return 1;
+      SET_INSTR_ID(out, stN_tab[idx].instr_id);
+      ADD_FIELD(out, Rm);
+      ADD_FIELD(out, Pg);
+      ADD_FIELD(out, Rn);
+      ADD_FIELD(out, Zt);
+
+      ADD_ZREG_OPERAND(out, Zt, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
+      ADD_ZREG_OPERAND(out, Pg, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
+      ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      ADD_REG_OPERAND(out, Rm, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", stN_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, Rm_s);
+      return 0;
+    }
     return 1;
   }
   // 1x0xxx
@@ -6781,7 +6876,7 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
     if ( !op0 )
     {
       // SVE 64-bit scatter store (scalar plus 64-bit unscaled offsets) - page 2826
-      SET_INSTR_ID(out, st1_tab[msz].instr_id);
+      SET_INSTR_ID(out, st1_ftab[msz].instr_id);
       ADD_FIELD(out, msz);
       ADD_FIELD(out, Zm);
       ADD_FIELD(out, xs);
@@ -6794,7 +6889,7 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
-      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", st1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", st1_ftab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
     if ( 1 == op0 )
@@ -6836,7 +6931,7 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
-      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", st1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", st1_tab3[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
     if ( 3 == op0 )
@@ -6864,14 +6959,14 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
   }
   if ( 5 == (op3 >> 3) )
   {
+    unsigned msz = bits(i->opcode, 23, 24);
     // SVE Memory - Scatter - page 2827
     if ( !op0 )
     {
       // SVE 64-bit scatter store (scalar plus 64-bit unscaled offsets) - page 2827
-      unsigned msz = bits(i->opcode, 23, 24);
       unsigned xs = bits(i->opcode, 14, 14);
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
-      SET_INSTR_ID(out, st1_tab[msz].instr_id);
+      SET_INSTR_ID(out, st1_ftab[msz].instr_id);
       ADD_FIELD(out, msz);
       ADD_FIELD(out, Zm);
       ADD_FIELD(out, xs);
@@ -6884,13 +6979,12 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
-      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", st1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", st1_ftab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
     if ( 1 == op0 )
     {
       // SVE 64-bit scatter store (scalar plus 64-bit scaled offsets) - page 2828
-      unsigned msz = bits(i->opcode, 23, 24);
       unsigned xs = bits(i->opcode, 14, 14);
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
       if ( NULL == st1_tab2[msz].instr_s )
@@ -6913,10 +7007,9 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
     if ( 2 == op0 )
     {
       // SVE 64-bit scatter store (vector plus immediate) - page 2828
-      unsigned msz = bits(i->opcode, 23, 24);
       unsigned imm5 = bits(i->opcode, 16, 20);
       unsigned Zn = Rn;
-      SET_INSTR_ID(out, st1_tab[msz].instr_id);
+      SET_INSTR_ID(out, st1_ftab[msz].instr_id);
       ADD_FIELD(out, msz);
       ADD_FIELD(out, imm5);
       ADD_FIELD(out, Pg);
@@ -6927,13 +7020,12 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       ADD_ZREG_OPERAND(out, Pg, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_ZREG_OPERAND(out, Zn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm5);
-      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", st1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], imm5);
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", st1_ftab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], imm5);
       return 0;
     }
     if ( 3 == op0 )
     {
       // SVE 64-bit scatter store (vector plus immediate) - page 2828
-      unsigned msz = bits(i->opcode, 23, 24);
       unsigned imm5 = bits(i->opcode, 16, 20);
       unsigned Zn = Rn;
       if ( NULL == st1_tab3[msz].instr_s )
@@ -6998,7 +7090,7 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       ADD_ZREG_OPERAND(out, Pg, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_REG_OPERAND(out, Rn, _64_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm4);
-      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", stnt1_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", stN_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
       return 0;
     }
     if ( !op1 )
@@ -7009,7 +7101,7 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       int sz = get_sz(size);
       unsigned imm4 = bits(i->opcode, 16, 19);
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
-      SET_INSTR_ID(out, st1_tab[msz].instr_id);
+      SET_INSTR_ID(out, st1_ftab[msz].instr_id);
       ADD_FIELD(out, msz);
       ADD_FIELD(out, size);
       ADD_FIELD(out, imm4);
@@ -7021,7 +7113,7 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_REG_OPERAND(out, Rn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm4);
-      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", st1_tab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
+      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", st1_ftab[msz].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, imm4);
       return 0;
     }
     return 1;
