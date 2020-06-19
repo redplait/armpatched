@@ -1085,7 +1085,11 @@ static int op00_op10_op21(struct instruction *i, struct ad_insn *out, unsigned o
     unsigned op0 = bits(i->opcode, 10, 11);
     if ( op0 == 3 )
     {
+      // SVE constructive prefix (unpredicated) - page 2765
+      unsigned opc = bits(i->opcode, 22, 23);
       unsigned opc2 = bits(i->opcode, 16, 20);
+      if ( opc )
+        return 1;
       if ( opc2 )
         return 1;
       else {
@@ -1100,6 +1104,7 @@ static int op00_op10_op21(struct instruction *i, struct ad_insn *out, unsigned o
       }
     } else if ( op0 == 2 )
     {
+      // SVE floating-point exponential accelerator - page 2764
       unsigned opc = bits(i->opcode, 16, 20);
       if ( opc )
         return 1;
@@ -5005,7 +5010,7 @@ static int op03_op1_op40(struct instruction *i, struct ad_insn *out, unsigned op
     unsigned op2 = bits(i->opcode, 6, 9);
     if ( !(op0 & 2) ) 
     {
-      // SVE floating-point arithmetic (predicated) - page 
+      // SVE floating-point arithmetic (predicated) - page 2806
       unsigned opc = bits(i->opcode, 16, 19);
       if ( NULL == fari2_tab[opc].instr_s )
         return 1;
@@ -5024,7 +5029,7 @@ static int op03_op1_op40(struct instruction *i, struct ad_insn *out, unsigned op
     }
     if ( (2 == op0) && !op1 )
     {
-      // ftmad
+      // ftmad - page 1680
       unsigned imm3 = bits(i->opcode, 16, 18);
       SET_INSTR_ID(out, AD_INSTR_FTMAD);
       ADD_FIELD(out, size);
@@ -6241,12 +6246,12 @@ static int op06(struct instruction *i, struct ad_insn *out)
   unsigned Zt = bits(i->opcode, 0, 4);
   unsigned prfop = bits(i->opcode, 0, 3);
   unsigned msz = bits(i->opcode, 23, 24);
+  unsigned xs = bits(i->opcode, 22, 22);
 
   if ( !op0 )
   {
-    unsigned msz = bits(i->opcode, 13, 14);
-    unsigned xs = bits(i->opcode, 22, 22);
     const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    msz = bits(i->opcode, 13, 14);
     if ( (3 == op1) && (1 == (op2 >> 2)) && !op3 )
     {
       // SVE 64-bit gather prefetch (scalar plus 64-bit scaled offsets) - page 2820
@@ -6293,9 +6298,8 @@ static int op06(struct instruction *i, struct ad_insn *out)
   if ( op0 && (3 == op1) && (1 == (op2 >> 2)) )
   {
     // SVE 64-bit gather load (scalar plus 64-bit scaled offsets) - page 2821
-    unsigned xs = bits(i->opcode, 22, 22);
-    unsigned msz = bits(i->opcode, 13, 14);
     const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
+    msz = bits(i->opcode, 13, 14);
     SET_INSTR_ID(out, prf_tab[msz].instr_id);
     ADD_FIELD(out, xs);
     ADD_FIELD(out, Zm);
@@ -6321,7 +6325,6 @@ static int op06(struct instruction *i, struct ad_insn *out)
     unsigned U = bits(i->opcode, 14, 14);
     unsigned ff = bits(i->opcode, 13, 13);
     unsigned opc = bits(i->opcode, 23, 24);
-    unsigned xs = bits(i->opcode, 22, 22);
     unsigned idx = (opc << 2) | (U << 1) | ff;
     const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
     if ( NULL == ld1_tab6[idx].instr_s )
@@ -6415,7 +6418,6 @@ static int op06(struct instruction *i, struct ad_insn *out)
     // SVE 64-bit gather load (scalar plus 64-bit unscaled offsets) - page 2823
     unsigned U = bits(i->opcode, 14, 14);
     unsigned ff = bits(i->opcode, 13, 13);
-    unsigned xs = bits(i->opcode, 22, 22);
     const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
     unsigned idx = (msz << 2) | (U << 1) | ff;
     if ( NULL == ld1_tab7[idx].instr_s )
@@ -6440,7 +6442,6 @@ static int op06(struct instruction *i, struct ad_insn *out)
     // SVE 64-bit gather load (scalar plus unpacked 32-bit unscaled offsets) - page 2823
     unsigned U = bits(i->opcode, 14, 14);
     unsigned ff = bits(i->opcode, 13, 13);
-    unsigned xs = bits(i->opcode, 22, 22);
     const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
     unsigned idx = (msz << 2) | (U << 1) | ff;
     if ( NULL == ld1_tab7[idx].instr_s )
@@ -6888,10 +6889,10 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
     // SVE Memory - Contiguous Store with Immediate Offset - page 2829
     unsigned op1 = bits(i->opcode, 20, 20);
     unsigned msz = bits(i->opcode, 23, 24);
+    unsigned imm4 = bits(i->opcode, 16, 19);
     if ( !op0 && op1 )
     {
       // SVE contiguous non-temporal store (scalar plus immediate) - page 2829
-      unsigned imm4 = bits(i->opcode, 16, 19);
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
       SET_INSTR_ID(out, stnt1_ftab[msz].instr_id);
       ADD_FIELD(out, msz);
@@ -6911,7 +6912,6 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
     {
       // SVE store multiple structures (scalar plus immediate) - page 2829
       unsigned opc = bits(i->opcode, 21, 22);
-      unsigned imm4 = bits(i->opcode, 16, 19);
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
       unsigned idx = (msz << 2) | opc;
       if ( NULL == stN_tab[idx].instr_s )
@@ -6934,7 +6934,6 @@ static int op07(struct instruction *i, struct ad_insn *out, unsigned op3)
       // SVE contiguous store (scalar plus immediate) - page 2829
       unsigned size = bits(i->opcode, 21, 22);
       int sz = get_sz(size);
-      unsigned imm4 = bits(i->opcode, 16, 19);
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
       SET_INSTR_ID(out, st1_ftab[msz].instr_id);
       ADD_FIELD(out, msz);
