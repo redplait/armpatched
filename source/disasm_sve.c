@@ -338,7 +338,7 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
 
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-      ADD_REG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+      ADD_ZREG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
       concat(DECODE_STR(out), "%s %s, %s, %s", instr_s, AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], AD_RTBL_FP_V_128[Vd]);
       return 0;
     }
@@ -370,7 +370,7 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
 
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-      ADD_REG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+      ADD_ZREG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
       concat(DECODE_STR(out), "%s %s, %s, %s", instr_s, AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], AD_RTBL_FP_V_128[Vd]);
       return 0;
     }
@@ -419,7 +419,7 @@ static int op00_op10_op20(struct instruction *i, struct ad_insn *out, unsigned o
 
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-      ADD_REG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+      ADD_ZREG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
       concat(DECODE_STR(out), "%s %s, %s, %s", instr_s, AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn], AD_RTBL_FP_V_128[Vd]);
       return 0;
     }
@@ -1539,7 +1539,7 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
         ADD_FIELD(out, Zdn);
 
         ADD_ZREG_OPERAND(out, Zdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-        ADD_REG_OPERAND(out, Vm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+        ADD_ZREG_OPERAND(out, Vm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
         concat(DECODE_STR(out), "insr %s, %s", AD_RTBL_Z_128[Zdn], Vm_s);
         return 0;
       }
@@ -1700,7 +1700,7 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
 
       ADD_ZREG_OPERAND(out, Zd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
-      ADD_REG_OPERAND(out, Vn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+      ADD_ZREG_OPERAND(out, Vn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
       concat(DECODE_STR(out), "cpy %s %s, %s", AD_RTBL_Z_128[Zd], AD_RTBL_PG_128[Pg], AD_RTBL_FP_V_128[Vn]);
       return 0;
     }
@@ -1747,7 +1747,7 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
       ADD_FIELD(out, Zn);
       ADD_FIELD(out, Vd);
 
-      ADD_REG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_FP_V_128);
+      ADD_ZREG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_FP_V_128, 4);
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       concat(DECODE_STR(out), "%s %s %s, %s", instr_s, AD_RTBL_FP_V_128[Vd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
@@ -1833,7 +1833,7 @@ static int op00_op11_op25(struct instruction *i, struct ad_insn *out, unsigned o
 
       ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
-      ADD_REG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+      ADD_ZREG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
       concat(DECODE_STR(out), "%s %s %s, %s", instr_s, AD_RTBL_FP_V_128[Vdn], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zm]);
       return 0;
     }
@@ -5270,7 +5270,7 @@ static int op03_op1_op20(struct instruction *i, struct ad_insn *out, unsigned op
   ADD_FIELD(out, Zn);
   ADD_FIELD(out, Vd);
 
-  ADD_REG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+  ADD_ZREG_OPERAND(out, Vd, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
   ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
   ADD_ZREG_OPERAND(out, Zn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
   concat(DECODE_STR(out), "%s %s, %s, %s", fmv_tab[opc].instr_s, AD_RTBL_FP_V_128[Vd], AD_RTBL_PG_128[Pg], AD_RTBL_Z_128[Zn]);
@@ -5365,9 +5365,9 @@ static int op03_op1_op23(struct instruction *i, struct ad_insn *out, unsigned op
   ADD_FIELD(out, Zm);
   ADD_FIELD(out, Vdn);
 
-  ADD_REG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+  ADD_ZREG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
   ADD_ZREG_OPERAND(out, Pg, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
-  ADD_REG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128));
+  ADD_ZREG_OPERAND(out, Vdn, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_FP_V_128), 4);
   ADD_ZREG_OPERAND(out, Zm, sz, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
   concat(DECODE_STR(out), "fadda %s %s, %s, %s", AD_RTBL_FP_V_128[Vdn], AD_RTBL_PG_128[Pg], AD_RTBL_FP_V_128[Vdn], AD_RTBL_Z_128[Zm]);
   return 0;
@@ -5570,7 +5570,7 @@ static int op04(struct instruction *i, struct ad_insn *out)
       ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s", ld1_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
   }
@@ -5599,7 +5599,7 @@ static int op04(struct instruction *i, struct ad_insn *out)
       ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
-      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab2[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", ld1_tab2[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
   }
@@ -5700,7 +5700,7 @@ static int op04(struct instruction *i, struct ad_insn *out)
       ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
-      concat(DECODE_STR(out), "%s %s, %s, %s, #%x", ld1_tab3[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", ld1_tab3[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
   }

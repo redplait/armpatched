@@ -6,7 +6,16 @@
 #include <kernwin.hpp>
 #include <stdlib.h>
 #include "../source/adefs.h"
-// #include "arm.hpp"
+
+#define USE_ARM_XXX
+
+#ifdef USE_ARM_XXX
+#include "allins.hpp"
+
+const uint16 insn_translate[] = {
+#include "e2.h"
+};
+#endif /* USE_ARM_XXX */
 
 enum RegNo
 {
@@ -71,6 +80,8 @@ enum RegNo
   ARM_MAXREG,            // must be the last entry
 };
 
+int my_regs_start = ARM_MAXREG + 1;
+
 /* opcode names */
 static const char *const sve_table[] = {
 #include "e.h"
@@ -84,6 +95,7 @@ static size_t idaapi dirty_sve_extension_callback(void *user_data, int event_id,
   struct ad_insn dis;
   switch ( event_id )
   {
+#ifndef USE_ARM_XXX
     case processor_t::ev_out_insn:
     {
       int latch = 0;
@@ -113,13 +125,13 @@ static size_t idaapi dirty_sve_extension_callback(void *user_data, int event_id,
             _snprintf(buf, sizeof(buf), "X%d", insn.ops[i].reg - X0);
             ctx->out_register(buf);
           }
-          else if (insn.ops[i].reg < 32 + ARM_MAXREG)
+          else if (insn.ops[i].reg < 32 + my_regs_start)
           {
-            _snprintf(buf, sizeof(buf), "Z%d", insn.ops[i].reg - ARM_MAXREG);
+            _snprintf(buf, sizeof(buf), "Z%d", insn.ops[i].reg - my_regs_start);
             ctx->out_register(buf);
           }
           else {
-            _snprintf(buf, sizeof(buf), "P%d", insn.ops[i].reg - ARM_MAXREG - 32);
+            _snprintf(buf, sizeof(buf), "P%d", insn.ops[i].reg - my_regs_start - 32);
             ctx->out_register(buf);
           }
         }
@@ -127,6 +139,7 @@ static size_t idaapi dirty_sve_extension_callback(void *user_data, int event_id,
       return 1;
     }
      break;
+#endif /* !USE_ARM_XXX */
 
     case processor_t::ev_ana_insn:
       {
@@ -137,9 +150,15 @@ static size_t idaapi dirty_sve_extension_callback(void *user_data, int event_id,
           return 0;
         if ( !ArmadilloDisassemble(op, (uint64)insn->ea, &dis))
         {
+#ifdef _DEBUG
           msg("%a %s\n", insn->ea, dis.decoded);
+#endif /* _DEBUG */
           insn->size = (uint16)4;
+#ifdef USE_ARM_XXX
+          insn->itype = insn_translate[dis.instr_id];
+#else
           insn->itype = CUSTOM_INSN_ITYPE + dis.instr_id;
+#endif /* USE_ARM_XXX */
           insn->flags |= INSN_64BIT;
           for ( int i = 0; i < dis.num_operands && i < UA_MAXOP; i++ )
           {
@@ -160,15 +179,20 @@ static size_t idaapi dirty_sve_extension_callback(void *user_data, int event_id,
                 insn->ops[i].dtype = dt_dword;
               if ( !dis.operands[i].op_reg.fp )
               {
+                // X reg
                 insn->ops[i].reg = X0 + dis.operands[i].op_reg.rn;
+              } else if ( dis.operands[i].op_reg.fp == 4 )
+              {
+                // V reg
+                insn->ops[i].reg = V0 + dis.operands[i].op_reg.rn;
               } else if ( dis.operands[i].op_reg.fp == 2 )
               {
-                // Zx - between ARM_MAXREG and ARM_MAXREG + 32
-                insn->ops[i].reg = dis.operands[i].op_reg.rn + ARM_MAXREG;
+                // Zx - between my_regs_start and my_regs_start + 32
+                insn->ops[i].reg = dis.operands[i].op_reg.rn + my_regs_start;
               } else if ( dis.operands[i].op_reg.fp == 3 )
               {
-                // Px - between ARM_MAXREG + 32 and ARM_MAXREG + 64
-                insn->ops[i].reg = dis.operands[i].op_reg.rn + 32 + ARM_MAXREG;
+                // Px - between my_regs_start + 32 and my_regs_start + 64
+                insn->ops[i].reg = dis.operands[i].op_reg.rn + 32 + my_regs_start;
               }
             }
           }
@@ -186,14 +210,14 @@ static size_t idaapi dirty_sve_extension_callback(void *user_data, int event_id,
            )
         {
           char buf[6];
-          if ( op->reg > 32 + ARM_MAXREG )
+          if ( op->reg >= 32 + my_regs_start )
           {
-             _snprintf(buf, sizeof(buf), "P%d", op->reg - 32 - ARM_MAXREG);
+             _snprintf(buf, sizeof(buf), "P%d", op->reg - 32 - my_regs_start);
              ctx->out_line(buf, COLOR_INSN);
              return 1;
-          } else if ( op->reg > ARM_MAXREG )
+          } else if ( op->reg >= my_regs_start )
           {
-            _snprintf(buf, sizeof(buf), "Z%d", op->reg - 32 - ARM_MAXREG);
+            _snprintf(buf, sizeof(buf), "Z%d", op->reg - my_regs_start);
             ctx->out_line(buf, COLOR_INSN);
             return 1;
           }
@@ -211,6 +235,7 @@ static size_t idaapi dirty_sve_extension_callback(void *user_data, int event_id,
         )
       {
         ctx->out_line(sve_table[insn.itype - CUSTOM_INSN_ITYPE], COLOR_INSN);
+        ctx->out_symbol(' ');
         return 1;
       }
     }
