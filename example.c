@@ -1689,7 +1689,7 @@ static void disp_operand(struct ad_operand operand){
                 printf("%s size %X\n", GET_FP_REG(operand.op_reg.rtbl, operand.op_reg.rn), operand.op_reg.sz);
             else{
                 const char *reg = GET_GEN_REG(operand.op_reg.rtbl, operand.op_reg.rn, operand.op_reg.zr);
-                printf("%s\n", reg);
+                printf("%s size %X\n", reg, operand.op_reg.sz);
             }
         }
     }

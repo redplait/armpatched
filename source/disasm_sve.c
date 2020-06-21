@@ -5448,7 +5448,7 @@ static const char *const prfop_name[] = {
 /* 1 1 1 1 */ NULL
 };
 
-static const struct itab ld1_tab[] = {
+static const struct itab ld1_ftab2[] = {
 /* 0 0 */ { "ld1sh", AD_INSTR_LD1SH },
 /* 0 1 */ { "ldff1sh", AD_INSTR_LDFF1SH },
 /* 1 0 */ { "ld1h", AD_INSTR_LD1H },
@@ -5559,7 +5559,7 @@ static int op04(struct instruction *i, struct ad_insn *out)
       unsigned idx = (U << 1) | ff;
       const char *Rn_s = GET_GEN_REG(AD_RTBL_GEN_64, Rn, NO_PREFER_ZR);
 
-      SET_INSTR_ID(out, ld1_tab[idx].instr_id);
+      SET_INSTR_ID(out, ld1_ftab2[idx].instr_id);
       ADD_FIELD(out, xs);
       ADD_FIELD(out, Zm);
       ADD_FIELD(out, Pg);
@@ -5570,7 +5570,8 @@ static int op04(struct instruction *i, struct ad_insn *out)
       ADD_ZREG_OPERAND(out, Pg, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_PG_128, 3);
       ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
-      concat(DECODE_STR(out), "%s %s, %s, %s, %s", ld1_tab[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%s", ld1_ftab2[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
   }
