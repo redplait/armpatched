@@ -20,6 +20,7 @@ class ntoskrnl_hack: public arm64_hack
     void dump_sign_data() const;
     void init_aux(const char *, PBYTE &aux);
     int try_find_PsKernelRangeList(PBYTE mz);
+    int disasm_MiGetPteAddress(PBYTE psp);
     int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
@@ -99,6 +100,9 @@ class ntoskrnl_hack: public arm64_hack
     DWORD eproc_ObjectTable_off;
     DWORD ObjectTable_pushlock_off;
     DWORD eproc_ProcessLock_off;
+    // kpte stuff
+    PBYTE m_MiGetPteAddress;
+    PBYTE m_pte_base_addr;
     // symlinks data
     PBYTE m_ObpSymbolicLinkObjectType;
     PBYTE m_AlpcPortObjectType;

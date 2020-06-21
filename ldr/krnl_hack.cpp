@@ -33,6 +33,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
+  m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
   m_ExNPagedLookasideLock = NULL;
   m_ExNPagedLookasideListHead = NULL;
@@ -140,6 +141,11 @@ void ntoskrnl_hack::dump() const
     printf("EPROCESS.RundownProtect: %X\n", eproc_ProcessLock_off);
   if ( ObjectTable_pushlock_off )
     printf("HANDLE_TABLE.HandleContentionEvent: %X\n", ObjectTable_pushlock_off);
+  // kpte
+  if ( m_MiGetPteAddress != NULL )
+    printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));
+  if ( m_pte_base_addr != NULL )
+    printf("pte_base_addr at: %p\n", PVOID(m_pte_base_addr - mz));
   dump_sign_data();
 }
 
@@ -163,6 +169,13 @@ int ntoskrnl_hack::hack(int verbose)
     PBYTE next = NULL;
     if ( find_first_jmp(mz + exp->rva, next) )
       res += find_lock_list(next, m_ExNPagedLookasideLock, m_ExNPagedLookasideListHead);
+  }
+  exp = m_ed->find("MmFreeNonCachedMemory");
+  if ( exp != NULL )
+  {
+    res += find_first_bl(mz + exp->rva, m_MiGetPteAddress);
+    if ( m_MiGetPteAddress != NULL )
+     res += disasm_MiGetPteAddress(m_MiGetPteAddress);
   }
   exp = m_ed->find("IoRegisterPlugPlayNotification");
   if ( exp != NULL )
@@ -967,4 +980,21 @@ int ntoskrnl_hack::hack_tracepoints(PBYTE psp)
   }
 end:
   return (m_KiTpStateLock != NULL) && (m_KiTpHashTable != NULL);
+}
+
+int ntoskrnl_hack::disasm_MiGetPteAddress(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  for ( DWORD i = 0; i < 5; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_ldr_off() )
+    {
+      m_pte_base_addr = (PBYTE)m_dis.operands[1].op_imm.bits;
+      break;
+    }
+  }
+  return (m_pte_base_addr != NULL);
 }
