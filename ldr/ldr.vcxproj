@@ -164,6 +164,7 @@
     <ClCompile Include="krnl_obtypes.cpp" />
     <ClCompile Include="krnl_pnp.cpp" />
     <ClCompile Include="krnl_sign.cpp" />
+    <ClCompile Include="krnl_wmi.cpp" />
     <ClCompile Include="ldr.cpp" />
     <ClCompile Include="ndis_hack.cpp" />
     <ClCompile Include="pe_file.cpp" />

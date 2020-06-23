@@ -43,6 +43,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_ObFindHandleForObject(PBYTE);
     int hack_enum_tab(PBYTE);
     int hack_ObReferenceProcessHandleTable(PBYTE);
+    int try_wmip_obj(PBYTE);
+    int disasm_IoWMIQueryAllData(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -51,6 +53,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
     PBYTE aux_ObReferenceObjectByHandle;
+    PBYTE aux_ObReferenceObjectByPointer;
     PBYTE aux_ExAcquireFastMutexUnsafe;
     PBYTE aux_ExAcquireFastMutex;
     PBYTE aux_KeAcquireGuardedMutex;
@@ -122,6 +125,7 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_proc_wow64_off;
     DWORD m_proc_win32proc_off;
     // wmi data
+    PBYTE m_WmipGuidObjectType;
     // data from PsKernelRangeList
     PBYTE m_PspPicoProviderRoutines;
     DWORD m_PspPicoProviderRoutines_size;

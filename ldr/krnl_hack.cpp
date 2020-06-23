@@ -18,6 +18,7 @@ void ntoskrnl_hack::zero_data()
   // fill auxilary data
   init_aux("KeAcquireSpinLockRaiseToDpc", aux_KeAcquireSpinLockRaiseToDpc);
   init_aux("ExAcquirePushLockExclusiveEx", aux_ExAcquirePushLockExclusiveEx);
+  init_aux("ObReferenceObjectByPointer", aux_ObReferenceObjectByPointer);
   init_aux("ObReferenceObjectByHandle", aux_ObReferenceObjectByHandle);
   init_aux("ExAcquireFastMutexUnsafe", aux_ExAcquireFastMutexUnsafe);
   init_aux("ExAcquireFastMutex", aux_ExAcquireFastMutex);
@@ -33,6 +34,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
+  m_WmipGuidObjectType = NULL;
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
   m_ExNPagedLookasideLock = NULL;
@@ -145,6 +147,9 @@ void ntoskrnl_hack::dump() const
     printf("EPROCESS.RundownProtect: %X\n", eproc_ProcessLock_off);
   if ( ObjectTable_pushlock_off )
     printf("HANDLE_TABLE.HandleContentionEvent: %X\n", ObjectTable_pushlock_off);
+  // wmi
+  if ( m_WmipGuidObjectType != NULL )
+    printf("WmipGuidObjectType: %p\n", PVOID(m_WmipGuidObjectType - mz));
   // kpte
   if ( m_MiGetPteAddress != NULL )
     printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));
@@ -181,6 +186,9 @@ int ntoskrnl_hack::hack(int verbose)
     if ( m_MiGetPteAddress != NULL )
      res += disasm_MiGetPteAddress(m_MiGetPteAddress);
   }
+  exp = m_ed->find("IoWMIQueryAllData");
+  if ( exp != NULL )
+    res += disasm_IoWMIQueryAllData(mz + exp->rva);
   exp = m_ed->find("IoRegisterPlugPlayNotification");
   if ( exp != NULL )
     res += disasm_IoRegisterPlugPlayNotification(mz + exp->rva);
