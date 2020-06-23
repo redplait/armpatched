@@ -41,7 +41,7 @@ void ntoskrnl_hack::zero_data()
   m_ExPagedLookasideListHead = NULL;
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
   m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = 0;
-  m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = m_proc_wow64_off = 0;
+  m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = m_proc_wow64_off = m_proc_win32proc_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
@@ -137,6 +137,8 @@ void ntoskrnl_hack::dump() const
     printf("EPROCESS.DebugPort: %X\n", m_proc_debport_off);
   if ( m_proc_wow64_off )
     printf("EPROCESS.WoW64Process: %X\n", m_proc_wow64_off);
+  if ( m_proc_win32proc_off )
+    printf("EPROCESS.Win32Process: %X\n", m_proc_win32proc_off);
   if ( eproc_ObjectTable_off )
     printf("EPROCESS.ObjectTable: %X\n", eproc_ObjectTable_off);
   if ( eproc_ProcessLock_off )
@@ -271,6 +273,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsGetProcessWow64Process");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_wow64_off);
+  exp = m_ed->find("PsGetProcessWin32Process");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva,m_proc_win32proc_off);
   exp = m_ed->find("PsGetProcessProtection");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_protection_off);
