@@ -45,6 +45,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_ObReferenceProcessHandleTable(PBYTE);
     int try_wmip_obj(PBYTE);
     int disasm_IoWMIQueryAllData(PBYTE);
+    int disasm_IoWMIDeviceObjectToProviderId(PBYTE, PBYTE &);
+    int disasm_WmipDoFindRegEntryByDevice(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;

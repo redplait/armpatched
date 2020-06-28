@@ -190,9 +190,19 @@ int ntoskrnl_hack::hack(int verbose)
     if ( m_MiGetPteAddress != NULL )
      res += disasm_MiGetPteAddress(m_MiGetPteAddress);
   }
+  // WMI data
   exp = m_ed->find("IoWMIQueryAllData");
   if ( exp != NULL )
     res += disasm_IoWMIQueryAllData(mz + exp->rva);
+  exp = m_ed->find("IoWMIDeviceObjectToProviderId");
+  if ( exp != NULL )
+  {
+    PBYTE res_call = NULL;
+    res += disasm_IoWMIDeviceObjectToProviderId(mz + exp->rva, res_call);
+    if ( res_call != NULL )
+      res += disasm_WmipDoFindRegEntryByDevice(res_call);
+  }
+
   exp = m_ed->find("IoRegisterPlugPlayNotification");
   if ( exp != NULL )
     res += disasm_IoRegisterPlugPlayNotification(mz + exp->rva);

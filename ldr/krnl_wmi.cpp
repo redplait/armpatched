@@ -2,6 +2,45 @@
 #include "krnl_hack.h"
 #include "cf_graph.h"
 
+int ntoskrnl_hack::disasm_IoWMIDeviceObjectToProviderId(PBYTE psp, PBYTE &out_call)
+{
+  if (!setup(psp))
+    return 0;
+  regs_pad used_regs;
+  int state = 0; // 0 - wait for KeAcquireSpinLockRaiseToDpc
+                 // 1 - call to WmipDoFindRegEntryByDevice
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if (!disasm(state) || is_ret())
+      break;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, ".data") )
+        used_regs.zero(get_reg(0));
+      continue;
+    }
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+      if ( caddr == aux_KeAcquireSpinLockRaiseToDpc )
+      {
+        state = 1;
+        m_WmipRegistrationSpinLock = (PBYTE)used_regs.get(AD_REG_X0);
+        continue;
+      }
+      if ( state )
+      {
+        out_call = caddr;
+        break;
+      }
+    }
+  }
+  return (m_WmipRegistrationSpinLock != NULL);
+}
+
 int ntoskrnl_hack::disasm_IoWMIQueryAllData(PBYTE psp)
 {
   std::set<PBYTE> calls;
@@ -57,6 +96,30 @@ int ntoskrnl_hack::disasm_IoWMIQueryAllData(PBYTE psp)
       return 1;
   }
   return 0;
+}
+
+int ntoskrnl_hack::disasm_WmipDoFindRegEntryByDevice(PBYTE psp)
+{
+  if (!setup(psp))
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 10; i++ )
+  {
+    if (!disasm() || is_ret())
+      break;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( in_section(what, ".data") )
+      {
+        m_WmipInUseRegEntryHead = what;
+        break;
+      }
+    }
+  }
+  return (m_WmipInUseRegEntryHead != NULL);
 }
 
 int ntoskrnl_hack::try_wmip_obj(PBYTE psp)
