@@ -105,20 +105,23 @@ int wmain(int argc, wchar_t **argv)
        continue;
      // dump PE directories
      printf("ImageBase: %I64X\n", f.image_base());
-     for ( const auto &diter : dir_get )
+     if ( verb_mode )
      {
-       DWORD addr = 0;
-       DWORD size = 0;
-       if ( ! (f.*(diter.first))(addr, size) )
-         continue;
-       printf("%s dir: rva %X size %X\n", diter.second, addr, size);
-       const one_section *where = f.find_section_rva(addr);
-       if ( NULL == where )
-         continue;
-       if (where->offset)
-         printf(" in section %s, file offset %X\n", where->name, where->offset + addr - where->va);
-       else
-         printf(" in section %s\n", where->name);
+       for ( const auto &diter : dir_get )
+       {
+         DWORD addr = 0;
+         DWORD size = 0;
+         if ( ! (f.*(diter.first))(addr, size) )
+           continue;
+         printf("%s dir: rva %X size %X\n", diter.second, addr, size);
+         const one_section *where = f.find_section_rva(addr);
+         if ( NULL == where )
+           continue;
+         if (where->offset)
+           printf(" in section %s, file offset %X\n", where->name, where->offset + addr - where->va);
+         else
+           printf(" in section %s\n", where->name);
+       }
      }
      // read exports
      exports_dict *ed = f.get_export_dict();

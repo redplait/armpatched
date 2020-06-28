@@ -126,6 +126,8 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_proc_win32proc_off;
     // wmi data
     PBYTE m_WmipGuidObjectType;
+    PBYTE m_WmipRegistrationSpinLock;
+    PBYTE m_WmipInUseRegEntryHead;
     // data from PsKernelRangeList
     PBYTE m_PspPicoProviderRoutines;
     DWORD m_PspPicoProviderRoutines_size;

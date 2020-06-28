@@ -34,7 +34,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
-  m_WmipGuidObjectType = NULL;
+  m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
   m_ExNPagedLookasideLock = NULL;
@@ -150,6 +150,10 @@ void ntoskrnl_hack::dump() const
   // wmi
   if ( m_WmipGuidObjectType != NULL )
     printf("WmipGuidObjectType: %p\n", PVOID(m_WmipGuidObjectType - mz));
+  if ( m_WmipRegistrationSpinLock != NULL )
+    printf("WmipRegistrationSpinLock: %p\n", PVOID(m_WmipRegistrationSpinLock - mz));
+  if ( m_WmipInUseRegEntryHead != NULL )
+    printf("WmipInUseRegEntryHead: %p\n", PVOID(m_WmipInUseRegEntryHead - mz));
   // kpte
   if ( m_MiGetPteAddress != NULL )
     printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));

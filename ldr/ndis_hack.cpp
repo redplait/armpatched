@@ -5,6 +5,8 @@ void ndis_hack::zero_data()
 {
   m_ndisProtocolListLock = m_ndisProtocolList = NULL;
   m_ndisFilterDriverListLock = m_ndisFilterDriverList = NULL;
+  m_ndisMiniDriverListLock = m_ndisMiniDriverList = NULL;
+  NDIS_M_DRIVER_BLOCK_size = NDIS_PROTOCOL_BLOCK_size = 0;
 }
 
 void ndis_hack::dump() const
@@ -14,10 +16,20 @@ void ndis_hack::dump() const
     printf("ndisProtocolListLock: %p\n", PVOID(m_ndisProtocolListLock - mz));
   if ( m_ndisProtocolList != NULL )
     printf("ndisProtocolList: %p\n", PVOID(m_ndisProtocolList - mz));
+  if ( NDIS_PROTOCOL_BLOCK_size )
+    printf("NDIS_PROTOCOL_BLOCK size: %X\n", NDIS_PROTOCOL_BLOCK_size);
+
   if ( m_ndisFilterDriverListLock != NULL )
     printf("ndisFilterDriverListLock: %p\n", PVOID(m_ndisFilterDriverListLock - mz));
   if ( m_ndisFilterDriverList != NULL )
     printf("ndisFilterDriverList: %p\n", PVOID(m_ndisFilterDriverList - mz));
+
+  if ( m_ndisMiniDriverListLock != NULL )
+    printf("ndisMiniDriverListLock: %p\n", PVOID(m_ndisMiniDriverListLock - mz));
+  if ( m_ndisMiniDriverList != NULL )
+    printf("ndisMiniDriverList: %p\n", PVOID(m_ndisMiniDriverList - mz));
+  if ( NDIS_M_DRIVER_BLOCK_size )
+    printf("NDIS_M_DRIVER_BLOCK size: %X\n", NDIS_M_DRIVER_BLOCK_size);
 }
 
 int drv_hack::is_inside_IAT(PBYTE psp) const
@@ -55,6 +67,7 @@ int ndis_hack::hack(int verbose)
     return 0;
   int res = 0;
   PBYTE mz = m_pe->base_addr();
+
   const export_item *exp = m_ed->find("NdisDeregisterProtocolDriver");
   if ( exp != NULL )
   {
@@ -71,6 +84,13 @@ int ndis_hack::hack(int verbose)
       }
     }
   }
+  if ( m_ndisProtocolList != NULL )
+  {
+    exp = m_ed->find("NdisRegisterProtocolDriver");
+    if ( exp != NULL )
+      res += hack_alloc(mz + exp->rva, 0x6270444E, NDIS_PROTOCOL_BLOCK_size);
+  }
+
   exp = m_ed->find("NdisFRegisterFilterDriver");
   if ( exp != NULL )
     res += hack_lock_list(mz + exp->rva, 300, m_ndisFilterDriverListLock, m_ndisFilterDriverList);
@@ -156,3 +176,67 @@ int ndis_hack::hack_lock_list(PBYTE psp, DWORD num, PBYTE &lock, PBYTE &list)
   }
   return (lock != NULL) && (list != NULL);
 }
+
+int ndis_hack::hack_alloc(PBYTE psp, DWORD tag, DWORD &out_size)
+{
+  regs_pad used_regs;
+  if ( !setup(psp) )
+    return 0;
+  int state = 0;
+  for ( DWORD i = 0; i < 200; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    PBYTE addr;
+    if ( is_b_jimm(addr) )
+      break;
+    if ( is_adrp(used_regs) )
+      continue;
+    // ldr reg, [const pool]
+    if ( is_ldr_off() ) 
+    {
+      PDWORD what = (PDWORD)m_dis.operands[1].op_imm.bits;
+      if ( in_section((PBYTE)what, ".text") )
+      {
+        DWORD value = *what;
+        used_regs.adrp(get_reg(0), value);
+        state = 1;
+      }
+      continue;
+    }
+    if ( is_add() )
+    {
+      int r0 = get_reg(0);
+      int r1 = get_reg(1);
+      if ( state )
+      {
+        used_regs.adrp(r0, m_dis.operands[2].op_imm.bits);
+        state = 0;
+        continue;
+      }
+      used_regs.add(r0, r1, m_dis.operands[2].op_imm.bits);
+      continue;
+    }
+    if ( is_ldar(used_regs) )
+      continue;
+    if ( is_mov_rr(used_regs) )
+    {
+      continue;
+    }
+    if ( is_bl_reg() )
+    {
+      PBYTE what = (PBYTE)used_regs.get(get_reg(0));
+      if ( is_iat_func(what, "ExAllocatePoolWithTag") ||
+           is_iat_func(what, "ExAllocatePool2")
+         )
+      {
+        if ( tag != used_regs.get(AD_REG_X2) )
+          continue;
+        out_size = used_regs.get(AD_REG_X1);
+        break;
+      }
+    }
+  }
+  return (out_size != 0);
+}
+
