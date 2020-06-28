@@ -52,4 +52,5 @@ class ndis_hack: public drv_hack
     // miniports - from ndisFindMiniportOnGlobalList
     PBYTE m_ndisMiniportListLock;
     PBYTE m_ndisMiniportList;
+    DWORD m_NextGlobalMiniport;
 };

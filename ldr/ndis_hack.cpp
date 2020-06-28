@@ -9,6 +9,7 @@ void ndis_hack::zero_data()
   m_ndisMiniDriverListLock = m_ndisMiniDriverList = NULL;
   m_ndisMiniportListLock = m_ndisMiniportList = NULL;
   NDIS_M_DRIVER_BLOCK_size = NDIS_PROTOCOL_BLOCK_size = 0;
+  m_NextGlobalMiniport = 0;
 }
 
 void ndis_hack::dump() const
@@ -37,6 +38,8 @@ void ndis_hack::dump() const
     printf("ndisMiniportListLock: %p\n", PVOID(m_ndisMiniportListLock - mz));
   if ( m_ndisMiniportList != NULL )
     printf("ndisMiniportList: %p\n", PVOID(m_ndisMiniportList - mz));
+  if ( m_NextGlobalMiniport )
+    printf("NDIS_MINIPORT_BLOCK.NextGlobalMiniport: %X\n", m_NextGlobalMiniport);
 }
 
 int drv_hack::is_inside_IAT(PBYTE psp) const
@@ -378,6 +381,7 @@ int ndis_hack::hack_miniports(PBYTE psp)
       edge_n++;
       int state = 0;
       regs_pad used_regs;
+      DWORD base_reg = 0;
       for (DWORD i = 0; i < 100; i++)
       {
         if (!disasm(state) || is_ret())
@@ -414,25 +418,37 @@ int ndis_hack::hack_miniports(PBYTE psp)
           }
           continue;
         }
-        if ( state && is_ldr() ) 
+        if ( (1 == state) && is_ldr() ) 
         {
            PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
            if ( in_section(what, ".data") )
            {
              m_ndisMiniportList = what;
-             goto end;
+             base_reg = get_reg(0);
+             state = 2;
            }
+           continue;
         }
-        if ( state && is_ldr_rr() )
+        if ( (1 == state) && is_ldr_rr() )
         {
            PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
            if ( in_section(what, ".data") )
            {
              m_ndisMiniportList = what;
-             goto end;
+             base_reg = get_reg(0);
+             state = 2;
            }
+           continue;
+        }
+        // to extract NextGlobalMiniport we need instruction like LDR base_reg, [base_reg + offset]
+        if ( (2 == state) && is_ldr() && (base_reg == get_reg(0)) && (base_reg == get_reg(1)) )
+        {
+          m_NextGlobalMiniport = (DWORD)m_dis.operands[2].op_imm.bits;
+          goto end;
         }
       }
+      if ( state )
+        goto end;
       cgraph.add_range(psp, m_psp - psp);
     }
     // prepare for next edge generation
