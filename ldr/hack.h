@@ -210,6 +210,7 @@ class arm64_hack
    }
    int is_add() const;
    int is_ldr() const;
+   int is_ldr_rr() const;
    int is_ldr_off() const;
    int is_ldrb() const;
    int is_ldrsb() const;

@@ -1,11 +1,13 @@
 #include "stdafx.h"
 #include "ndis_hack.h"
+#include "cf_graph.h"
 
 void ndis_hack::zero_data()
 {
   m_ndisProtocolListLock = m_ndisProtocolList = NULL;
   m_ndisFilterDriverListLock = m_ndisFilterDriverList = NULL;
   m_ndisMiniDriverListLock = m_ndisMiniDriverList = NULL;
+  m_ndisMiniportListLock = m_ndisMiniportList = NULL;
   NDIS_M_DRIVER_BLOCK_size = NDIS_PROTOCOL_BLOCK_size = 0;
 }
 
@@ -30,6 +32,11 @@ void ndis_hack::dump() const
     printf("ndisMiniDriverList: %p\n", PVOID(m_ndisMiniDriverList - mz));
   if ( NDIS_M_DRIVER_BLOCK_size )
     printf("NDIS_M_DRIVER_BLOCK size: %X\n", NDIS_M_DRIVER_BLOCK_size);
+
+  if ( m_ndisMiniportListLock != NULL )
+    printf("ndisMiniportListLock: %p\n", PVOID(m_ndisMiniportListLock - mz));
+  if ( m_ndisMiniportList != NULL )
+    printf("ndisMiniportList: %p\n", PVOID(m_ndisMiniportList - mz));
 }
 
 int drv_hack::is_inside_IAT(PBYTE psp) const
@@ -113,6 +120,14 @@ int ndis_hack::hack(int verbose)
     }
   }
 
+  exp = m_ed->find("NdisIMInitializeDeviceInstanceEx");
+  if ( exp != NULL )
+  {
+    PBYTE res_addr = NULL;
+    res += find_ndisFindMiniportOnGlobalList(mz + exp->rva, res_addr);
+    if ( res_addr != NULL )
+      res += hack_miniports(res_addr);
+  }
   return res;
 }
 
@@ -308,4 +323,123 @@ int ndis_hack::hack_alloc_ext(PBYTE psp, DWORD &out_size)
     }
   }
   return (out_size != 0);
+}
+
+int ndis_hack::find_ndisFindMiniportOnGlobalList(PBYTE psp, PBYTE &out_res)
+{
+  regs_pad used_regs;
+  if ( !setup(psp) )
+    return 0;
+  int state = 0; // 0 - wait for KeGetCurrentThread
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !is_inside_IAT(what) )
+        used_regs.zero(get_reg(0));
+    }
+    if ( is_ldar(used_regs) )
+      continue;
+    if ( is_bl_reg() )
+    {
+      PBYTE what = (PBYTE)used_regs.get(get_reg(0));
+      if ( is_iat_func(what, "KeGetCurrentThread") )
+        state = 1;
+    }
+    if ( state && is_bl_jimm(out_res) )
+      break;
+  }
+  return (out_res != NULL);
+}
+
+int ndis_hack::hack_miniports(PBYTE psp)
+{
+  cf_graph<PBYTE> cgraph;
+  std::list<PBYTE> addr_list;
+  addr_list.push_back(psp);
+  int edge_n = 0;
+  int edge_gen = 0;
+  while (edge_gen < 100)
+  {
+    for (auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter)
+    {
+      psp = *iter;
+      if (m_verbose)
+        printf("hack_miniports: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
+      if (cgraph.in_ranges(psp))
+        continue;
+      if (!setup(psp))
+        continue;
+      edge_n++;
+      int state = 0;
+      regs_pad used_regs;
+      for (DWORD i = 0; i < 100; i++)
+      {
+        if (!disasm(state) || is_ret())
+          break;
+        if ( check_jmps(cgraph) )
+          continue;
+        if ( is_adrp(used_regs) )
+          continue;
+        if ( is_ldar(used_regs) )
+          continue;
+        if ( is_add() )
+        {
+          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( !state )
+          {
+             if ( !is_inside_IAT(what) )
+             {
+               if ( !in_section(what, ".data") )
+                 used_regs.zero(get_reg(0));
+             }
+          }
+          continue;
+        }
+        // call reg
+        if ( is_bl_reg() )
+        {
+          if ( state )
+            goto end;
+          PBYTE what = (PBYTE)used_regs.get(get_reg(0));
+          if ( is_iat_func(what, "KeAcquireSpinLockRaiseToDpc") )
+          {
+            state = 1;
+            m_ndisMiniportListLock = (PBYTE)used_regs.get(AD_REG_X0);
+          }
+          continue;
+        }
+        if ( state && is_ldr() ) 
+        {
+           PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+           if ( in_section(what, ".data") )
+           {
+             m_ndisMiniportList = what;
+             goto end;
+           }
+        }
+        if ( state && is_ldr_rr() )
+        {
+           PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+           if ( in_section(what, ".data") )
+           {
+             m_ndisMiniportList = what;
+             goto end;
+           }
+        }
+      }
+      cgraph.add_range(psp, m_psp - psp);
+    }
+    // prepare for next edge generation
+    edge_gen++;
+    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
+      break;    
+  }
+end:
+  return (m_ndisMiniportListLock != NULL) && (m_ndisMiniportList != NULL);
 }
