@@ -20,6 +20,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExAcquirePushLockExclusiveEx", aux_ExAcquirePushLockExclusiveEx);
   init_aux("ObReferenceObjectByPointer", aux_ObReferenceObjectByPointer);
   init_aux("ObReferenceObjectByHandle", aux_ObReferenceObjectByHandle);
+  init_aux("ObOpenObjectByPointer", aux_ObOpenObjectByPointer);
   init_aux("ExAcquireFastMutexUnsafe", aux_ExAcquireFastMutexUnsafe);
   init_aux("ExAcquireFastMutex", aux_ExAcquireFastMutex);
   init_aux("KeAcquireGuardedMutex", aux_KeAcquireGuardedMutex);
@@ -34,6 +35,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
+  m_PspSiloMonitorLock = m_PspSiloMonitorList = NULL;
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
@@ -46,7 +48,7 @@ void ntoskrnl_hack::zero_data()
   m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = m_proc_wow64_off = m_proc_win32proc_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
-  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = NULL;
+  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = NULL;
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
   m_PspCreateThreadNotifyRoutine = m_PspCreateThreadNotifyRoutineCount = NULL;
@@ -97,6 +99,8 @@ void ntoskrnl_hack::dump() const
     printf("ObpSymbolicLinkObjectType: %p\n", PVOID(m_ObpSymbolicLinkObjectType - mz));
   if ( m_AlpcPortObjectType != NULL )
     printf("AlpcPortObjectType: %p\n", PVOID(m_AlpcPortObjectType - mz));
+  if ( m_DbgkDebugObjectType != NULL )
+    printf("DbgkDebugObjectType: %p\n", PVOID(m_DbgkDebugObjectType - mz));
   if ( m_PsWin32CallBack != NULL )
     printf("PsWin32CallBack: %p\n", PVOID(m_PsWin32CallBack - mz));
   if ( m_ExpHostListLock != NULL )
@@ -154,6 +158,11 @@ void ntoskrnl_hack::dump() const
     printf("WmipRegistrationSpinLock: %p\n", PVOID(m_WmipRegistrationSpinLock - mz));
   if ( m_WmipInUseRegEntryHead != NULL )
     printf("WmipInUseRegEntryHead: %p\n", PVOID(m_WmipInUseRegEntryHead - mz));
+  // silo
+  if ( m_PspSiloMonitorLock != NULL )
+    printf("PspSiloMonitorLock: %p\n", PVOID(m_PspSiloMonitorLock - mz));
+  if ( m_PspSiloMonitorList != NULL )
+    printf("PspSiloMonitorList: %p\n", PVOID(m_PspSiloMonitorList - mz));
   // kpte
   if ( m_MiGetPteAddress != NULL )
     printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));
@@ -225,7 +234,11 @@ int ntoskrnl_hack::hack(int verbose)
     PBYTE addr = NULL;
     if ( get_nt_addr("ZwQuerySymbolicLinkObject", addr) )
       res += hack_obref_type(addr, m_ObpSymbolicLinkObjectType, ".data");
+//    if ( get_nt_addr("ZwWaitForDebugEvent", addr) )
+//      res += hack_obref_type(addr, m_DbgkDebugObjectType, "ALMOSTRO");
   }
+  if ( m_DbgkDebugObjectType == NULL )
+    res += find_DbgkDebugObjectType_by_sign(mz, 0xC0000712);
   if ( m_KeLoaderBlock != NULL )
   {
     res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000009);
@@ -306,6 +319,45 @@ int ntoskrnl_hack::hack(int verbose)
     res += hack_x0_ldr(mz + exp->rva, m_proc_debport_off);
   res += try_find_PsKernelRangeList(mz);
   return res;
+}
+
+int ntoskrnl_hack::find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign)
+{
+  // try search in PAGE section
+  const one_section *s = m_pe->find_section_by_name("PAGE");
+  if ( NULL == s )
+    return 0;
+  PBYTE start = mz + s->va;
+  PBYTE end = start + s->size;
+  bm_search srch((const PBYTE)&sign, sizeof(sign));
+  PBYTE curr = start;
+  std::list<PBYTE> founds;
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    try
+    {
+      founds.push_back(fres);
+    } catch(std::bad_alloc)
+    { return 0; }
+    curr = fres + sizeof(sign);
+  }
+  if ( founds.empty() )
+    return 0;
+  for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
+  {
+    PBYTE func = find_pdata(*citer);
+#ifdef _DEBUG
+    printf("find_DbgkDebugObjectType_by_sign: found at %p, func %p\n", *citer - mz, func);
+#endif/* _DEBUG */
+    if ( NULL == func )
+      continue;
+    if ( hack_obref_type(func, m_DbgkDebugObjectType, "ALMOSTRO") )
+      return 1;
+  }
+  return 0;
 }
 
 int ntoskrnl_hack::find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign)
@@ -717,6 +769,72 @@ int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
   return (lock != NULL) && (list != NULL);
 }
 
+int ntoskrnl_hack::hack_obopen_type(PBYTE psp, PBYTE &off, const char *s_name)
+{
+  if ( !setup(psp) )
+    return 0;
+  cf_graph<PBYTE> cgraph;
+  std::list<PBYTE> addr_list;
+  addr_list.push_back(psp);
+  int edge_n = 0;
+  int edge_gen = 0;
+  off = NULL;
+  while( edge_gen < 100 )
+  {
+    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
+    {
+      psp = *iter;
+      if ( m_verbose )
+        printf("hack_obopen_type: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
+      if ( cgraph.in_ranges(psp) )
+        continue;
+      if ( !setup(psp) )
+        continue;
+      regs_pad used_regs;
+      edge_n++;
+      for ( DWORD i = 0; i < 100; i++ )
+      {
+        if ( !disasm() || is_ret() )
+          break;
+        if ( check_jmps(cgraph) )
+          continue;
+        // check for last b xxx
+        PBYTE b_addr = NULL;
+        if ( is_b_jimm(b_addr) )
+        {
+          cgraph.add(b_addr);
+          break;
+        }
+        if ( is_adrp(used_regs) )
+          continue;
+        if ( is_ldr() ) 
+        {
+          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( !in_section(what, s_name) )
+            used_regs.zero(get_reg(0));
+        }
+        // check for call
+        PBYTE caddr = NULL;
+        if ( is_bl_jimm(caddr) )
+        {
+           if ( caddr == aux_ObOpenObjectByPointer )
+           {
+             off = (PBYTE)used_regs.get(AD_REG_X4);
+             goto end;
+           }
+        }
+      }
+      cgraph.add_range(psp, m_psp - psp);
+    }
+    // prepare for next edge generation
+    edge_gen++;
+    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
+      break;    
+  }
+end:
+  return (off != NULL);
+}
+
 int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name)
 {
   if ( !setup(psp) )
@@ -781,7 +899,6 @@ int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name)
   }
 end:
   return (off != NULL);
-
 }
 
 int ntoskrnl_hack::hack_sdt(PBYTE psp)

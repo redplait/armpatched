@@ -35,8 +35,10 @@ class ntoskrnl_hack: public arm64_hack
     int hack_sdt(PBYTE psp);
     int hack_ob_types(PBYTE psp);
     int hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name);
+    int hack_obopen_type(PBYTE psp, PBYTE &off, const char *s_name);
     int hack_reg_ext(PBYTE psp);
     int hask_se_logon(PBYTE psp);
+    int find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign);
     int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
     int disasm_SepInitializeCodeIntegrity(PBYTE, PBYTE where);
     int disasm_IoRegisterPlugPlayNotification(PBYTE);
@@ -56,6 +58,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExAcquirePushLockExclusiveEx;
     PBYTE aux_ObReferenceObjectByHandle;
     PBYTE aux_ObReferenceObjectByPointer;
+    PBYTE aux_ObOpenObjectByPointer;
     PBYTE aux_ExAcquireFastMutexUnsafe;
     PBYTE aux_ExAcquireFastMutex;
     PBYTE aux_KeAcquireGuardedMutex;
@@ -126,10 +129,15 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_proc_debport_off;
     DWORD m_proc_wow64_off;
     DWORD m_proc_win32proc_off;
+    // DbgkDebugObjectType - from NtCreateDebugObject
+    PBYTE m_DbgkDebugObjectType;
     // wmi data
     PBYTE m_WmipGuidObjectType;
     PBYTE m_WmipRegistrationSpinLock;
     PBYTE m_WmipInUseRegEntryHead;
+    // silo data
+    PBYTE m_PspSiloMonitorLock;
+    PBYTE m_PspSiloMonitorList;
     // data from PsKernelRangeList
     PBYTE m_PspPicoProviderRoutines;
     DWORD m_PspPicoProviderRoutines_size;
