@@ -33,6 +33,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExAllocatePoolWithTag", aux_ExAllocatePoolWithTag);
   init_aux("ExEnumHandleTable", aux_ExEnumHandleTable);
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
+  init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
   // zero output data
   m_PspSiloMonitorLock = m_PspSiloMonitorList = NULL;
@@ -247,6 +248,9 @@ int ntoskrnl_hack::hack(int verbose)
     if ( m_SeCiCallbacks == NULL )
       res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000007);
   }
+  exp = m_ed->find("PsStartSiloMonitor");
+  if ( exp != NULL )
+    res += hack_start_silo(mz + exp->rva);
   exp = m_ed->find("ExRegisterExtension");
   if ( exp != NULL )
     res += hack_reg_ext(mz + exp->rva);

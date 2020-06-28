@@ -49,6 +49,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_IoWMIQueryAllData(PBYTE);
     int disasm_IoWMIDeviceObjectToProviderId(PBYTE, PBYTE &);
     int disasm_WmipDoFindRegEntryByDevice(PBYTE);
+    int hack_start_silo(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -67,6 +68,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_memset;
     PBYTE aux_ExEnumHandleTable;
     PBYTE aux_ExfUnblockPushLock;
+    PBYTE aux_PsInitialSystemProcess;
     // not exported
     PBYTE aux_ExAllocateCallBack;
     PBYTE aux_ExCompareExchangeCallBack;
