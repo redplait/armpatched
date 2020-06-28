@@ -53,4 +53,7 @@ class ndis_hack: public drv_hack
     PBYTE m_ndisMiniportListLock;
     PBYTE m_ndisMiniportList;
     DWORD m_NextGlobalMiniport;
+    // ndis!_NDIS_COMMON_OPEN_BLOCK - from NdisOpenAdapterEx
+    PBYTE m_ndisGlobalOpenListLock;
+    PBYTE m_ndisGlobalOpenList;
 };

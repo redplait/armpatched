@@ -8,6 +8,7 @@ void ndis_hack::zero_data()
   m_ndisFilterDriverListLock = m_ndisFilterDriverList = NULL;
   m_ndisMiniDriverListLock = m_ndisMiniDriverList = NULL;
   m_ndisMiniportListLock = m_ndisMiniportList = NULL;
+  m_ndisGlobalOpenListLock = m_ndisGlobalOpenList = NULL;
   NDIS_M_DRIVER_BLOCK_size = NDIS_PROTOCOL_BLOCK_size = 0;
   m_NextGlobalMiniport = 0;
 }
@@ -40,6 +41,11 @@ void ndis_hack::dump() const
     printf("ndisMiniportList: %p\n", PVOID(m_ndisMiniportList - mz));
   if ( m_NextGlobalMiniport )
     printf("NDIS_MINIPORT_BLOCK.NextGlobalMiniport: %X\n", m_NextGlobalMiniport);
+
+  if ( m_ndisGlobalOpenListLock != NULL )
+    printf("ndisGlobalOpenListLock: %p\n", PVOID(m_ndisGlobalOpenListLock - mz));
+  if ( m_ndisGlobalOpenList != NULL )
+    printf("ndisGlobalOpenList: %p\n", PVOID(m_ndisGlobalOpenList - mz));
 }
 
 int drv_hack::is_inside_IAT(PBYTE psp) const
@@ -131,6 +137,11 @@ int ndis_hack::hack(int verbose)
     if ( res_addr != NULL )
       res += hack_miniports(res_addr);
   }
+
+  exp = m_ed->find("NdisOpenAdapterEx");
+  if ( exp != NULL )
+    res += hack_lock_list(mz + exp->rva, 300, m_ndisGlobalOpenListLock, m_ndisGlobalOpenList);
+
   return res;
 }
 
