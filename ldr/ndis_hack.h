@@ -35,6 +35,7 @@ class ndis_hack: public drv_hack
     void collect_calls(PBYTE psp, std::set<PBYTE> &, const char *s_name);
     int hack_lock_list(PBYTE psp, DWORD num, PBYTE &lock, PBYTE &list);
     int hack_alloc(PBYTE psp, DWORD tag, DWORD &out_size);
+    int hack_alloc_ext(PBYTE psp, DWORD &out_size);
     // output data
     PBYTE m_ndisProtocolListLock;
     PBYTE m_ndisProtocolList;
@@ -46,5 +47,4 @@ class ndis_hack: public drv_hack
     PBYTE m_ndisMiniDriverListLock;
     PBYTE m_ndisMiniDriverList;
     DWORD NDIS_M_DRIVER_BLOCK_size;
-    // from 
 };

@@ -94,6 +94,25 @@ int ndis_hack::hack(int verbose)
   exp = m_ed->find("NdisFRegisterFilterDriver");
   if ( exp != NULL )
     res += hack_lock_list(mz + exp->rva, 300, m_ndisFilterDriverListLock, m_ndisFilterDriverList);
+
+  exp = m_ed->find("NdisMRegisterMiniportDriver");
+  if ( exp != NULL )
+  {
+    std::set<PBYTE> calls;
+    collect_calls(mz + exp->rva, calls, ".text");
+    for ( auto citer = calls.cbegin(); citer != calls.cend(); ++citer )
+    {
+      if ( verbose )
+        printf("Try function at %p\n", *citer);
+      if ( hack_lock_list(*citer, 200, m_ndisMiniDriverListLock, m_ndisMiniDriverList) )
+      {
+        res++;
+        res += hack_alloc_ext(*citer, NDIS_M_DRIVER_BLOCK_size);
+        break;
+      }
+    }
+  }
+
   return res;
 }
 
@@ -177,6 +196,8 @@ int ndis_hack::hack_lock_list(PBYTE psp, DWORD num, PBYTE &lock, PBYTE &list)
   return (lock != NULL) && (list != NULL);
 }
 
+// ExAllocatePool2 - x1 size x2 - tag
+// ExAllocatePoolWithTag - same as above
 int ndis_hack::hack_alloc(PBYTE psp, DWORD tag, DWORD &out_size)
 {
   regs_pad used_regs;
@@ -191,7 +212,10 @@ int ndis_hack::hack_alloc(PBYTE psp, DWORD tag, DWORD &out_size)
     if ( is_b_jimm(addr) )
       break;
     if ( is_adrp(used_regs) )
+    {
+      state = 1;
       continue;
+    }
     // ldr reg, [const pool]
     if ( is_ldr_off() ) 
     {
@@ -200,7 +224,6 @@ int ndis_hack::hack_alloc(PBYTE psp, DWORD tag, DWORD &out_size)
       {
         DWORD value = *what;
         used_regs.adrp(get_reg(0), value);
-        state = 1;
       }
       continue;
     }
@@ -208,21 +231,19 @@ int ndis_hack::hack_alloc(PBYTE psp, DWORD tag, DWORD &out_size)
     {
       int r0 = get_reg(0);
       int r1 = get_reg(1);
-      if ( state )
+      if ( !state )
       {
-        used_regs.adrp(r0, m_dis.operands[2].op_imm.bits);
-        state = 0;
+        used_regs.adrp(r0, m_dis.operands[2].op_imm.bits);        
         continue;
       }
       used_regs.add(r0, r1, m_dis.operands[2].op_imm.bits);
+      state = 0;
       continue;
     }
     if ( is_ldar(used_regs) )
       continue;
     if ( is_mov_rr(used_regs) )
-    {
       continue;
-    }
     if ( is_bl_reg() )
     {
       PBYTE what = (PBYTE)used_regs.get(get_reg(0));
@@ -240,3 +261,51 @@ int ndis_hack::hack_alloc(PBYTE psp, DWORD tag, DWORD &out_size)
   return (out_size != 0);
 }
 
+// IoAllocateDriverObjectExtension: x1 - ClientIdentificationAddress (can be used as tag), x2 - size
+int ndis_hack::hack_alloc_ext(PBYTE psp, DWORD &out_size)
+{
+  regs_pad used_regs;
+  if ( !setup(psp) )
+    return 0;
+  int state = 0;
+  for ( DWORD i = 0; i < 200; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    PBYTE addr;
+    if ( is_b_jimm(addr) )
+      break;
+    if ( is_adrp(used_regs) )
+    {
+      state = 1;
+      continue;
+    }
+    if ( is_add() )
+    {
+      int r0 = get_reg(0);
+      int r1 = get_reg(1);
+      if ( !state )
+      {
+        used_regs.adrp(r0, m_dis.operands[2].op_imm.bits);        
+        continue;
+      }
+      used_regs.add(r0, r1, m_dis.operands[2].op_imm.bits);
+      state = 0;
+      continue;
+    }
+    if ( is_ldar(used_regs) )
+      continue;
+    if ( is_mov_rr(used_regs) )
+      continue;
+    if ( is_bl_reg() )
+    {
+      PBYTE what = (PBYTE)used_regs.get(get_reg(0));
+      if ( is_iat_func(what, "IoAllocateDriverObjectExtension") )
+      {
+        out_size = used_regs.get(AD_REG_X2);
+        break;
+      }
+    }
+  }
+  return (out_size != 0);
+}
