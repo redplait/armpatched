@@ -15,6 +15,40 @@ DWORD tp_hash(const char *name)
   return res;
 }
 
+int ntoskrnl_hack::find_stab_types(PBYTE mz)
+{
+  int res = 0;
+  DWORD val = tp_hash("NtOpenKeyTransactedEx");
+  std::map<DWORD, PBYTE>::const_iterator c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += hack_obref_type(c->second, m_CmRegistryTransactionType, ".data");
+  val = tp_hash("NtWaitForKeyedEvent");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += hack_obref_type(c->second, m_ExpKeyedEventObjectType, "ALMOSTRO");
+  val = tp_hash("NtWaitForWorkViaWorkerFactory");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += hack_obref_type(c->second, m_ExpWorkerFactoryObjectType, "ALMOSTRO");
+  val = tp_hash("NtCancelWaitCompletionPacket");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += hack_obref_type(c->second, m_IopWaitCompletionPacketObjectType, "ALMOSTRO");
+  val = tp_hash("NtDeletePrivateNamespace");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += hack_obref_type(c->second, m_ObpDirectoryObjectType, ".data");
+  val = tp_hash("NtStartProfile");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += hack_obref_type(c->second, m_ExProfileObjectType, "ALMOSTRO");
+  val = tp_hash("NtTraceEvent");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += hack_obref_type(c->second, m_EtwpRegistrationObjectType, "ALMOSTRO");
+  return res;
+}
+
 struct tp_sdt
 {
   DWORD hash;

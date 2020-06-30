@@ -42,6 +42,7 @@ void ntoskrnl_hack::zero_data()
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
+  m_CmRegistryTransactionType = m_ExpKeyedEventObjectType = m_ExpWorkerFactoryObjectType = m_IopWaitCompletionPacketObjectType = m_ObpDirectoryObjectType = NULL;
   m_ExNPagedLookasideLock = NULL;
   m_ExNPagedLookasideListHead = NULL;
   m_ExPagedLookasideLock = NULL;
@@ -51,7 +52,7 @@ void ntoskrnl_hack::zero_data()
   m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = m_proc_wow64_off = m_proc_win32proc_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
-  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = NULL;
+  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = m_EtwpRegistrationObjectType = NULL;
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
   m_PspCreateThreadNotifyRoutine = m_PspCreateThreadNotifyRoutineCount = NULL;
@@ -108,6 +109,20 @@ void ntoskrnl_hack::dump() const
     printf("ObTypeIndexTable: %p\n", PVOID(m_ObTypeIndexTable - mz));
   if ( m_ObpSymbolicLinkObjectType != NULL ) 
     printf("ObpSymbolicLinkObjectType: %p\n", PVOID(m_ObpSymbolicLinkObjectType - mz));
+  if ( m_CmRegistryTransactionType != NULL )
+    printf("CmRegistryTransactionType: %p\n", PVOID(m_CmRegistryTransactionType - mz));
+  if ( m_ExpKeyedEventObjectType != NULL )
+    printf("ExpKeyedEventObjectType: %p\n", PVOID(m_ExpKeyedEventObjectType - mz));
+  if ( m_ExpWorkerFactoryObjectType != NULL )
+    printf("ExpWorkerFactoryObjectType: %p\n", PVOID(m_ExpWorkerFactoryObjectType - mz));
+  if ( m_IopWaitCompletionPacketObjectType != NULL )
+    printf("IopWaitCompletionPacketObjectType: %p\n", PVOID(m_IopWaitCompletionPacketObjectType - mz));
+  if ( m_ObpDirectoryObjectType != NULL )
+    printf("ObpDirectoryObjectType: %p\n", PVOID(m_ObpDirectoryObjectType - mz));
+  if ( m_ExProfileObjectType != NULL )
+    printf("ExProfileObjectType: %p\n", PVOID(m_ExProfileObjectType - mz));
+  if ( m_EtwpRegistrationObjectType != NULL )
+    printf("EtwpRegistrationObjectType: %p\n", PVOID(m_EtwpRegistrationObjectType - mz));
   if ( m_AlpcPortObjectType != NULL )
     printf("AlpcPortObjectType: %p\n", PVOID(m_AlpcPortObjectType - mz));
   if ( m_DbgkDebugObjectType != NULL )
@@ -244,6 +259,9 @@ int ntoskrnl_hack::hack(int verbose)
    { }
   if ( m_KiTpHashTable != NULL )
     res += find_trace_sdt(mz);
+
+  if ( !m_stab.empty() )
+    res += find_stab_types(mz);
 
   // ssdt
   DWORD ep = m_pe->entry_point();

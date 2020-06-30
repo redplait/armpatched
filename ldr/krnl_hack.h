@@ -27,6 +27,7 @@ class ntoskrnl_hack: public arm64_hack
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
     int find_trace_sdt(PBYTE mz);
+    int find_stab_types(PBYTE mz);
     int hack_ex_cbs_aux(PBYTE psp);
     int hack_timers(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
@@ -116,6 +117,14 @@ class ntoskrnl_hack: public arm64_hack
     // obtypes cookie & table
     PBYTE m_ObHeaderCookie;
     PBYTE m_ObTypeIndexTable;
+    // some non-exported object types
+    PBYTE m_CmRegistryTransactionType;
+    PBYTE m_ExpKeyedEventObjectType;
+    PBYTE m_ExpWorkerFactoryObjectType;
+    PBYTE m_IopWaitCompletionPacketObjectType;
+    PBYTE m_ObpDirectoryObjectType;
+    PBYTE m_ExProfileObjectType;
+    PBYTE m_EtwpRegistrationObjectType;
     // object tables data
     DWORD eproc_ObjectTable_off;
     DWORD ObjectTable_pushlock_off;
