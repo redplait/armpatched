@@ -34,7 +34,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExEnumHandleTable", aux_ExEnumHandleTable);
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
-  aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = NULL;
+  aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = NULL;
   // zero output data
   m_PspSiloMonitorLock = m_PspSiloMonitorList = NULL;
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
@@ -64,6 +64,9 @@ void ntoskrnl_hack::zero_data()
 void ntoskrnl_hack::dump() const
 {
   PBYTE mz = m_pe->base_addr();
+  if ( aux_dispatch_icall != NULL )
+    printf("guard_dispatch_icall: %p\n", PVOID(aux_dispatch_icall - mz));
+  // lookaside lists & locks
   if ( m_ExNPagedLookasideLock != NULL )
     printf("ExNPagedLookasideLock: %p\n", PVOID(m_ExNPagedLookasideLock - mz));
   if ( m_ExNPagedLookasideListHead != NULL )
@@ -179,7 +182,12 @@ int ntoskrnl_hack::hack(int verbose)
     return 0;
   int res = 0;
   PBYTE mz = m_pe->base_addr();
-  const export_item *exp = m_ed->find("ExInitializePagedLookasideList");
+  // first resolve guard_dispatch_icall
+  const export_item *exp = m_ed->find("RtlGetCompressionWorkSpaceSize");
+  if ( exp != NULL )
+   res += find_first_jmp(mz + exp->rva, aux_dispatch_icall);
+  // lookaside lists & locks
+  exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )
   {
     PBYTE next = NULL;

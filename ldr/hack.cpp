@@ -225,7 +225,7 @@ int arm64_hack::find_first_jmp(PBYTE addr, PBYTE &out)
 {
   if ( !setup(addr) )
     return 0;
-  for ( DWORD i = 0; i < 10; i++ )
+  for ( DWORD i = 0; i < 12; i++ )
   {
     if ( !disasm() || is_ret() )
       return 0;

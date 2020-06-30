@@ -72,6 +72,7 @@ class ntoskrnl_hack: public arm64_hack
     // not exported
     PBYTE aux_ExAllocateCallBack;
     PBYTE aux_ExCompareExchangeCallBack;
+    PBYTE aux_dispatch_icall; // guard_dispatch_icall
     // lookaside lists data
     PBYTE m_ExNPagedLookasideLock;
     PBYTE m_ExNPagedLookasideListHead;
