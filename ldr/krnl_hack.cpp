@@ -91,6 +91,9 @@ void ntoskrnl_hack::dump() const
     printf("KiTpStateLock: %p\n", PVOID(m_KiTpStateLock - mz));
   if ( m_KiTpHashTable != NULL )
     printf("KiTpHashTable: %p\n", PVOID(m_KiTpHashTable - mz));
+  if ( !m_stab.empty() )
+    printf("tp sdt size: %X\n", (DWORD)m_stab.size());
+
   if ( m_KeLoaderBlock != NULL )
     printf("KeLoaderBlock: %p\n", PVOID(m_KeLoaderBlock - mz));
   if ( m_KiServiceLimit != NULL )
@@ -230,6 +233,8 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("IoRegisterPlugPlayNotification");
   if ( exp != NULL )
     res += disasm_IoRegisterPlugPlayNotification(mz + exp->rva);
+
+  // tracepoints
   exp = m_ed->find("KeSetTracepoint");
   if ( exp != NULL ) 
    try
@@ -237,13 +242,18 @@ int ntoskrnl_hack::hack(int verbose)
      res += hack_tracepoints(mz + exp->rva);
    } catch(std::bad_alloc)
    { }
+  if ( m_KiTpHashTable != NULL )
+    res += find_trace_sdt(mz);
+
+  // ssdt
   DWORD ep = m_pe->entry_point();
   if ( ep )
-   try
-   {
-     res += hack_entry(mz + ep);
-   } catch(std::bad_alloc)
-   { }
+  try
+  {
+    res += hack_entry(mz + ep);
+  } catch(std::bad_alloc)
+  { }
+
   if ( m_KiServiceTable != NULL )
   {
     PBYTE addr = NULL;
@@ -787,138 +797,6 @@ int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
   return (lock != NULL) && (list != NULL);
 }
 
-int ntoskrnl_hack::hack_obopen_type(PBYTE psp, PBYTE &off, const char *s_name)
-{
-  if ( !setup(psp) )
-    return 0;
-  cf_graph<PBYTE> cgraph;
-  std::list<PBYTE> addr_list;
-  addr_list.push_back(psp);
-  int edge_n = 0;
-  int edge_gen = 0;
-  off = NULL;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = *iter;
-      if ( m_verbose )
-        printf("hack_obopen_type: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      edge_n++;
-      for ( DWORD i = 0; i < 100; i++ )
-      {
-        if ( !disasm() || is_ret() )
-          break;
-        if ( check_jmps(cgraph) )
-          continue;
-        // check for last b xxx
-        PBYTE b_addr = NULL;
-        if ( is_b_jimm(b_addr) )
-        {
-          cgraph.add(b_addr);
-          break;
-        }
-        if ( is_adrp(used_regs) )
-          continue;
-        if ( is_ldr() ) 
-        {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, s_name) )
-            used_regs.zero(get_reg(0));
-        }
-        // check for call
-        PBYTE caddr = NULL;
-        if ( is_bl_jimm(caddr) )
-        {
-           if ( caddr == aux_ObOpenObjectByPointer )
-           {
-             off = (PBYTE)used_regs.get(AD_REG_X4);
-             goto end;
-           }
-        }
-      }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;    
-  }
-end:
-  return (off != NULL);
-}
-
-int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name)
-{
-  if ( !setup(psp) )
-    return 0;
-  cf_graph<PBYTE> cgraph;
-  std::list<PBYTE> addr_list;
-  addr_list.push_back(psp);
-  int edge_n = 0;
-  int edge_gen = 0;
-  off = NULL;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = *iter;
-      if ( m_verbose )
-        printf("hack_obref_type: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      edge_n++;
-      for ( DWORD i = 0; i < 100; i++ )
-      {
-        if ( !disasm() || is_ret() )
-          break;
-        if ( check_jmps(cgraph) )
-          continue;
-        // check for last b xxx
-        PBYTE b_addr = NULL;
-        if ( is_b_jimm(b_addr) )
-        {
-          cgraph.add(b_addr);
-          break;
-        }
-        if ( is_adrp(used_regs) )
-          continue;
-        if ( is_ldr() ) 
-        {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, s_name) )
-            used_regs.zero(get_reg(0));
-        }
-        // check for call
-        PBYTE caddr = NULL;
-        if ( is_bl_jimm(caddr) )
-        {
-           if ( caddr == aux_ObReferenceObjectByHandle )
-           {
-             off = (PBYTE)used_regs.get(AD_REG_X2);
-             goto end;
-           }
-        }
-      }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;    
-  }
-end:
-  return (off != NULL);
-}
-
 int ntoskrnl_hack::hack_sdt(PBYTE psp)
 {
   if ( !setup(psp) )
@@ -1061,92 +939,6 @@ end:
   if ( KiInitializeKernel == NULL )
     return 0;
   return hack_sdt(KiInitializeKernel);
-}
-
-int ntoskrnl_hack::hack_tracepoints(PBYTE psp)
-{
-  statefull_graph<PBYTE, int> cgraph;
-  std::list<std::pair<PBYTE, int> > addr_list;
-  auto curr = std::make_pair(psp, 0);
-  addr_list.push_back(curr);
-  int edge_n = 0;
-  int edge_gen = 0;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = iter->first;
-      int state = iter->second;
-      if ( m_verbose )
-        printf("hack_tracepoints: %p, state %d, edge_gen %d, edge_n %d\n", psp, state, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      edge_n++;
-      for ( ; ; )
-      {
-        if ( !disasm(state) || is_ret() )
-          break;
-        if ( check_jmps(cgraph, state) )
-          continue;
-        // check for last b xxx
-        PBYTE b_addr = NULL;
-        if ( is_b_jimm(b_addr) )
-        {
-          cgraph.add(b_addr, state);
-          break;
-        }
-        // adrp/adr pair
-        if ( is_adrp(used_regs) )
-          continue;
-        if ( is_ldr() )
-        {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( in_section(what, "ALMOSTRO") )
-          {
-            if ( !state )
-            {
-              m_KiDynamicTraceEnabled = what;
-              state = 1;
-              continue;
-            }
-          } else if ( in_section(what, ".data") )
-          {
-            if ( 2 == state )
-            {
-              m_KiTpHashTable = what;
-              goto end;
-            }
-          }
-        } else
-          used_regs.zero(get_reg(0));
-        if ( is_add() )
-        {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, ".data") )
-            used_regs.zero(get_reg(0));
-        }
-        // check for call
-        if ( is_bl_jimm(b_addr) )
-        {
-           if (b_addr == aux_ExAcquirePushLockExclusiveEx )
-           {
-             state = 2;
-             m_KiTpStateLock = (PBYTE)used_regs.get(AD_REG_X0);
-           }
-        }
-      }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;    
-  }
-end:
-  return (m_KiTpStateLock != NULL) && (m_KiTpHashTable != NULL);
 }
 
 int ntoskrnl_hack::disasm_MiGetPteAddress(PBYTE psp)

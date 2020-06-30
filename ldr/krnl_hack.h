@@ -2,6 +2,8 @@
 
 #include "hack.h"
 
+DWORD tp_hash(const char *name);
+
 class ntoskrnl_hack: public arm64_hack
 {
   public:
@@ -24,6 +26,7 @@ class ntoskrnl_hack: public arm64_hack
     int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);
     int find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list);
     int hack_tracepoints(PBYTE psp);
+    int find_trace_sdt(PBYTE mz);
     int hack_ex_cbs_aux(PBYTE psp);
     int hack_timers(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
@@ -85,6 +88,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KiDynamicTraceEnabled;
     PBYTE m_KiTpStateLock;
     PBYTE m_KiTpHashTable;
+    std::map<DWORD, PBYTE> m_stab;
     // KiServiceTable and friends from KiInitializeKernel
     PBYTE m_KeLoaderBlock;
     PBYTE m_KiServiceLimit;
