@@ -62,6 +62,99 @@ class regs_pad
    reg64_t m_regs[AD_REG_SP];
 };
 
+// for xrefs search
+struct adr_holder
+{
+  PBYTE addr;
+  PBYTE where;
+  inline void reset()
+  {
+    addr = where = NULL;
+  }
+  adr_holder()
+  {
+    reset();
+  }
+};
+
+class xref_finder
+{
+  public:
+   xref_finder()
+   {
+     reset();
+   }
+   void reset()
+   {
+     for ( DWORD i = 0; i < _countof(m_regs); i++ )
+       m_regs[i].reset();
+     disasm_cnt = adrp_cnt = add_cnt = 0;
+   }
+   int purge(int i, PBYTE addr)
+   {
+     if ( NULL == m_regs[i].where )
+       return 0;
+     // 40 - 10 opcodes
+     if ( m_regs[i].where > addr - 40 )
+       return 1;
+     m_regs[i].reset();
+     return 0;
+   }
+   PBYTE find(PBYTE start, DWORD size, PBYTE what)
+   {
+     size &= ~3;
+     struct ad_insn dis;
+     int reg_n;
+     for ( DWORD i = 0; i < size / sizeof(DWORD); i++, start += 4 )
+     {
+       DWORD val = *(PDWORD)start;
+       // check for adrp
+       if ( (val & 0x9f000000) == 0x90000000 )
+       {
+         if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+           continue;
+         disasm_cnt++;
+         if ( dis.instr_id != AD_INSTR_ADRP )
+           continue;
+         adrp_cnt++;
+         reg_n = dis.operands[0].op_reg.rn;
+         if ( reg_n >= AD_REG_SP )
+           continue;
+         m_regs[reg_n].addr = (PBYTE)dis.operands[1].op_imm.bits;
+         if ( m_regs[reg_n].addr == what )
+           return start;
+         m_regs[reg_n].where = start;
+         continue;
+       }
+       // check for add
+       if ( (val & 0x7f000000) == 0x11000000 )
+       {
+         if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+           continue;
+         disasm_cnt++;
+         if ( dis.instr_id != AD_INSTR_ADD )
+           continue;
+         add_cnt++;
+         reg_n = dis.operands[1].op_reg.rn;
+         if ( reg_n >= AD_REG_SP )
+           continue;
+         if ( !purge(reg_n, start) )
+           continue;
+         if ( NULL == m_regs[reg_n].addr )
+           continue;
+         if ( m_regs[reg_n].addr + (reg64_t)dis.operands[2].op_imm.bits == what )
+           return start;
+       }
+     }
+     return NULL;
+   }
+   DWORD disasm_cnt;
+   DWORD adrp_cnt;
+   DWORD add_cnt;
+  protected:
+   adr_holder m_regs[AD_REG_SP];
+};
+
 // some base class for all hacks
 class arm64_hack
 {

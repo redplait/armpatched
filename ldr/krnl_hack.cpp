@@ -33,9 +33,11 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExAllocatePoolWithTag", aux_ExAllocatePoolWithTag);
   init_aux("ExEnumHandleTable", aux_ExEnumHandleTable);
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
+  init_aux("RtlImageNtHeader", aux_RtlImageNtHeader);
   init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = NULL;
   // zero output data
+  m_CrashdmpCallTable = NULL;
   m_PspSiloMonitorLock = m_PspSiloMonitorList = NULL;
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
   m_MiGetPteAddress = m_pte_base_addr = NULL;
@@ -66,6 +68,8 @@ void ntoskrnl_hack::dump() const
   PBYTE mz = m_pe->base_addr();
   if ( aux_dispatch_icall != NULL )
     printf("guard_dispatch_icall: %p\n", PVOID(aux_dispatch_icall - mz));
+  if ( m_CrashdmpCallTable != NULL ) 
+    printf("CrashdmpCallTable: %p\n", PVOID(m_CrashdmpCallTable - mz));
   // lookaside lists & locks
   if ( m_ExNPagedLookasideLock != NULL )
     printf("ExNPagedLookasideLock: %p\n", PVOID(m_ExNPagedLookasideLock - mz));
@@ -185,7 +189,9 @@ int ntoskrnl_hack::hack(int verbose)
   // first resolve guard_dispatch_icall
   const export_item *exp = m_ed->find("RtlGetCompressionWorkSpaceSize");
   if ( exp != NULL )
-   res += find_first_jmp(mz + exp->rva, aux_dispatch_icall);
+    res += find_first_jmp(mz + exp->rva, aux_dispatch_icall);
+  if ( aux_dispatch_icall != NULL )
+    res += find_crash_tab(mz);
   // lookaside lists & locks
   exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )

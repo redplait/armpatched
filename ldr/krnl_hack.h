@@ -50,6 +50,8 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_IoWMIDeviceObjectToProviderId(PBYTE, PBYTE &);
     int disasm_WmipDoFindRegEntryByDevice(PBYTE);
     int hack_start_silo(PBYTE);
+    int find_crash_tab(PBYTE mz);
+    int disasm_crash_tab(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -68,6 +70,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_memset;
     PBYTE aux_ExEnumHandleTable;
     PBYTE aux_ExfUnblockPushLock;
+    PBYTE aux_RtlImageNtHeader;
     PBYTE aux_PsInitialSystemProcess;
     // not exported
     PBYTE aux_ExAllocateCallBack;
@@ -96,6 +99,8 @@ class ntoskrnl_hack: public arm64_hack
     // extensions
     PBYTE m_ExpHostListLock;
     PBYTE m_ExpHostList; // from ExpFindHost
+    // CrashdmpCallTable
+    PBYTE m_CrashdmpCallTable;
     // kernel notificators
     PBYTE m_PsWin32CallBack;
     PBYTE m_SepRmNotifyMutex;
