@@ -57,7 +57,8 @@ void ntoskrnl_hack::zero_data()
   m_SeCiCallbacks_size = 0;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = m_EtwpRegistrationObjectType = NULL;
   m_RtlpDebugPrintCallbackLock = m_RtlpDebugPrintCallbackList = NULL;
-  m_DebugPrintCallback_size = 0;
+  m_KdComponentTable = m_Kd_WIN2000_Mask = NULL;
+  m_DebugPrintCallback_size = m_KdComponentTable_size = 0;
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
   m_CmpCallbackListLock = m_CallbackListHead = NULL;
@@ -133,6 +134,7 @@ void ntoskrnl_hack::dump() const
     printf("EtwpRegistrationObjectType: %p\n", PVOID(m_EtwpRegistrationObjectType - mz));
   if ( m_AlpcPortObjectType != NULL )
     printf("AlpcPortObjectType: %p\n", PVOID(m_AlpcPortObjectType - mz));
+  // dbg data
   if ( m_DbgkDebugObjectType != NULL )
     printf("DbgkDebugObjectType: %p\n", PVOID(m_DbgkDebugObjectType - mz));
   if ( m_RtlpDebugPrintCallbackLock != NULL )
@@ -141,6 +143,11 @@ void ntoskrnl_hack::dump() const
     printf("RtlpDebugPrintCallbackList: %p\n", PVOID(m_RtlpDebugPrintCallbackList - mz));
   if ( m_DebugPrintCallback_size )
     printf("DebugPrintCallback size: %X\n", m_DebugPrintCallback_size);
+  if ( m_KdComponentTable != NULL )
+    printf("KdComponentTable: %p, size %X\n", PVOID(m_KdComponentTable - mz), m_KdComponentTable_size);
+  if ( m_Kd_WIN2000_Mask != NULL )
+    printf("Kd_WIN2000_Mask: %p\n", PVOID(m_Kd_WIN2000_Mask - mz));
+
   if ( m_PsWin32CallBack != NULL )
     printf("PsWin32CallBack: %p\n", PVOID(m_PsWin32CallBack - mz));
   if ( m_ExpHostListLock != NULL )
@@ -306,6 +313,13 @@ int ntoskrnl_hack::hack(int verbose)
   if ( m_DbgkDebugObjectType == NULL )
     res += find_DbgkDebugObjectType_by_sign(mz, 0xC0000712);
   res += find_DbgpInsertDebugPrintCallback_by_sign(mz);
+  exp = m_ed->find("DbgQueryDebugFilterState");
+  if ( exp != NULL )
+  {
+    PBYTE next = NULL;
+    if ( find_first_jmp(mz + exp->rva, next) )
+      res += hack_kd_masks(next);
+  }
 
   if ( m_KeLoaderBlock != NULL )
   {

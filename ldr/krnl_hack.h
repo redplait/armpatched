@@ -62,6 +62,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_KiSystemServiceTraceCallbackTable(PBYTE mz, PBYTE psp);
     int find_DbgpInsertDebugPrintCallback_by_sign(PBYTE mz);
     int hack_DbgpInsertDebugPrintCallback(PBYTE);
+    int hack_kd_masks(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -168,6 +169,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_RtlpDebugPrintCallbackLock;
     PBYTE m_RtlpDebugPrintCallbackList;
     DWORD m_DebugPrintCallback_size;
+    PBYTE m_KdComponentTable;
+    DWORD m_KdComponentTable_size;
+    PBYTE m_Kd_WIN2000_Mask;
     // wmi data
     PBYTE m_WmipGuidObjectType;
     PBYTE m_WmipRegistrationSpinLock;

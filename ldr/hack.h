@@ -358,6 +358,10 @@ class arm64_hack
    int is_ldrb() const;
    int is_ldrsb() const;
    int is_str() const;
+   inline int is_cmp_rimm() const
+   {
+     return (m_dis.instr_id == AD_INSTR_CMP && m_dis.num_operands == 2 && m_dis.operands[0].type == AD_OP_REG && m_dis.operands[1].type == AD_OP_IMM);
+   }
    inline int is_mov_rimm() const
    {
      return (m_dis.instr_id == AD_INSTR_MOV && m_dis.num_operands == 2 && m_dis.operands[0].type == AD_OP_REG && m_dis.operands[1].type == AD_OP_IMM);

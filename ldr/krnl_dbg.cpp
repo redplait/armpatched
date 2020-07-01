@@ -3,6 +3,48 @@
 #include "bm_search.h"
 #include "cf_graph.h"
 
+int ntoskrnl_hack::hack_kd_masks(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  int state = 0; // 0 - wait for cmp r0, imm
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( !state && is_cmp_rimm() && get_reg(0) == AD_REG_X0 )
+    {
+      m_KdComponentTable_size = (DWORD)m_dis.operands[1].op_imm.bits;
+      state = 1;
+    }
+    if ( is_adrp(used_regs) )
+      continue;
+    // ldr - Kd_WIN2000_Mask
+    if ( state && is_ldr() ) 
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, ".data") )
+        used_regs.zero(get_reg(0));
+      else
+        m_Kd_WIN2000_Mask = what;
+    }
+    // add
+    if ( state && is_add() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( !in_section(what, ".data") )
+        used_regs.zero(get_reg(0));
+      else
+      {
+        m_KdComponentTable = what;
+        break;
+      }
+    }
+  }
+  return (m_KdComponentTable != NULL) && (m_Kd_WIN2000_Mask != NULL);
+}
+
 int ntoskrnl_hack::find_DbgpInsertDebugPrintCallback_by_sign(PBYTE mz)
 {
   // try search tag in .text section
