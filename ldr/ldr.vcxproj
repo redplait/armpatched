@@ -162,6 +162,7 @@
     <ClCompile Include="imports_dict.cpp" />
     <ClCompile Include="krnl_crsh.cpp" />
     <ClCompile Include="krnl_hack.cpp" />
+    <ClCompile Include="krnl_ntfy.cpp" />
     <ClCompile Include="krnl_obtypes.cpp" />
     <ClCompile Include="krnl_pnp.cpp" />
     <ClCompile Include="krnl_sign.cpp" />
