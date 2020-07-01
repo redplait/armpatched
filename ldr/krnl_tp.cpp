@@ -101,6 +101,7 @@ int ntoskrnl_hack::find_trace_sdt(PBYTE mz)
     }    
   }
   // fill m_stab
+  aux_tp_stab = (PBYTE)lower;
   for ( ; lower < (tp_sdt *)end; ++lower )
   {
     const one_section *s = m_pe->find_section_rva((PBYTE)lower->addr - mz);
@@ -114,7 +115,93 @@ int ntoskrnl_hack::find_trace_sdt(PBYTE mz)
     } catch(std::bad_alloc)
     { break; }
   }
+  if ( !m_stab.empty() )
+  {
+    // try KiSystemServiceTraceCallbackTable - from KiGetSystemServiceTraceTable
+    try_KiGetSystemServiceTraceTable_by_sign(mz);
+  }
   return m_stab.empty() ? 0 : 1;
+}
+
+int ntoskrnl_hack::try_KiGetSystemServiceTraceTable_by_sign(PBYTE mz)
+{
+  // try search in PAGE section
+  const one_section *s = m_pe->find_section_by_name("PAGE");
+  if ( NULL == s )
+    return 0;
+  PBYTE start = mz + s->va;
+  PBYTE end = start + s->size;
+  const DWORD sign = 0x7454694B;
+  bm_search srch((const PBYTE)&sign, sizeof(sign));
+  PBYTE curr = start;
+  std::list<PBYTE> founds;
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    try
+    {
+      founds.push_back(fres);
+    } catch(std::bad_alloc)
+    { return 0; }
+    curr = fres + sizeof(sign);
+  }
+  if ( founds.empty() )
+    return 0;
+  for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
+  {
+    PBYTE func = find_pdata(*citer);
+    if ( NULL == func )
+      continue;
+#ifdef _DEBUG
+    printf("try_KiGetSystemServiceTraceTable_by_sign: found at %p, func %p\n", *citer - mz, func);
+#endif/* _DEBUG */
+    if ( hack_KiSystemServiceTraceCallbackTable(mz, func) )
+      return 1;
+  }
+  return 0;
+}
+
+int ntoskrnl_hack::hack_KiSystemServiceTraceCallbackTable(PBYTE mz, PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  int state = 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 30; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_ldr() ) 
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, "PAGEDATA") )
+         used_regs.zero(get_reg(0));
+       else {
+         m_KiSystemServiceTraceCallbackTable = what;
+         state = 1;
+       }
+       continue;
+    }
+    if ( is_mov_rimm() )
+    {
+      used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+      continue;
+    }
+    PBYTE b_addr = NULL;
+    if ( is_bl_jimm(b_addr) )
+    {
+      if ( state && (b_addr == aux_ExAllocatePoolWithTag) )
+      {
+        m_KiSystemServiceTraceCallbackTable_size = (DWORD)used_regs.get(AD_REG_X1);
+        break;
+      }
+    }
+  }
+  return (m_KiSystemServiceTraceCallbackTable != NULL);
 }
 
 int ntoskrnl_hack::hack_tracepoints(PBYTE psp)

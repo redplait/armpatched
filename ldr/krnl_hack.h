@@ -56,6 +56,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_start_silo(PBYTE);
     int find_crash_tab(PBYTE mz);
     int disasm_crash_tab(PBYTE);
+    int try_KiGetSystemServiceTraceTable_by_sign(PBYTE mz);
+    int hack_KiSystemServiceTraceCallbackTable(PBYTE mz, PBYTE psp);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -89,6 +91,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KiDynamicTraceEnabled;
     PBYTE m_KiTpStateLock;
     PBYTE m_KiTpHashTable;
+    PBYTE m_KiSystemServiceTraceCallbackTable;
+    DWORD m_KiSystemServiceTraceCallbackTable_size;
+    PBYTE aux_tp_stab;
     std::map<DWORD, PBYTE> m_stab;
     // KiServiceTable and friends from KiInitializeKernel
     PBYTE m_KeLoaderBlock;

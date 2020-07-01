@@ -35,7 +35,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   init_aux("RtlImageNtHeader", aux_RtlImageNtHeader);
   init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
-  aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = NULL;
+  aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = aux_tp_stab = NULL;
   // zero output data
   m_CrashdmpCallTable = NULL;
   m_PspSiloMonitorLock = m_PspSiloMonitorList = NULL;
@@ -47,7 +47,8 @@ void ntoskrnl_hack::zero_data()
   m_ExNPagedLookasideListHead = NULL;
   m_ExPagedLookasideLock = NULL;
   m_ExPagedLookasideListHead = NULL;
-  m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = NULL;
+  m_KiSystemServiceTraceCallbackTable_size = 0;
+  m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = m_KiSystemServiceTraceCallbackTable = NULL;
   m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = 0;
   m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = m_proc_wow64_off = m_proc_win32proc_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
@@ -92,6 +93,8 @@ void ntoskrnl_hack::dump() const
     printf("KiTpStateLock: %p\n", PVOID(m_KiTpStateLock - mz));
   if ( m_KiTpHashTable != NULL )
     printf("KiTpHashTable: %p\n", PVOID(m_KiTpHashTable - mz));
+  if ( m_KiSystemServiceTraceCallbackTable != NULL )
+    printf("KiSystemServiceTraceCallbackTable: %p size %X\n", PVOID(m_KiSystemServiceTraceCallbackTable - mz), m_KiSystemServiceTraceCallbackTable_size);
   if ( !m_stab.empty() )
     printf("tp sdt size: %X\n", (DWORD)m_stab.size());
 
