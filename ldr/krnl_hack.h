@@ -16,6 +16,11 @@ class ntoskrnl_hack: public arm64_hack
     { }
     int hack(int verbose);
     void dump() const;
+    // validators
+    inline int is_cm_cbs_ok() const
+    {
+      return (m_CmpCallbackListLock != NULL) && (m_CallbackListHead != NULL);
+    }
   protected:
     void zero_data();
     void zero_sign_data();
@@ -44,6 +49,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_reg_ext(PBYTE psp);
     int hask_se_logon(PBYTE psp);
     int hack_cm_cbs(PBYTE psp);
+    int hack_cm_cbs2(PBYTE psp); // under 19041 lock inside separate function CmpLockCallbackListExclusive
+    int hack_cm_lock(PBYTE psp);
     int find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign);
     int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
     int disasm_SepInitializeCodeIntegrity(PBYTE, PBYTE where);

@@ -363,7 +363,11 @@ int ntoskrnl_hack::hack(int verbose)
     res += hask_se_logon(mz + exp->rva);
   exp = m_ed->find("CmUnRegisterCallback");
   if ( exp != NULL )
+  {
     res += hack_cm_cbs(mz + exp->rva);
+    if ( !is_cm_cbs_ok() )
+      res += hack_cm_cbs2(mz + exp->rva);
+  }
   // obtypes
   exp = m_ed->find("ObReferenceObjectByPointerWithTag");
   if ( exp != NULL ) 
