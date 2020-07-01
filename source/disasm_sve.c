@@ -5571,7 +5571,7 @@ static int op04(struct instruction *i, struct ad_insn *out)
       ADD_REG_OPERAND(out, Rn, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), _RTBL(AD_RTBL_GEN_64));
       ADD_ZREG_OPERAND(out, Zm, _32_BIT, NO_PREFER_ZR, _SYSREG(AD_NONE), AD_RTBL_Z_128, 2);
       ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&xs);
-      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%s", ld1_ftab2[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
+      concat(DECODE_STR(out), "%s %s, %s, %s, %s, #%x", ld1_ftab2[idx].instr_s, AD_RTBL_Z_128[Zt], AD_RTBL_PG_128[Pg], Rn_s, AD_RTBL_Z_128[Zm], xs);
       return 0;
     }
   }
