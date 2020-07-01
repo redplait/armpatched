@@ -37,6 +37,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
   aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = aux_tp_stab = NULL;
   // zero output data
+  m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
   m_PspSiloMonitorLock = m_PspSiloMonitorList = NULL;
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
@@ -202,6 +203,11 @@ void ntoskrnl_hack::dump() const
     printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));
   if ( m_pte_base_addr != NULL )
     printf("pte_base_addr at: %p\n", PVOID(m_pte_base_addr - mz));
+  // hypervisor
+  if ( m_HvlpFlags != NULL )
+    printf("HvlpFlags: %p\n", PVOID(m_HvlpFlags - mz));
+  if ( m_HvlpAa64Connected != NULL )
+    printf("HvlpAa64Connected: %p\n", PVOID(m_HvlpAa64Connected - mz));
   dump_sign_data();
 }
 
@@ -375,8 +381,46 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsGetProcessDebugPort");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_debport_off);
+
+  // hypervisor
+  exp = m_ed->find("HvlQueryActiveProcessors");
+  if ( exp != NULL )
+    res += hack_hvl_flags(mz + exp->rva, m_HvlpFlags, "ALMOSTRO");
+  exp = m_ed->find("HvlQueryConnection");
+  if ( exp != NULL )
+    res += hack_hvl_flags(mz + exp->rva, m_HvlpAa64Connected, "CFGRO");
+
   res += try_find_PsKernelRangeList(mz);
   return res;
+}
+
+int ntoskrnl_hack::hack_hvl_flags(PBYTE psp, PBYTE &out_res, const char *s_name)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 10; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( in_section(what, s_name) )
+        out_res = what;
+      break;
+    }
+    if ( is_ldr() ) 
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( in_section(what, s_name) )
+         out_res = what;
+       break;
+    }
+  }
+  return (out_res != NULL);
 }
 
 int ntoskrnl_hack::find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign)

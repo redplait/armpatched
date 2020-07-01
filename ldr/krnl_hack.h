@@ -32,6 +32,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_timers(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
     int hack_x0_ldr(PBYTE psp, DWORD &off);
+    int hack_hvl_flags(PBYTE psp, PBYTE &out_res, const char *s_name);
     // for ZwXXX functions - get index in sdt
     int hack_x16(PBYTE psp, DWORD &off);
     int get_nt_addr(const char *, PBYTE &);
@@ -167,6 +168,9 @@ class ntoskrnl_hack: public arm64_hack
     // silo data
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;
+    // hypervisor data
+    PBYTE m_HvlpAa64Connected;
+    PBYTE m_HvlpFlags;
     // data from PsKernelRangeList
     PBYTE m_PspPicoProviderRoutines;
     DWORD m_PspPicoProviderRoutines_size;
