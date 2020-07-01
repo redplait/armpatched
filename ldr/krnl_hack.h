@@ -60,11 +60,14 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_crash_tab(PBYTE);
     int try_KiGetSystemServiceTraceTable_by_sign(PBYTE mz);
     int hack_KiSystemServiceTraceCallbackTable(PBYTE mz, PBYTE psp);
+    int find_DbgpInsertDebugPrintCallback_by_sign(PBYTE mz);
+    int hack_DbgpInsertDebugPrintCallback(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
     PBYTE aux_MmHighestUserAddress;
     PBYTE aux_MmBadPointer;
+    PBYTE aux_ExAcquireSpinLockExclusiveAtDpcLevel;
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
     PBYTE aux_ObReferenceObjectByHandle;
@@ -161,6 +164,10 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_proc_win32proc_off;
     // DbgkDebugObjectType - from NtCreateDebugObject
     PBYTE m_DbgkDebugObjectType;
+    // DebugPrintCallback data
+    PBYTE m_RtlpDebugPrintCallbackLock;
+    PBYTE m_RtlpDebugPrintCallbackList;
+    DWORD m_DebugPrintCallback_size;
     // wmi data
     PBYTE m_WmipGuidObjectType;
     PBYTE m_WmipRegistrationSpinLock;

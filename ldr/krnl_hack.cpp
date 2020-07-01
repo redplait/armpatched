@@ -16,6 +16,7 @@ void ntoskrnl_hack::init_aux(const char *aux_name, PBYTE &aux)
 void ntoskrnl_hack::zero_data()
 {
   // fill auxilary data
+  init_aux("ExAcquireSpinLockExclusiveAtDpcLevel", aux_ExAcquireSpinLockExclusiveAtDpcLevel);
   init_aux("KeAcquireSpinLockRaiseToDpc", aux_KeAcquireSpinLockRaiseToDpc);
   init_aux("ExAcquirePushLockExclusiveEx", aux_ExAcquirePushLockExclusiveEx);
   init_aux("ObReferenceObjectByPointer", aux_ObReferenceObjectByPointer);
@@ -55,6 +56,8 @@ void ntoskrnl_hack::zero_data()
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = m_EtwpRegistrationObjectType = NULL;
+  m_RtlpDebugPrintCallbackLock = m_RtlpDebugPrintCallbackList = NULL;
+  m_DebugPrintCallback_size = 0;
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
   m_CmpCallbackListLock = m_CallbackListHead = NULL;
@@ -132,6 +135,12 @@ void ntoskrnl_hack::dump() const
     printf("AlpcPortObjectType: %p\n", PVOID(m_AlpcPortObjectType - mz));
   if ( m_DbgkDebugObjectType != NULL )
     printf("DbgkDebugObjectType: %p\n", PVOID(m_DbgkDebugObjectType - mz));
+  if ( m_RtlpDebugPrintCallbackLock != NULL )
+    printf("RtlpDebugPrintCallbackLock: %p\n", PVOID(m_RtlpDebugPrintCallbackLock - mz));
+  if ( m_RtlpDebugPrintCallbackList != NULL )
+    printf("RtlpDebugPrintCallbackList: %p\n", PVOID(m_RtlpDebugPrintCallbackList - mz));
+  if ( m_DebugPrintCallback_size )
+    printf("DebugPrintCallback size: %X\n", m_DebugPrintCallback_size);
   if ( m_PsWin32CallBack != NULL )
     printf("PsWin32CallBack: %p\n", PVOID(m_PsWin32CallBack - mz));
   if ( m_ExpHostListLock != NULL )
@@ -296,6 +305,8 @@ int ntoskrnl_hack::hack(int verbose)
   }
   if ( m_DbgkDebugObjectType == NULL )
     res += find_DbgkDebugObjectType_by_sign(mz, 0xC0000712);
+  res += find_DbgpInsertDebugPrintCallback_by_sign(mz);
+
   if ( m_KeLoaderBlock != NULL )
   {
     res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000009);
