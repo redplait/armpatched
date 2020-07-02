@@ -51,8 +51,8 @@ void ntoskrnl_hack::zero_data()
   m_ExPagedLookasideListHead = NULL;
   m_KiSystemServiceTraceCallbackTable_size = 0;
   m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = m_KiSystemServiceTraceCallbackTable = NULL;
-  m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = 0;
-  m_proc_pid_off = m_proc_protection_off = m_proc_debport_off = m_proc_wow64_off = m_proc_win32proc_off = 0;
+  m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = m_thread_silo_off = m_thread_TopLevelIrp_off = 0;
+  m_proc_pid_off = m_proc_peb_off = m_proc_job_off = m_proc_protection_off = m_proc_debport_off = m_proc_flags3_off = m_proc_secport_off = m_proc_wow64_off = m_proc_win32proc_off = m_proc_DxgProcess_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = m_EtwpRegistrationObjectType = NULL;
@@ -185,17 +185,31 @@ void ntoskrnl_hack::dump() const
     printf("KTHREAD.Process offset:    %X\n", m_thread_process_off);
   if ( m_thread_prevmod_off )
     printf("KTHREAD.PreviousMode offset: %X\n", m_thread_prevmod_off);
+  if ( m_thread_silo_off )
+    printf("ETHREAD.Silo offset: %X\n", m_thread_silo_off);
+  if ( m_thread_TopLevelIrp_off )
+    printf("ETHREAD.TopLevelIrp offset: %X\n", m_thread_TopLevelIrp_off);
   // process offsets
   if ( m_proc_pid_off )
     printf("EPROCESS.UniqueProcessId offset: %X\n", m_proc_pid_off);
+  if ( m_proc_peb_off )
+    printf("EPROCESS.Peb offset: %X\n", m_proc_peb_off);
+  if ( m_proc_job_off )
+    printf("EPROCESS.Job offset: %X\n", m_proc_job_off);
   if ( m_proc_protection_off )
     printf("EPROCESS.Protection offset: %X\n", m_proc_protection_off);
   if ( m_proc_debport_off )
     printf("EPROCESS.DebugPort: %X\n", m_proc_debport_off);
+  if ( m_proc_secport_off )
+    printf("EPROCESS.SecurityPort: %X\n", m_proc_secport_off);
   if ( m_proc_wow64_off )
     printf("EPROCESS.WoW64Process: %X\n", m_proc_wow64_off);
   if ( m_proc_win32proc_off )
     printf("EPROCESS.Win32Process: %X\n", m_proc_win32proc_off);
+  if ( m_proc_DxgProcess_off )
+    printf("EPROCESS.DxgProcess offset: %X\n", m_proc_DxgProcess_off);
+  if ( m_proc_flags3_off )
+    printf("EPROCESS.Flags3 offset: %X\n", m_proc_flags3_off);
   if ( eproc_ObjectTable_off )
     printf("EPROCESS.ObjectTable: %X\n", eproc_ObjectTable_off);
   if ( eproc_ProcessLock_off )
@@ -394,22 +408,44 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("ExGetPreviousMode");
   if ( exp != NULL )
     res += hack_x18(mz + exp->rva, m_thread_prevmod_off);
+  exp = m_ed->find("PsIsCurrentThreadInServerSilo");
+  if ( exp != NULL )
+    res += hack_x18(mz + exp->rva, m_thread_silo_off);
+  exp = m_ed->find("IoGetTopLevelIrp");
+  if ( exp != NULL )
+    res += hack_x18(mz + exp->rva, m_thread_TopLevelIrp_off);
   // process offsets
   exp = m_ed->find("PsGetProcessId");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_pid_off);
+  exp = m_ed->find("PsGetProcessPeb");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_peb_off);
+  exp = m_ed->find("PsGetProcessJob");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_job_off);
   exp = m_ed->find("PsGetProcessWow64Process");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_wow64_off);
   exp = m_ed->find("PsGetProcessWin32Process");
   if ( exp != NULL )
-    res += hack_x0_ldr(mz + exp->rva,m_proc_win32proc_off);
+    res += hack_x0_ldr(mz + exp->rva, m_proc_win32proc_off);
+  exp = m_ed->find("PsGetProcessDxgProcess");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_DxgProcess_off);
   exp = m_ed->find("PsGetProcessProtection");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_protection_off);
   exp = m_ed->find("PsGetProcessDebugPort");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_debport_off);
+  exp = m_ed->find("PsGetProcessSecurityPort");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_secport_off);
+  exp = m_ed->find("PsIsSystemProcess");
+  if ( exp != NULL )
+    res += hack_x0_ldr(mz + exp->rva, m_proc_flags3_off);
+
 
   // hypervisor
   exp = m_ed->find("HvlQueryActiveProcessors");
