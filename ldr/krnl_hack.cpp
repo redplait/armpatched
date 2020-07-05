@@ -40,7 +40,7 @@ void ntoskrnl_hack::zero_data()
   // zero output data
   m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
-  m_PspSiloMonitorLock = m_PspSiloMonitorList = NULL;
+  m_PspSiloMonitorLock = m_PspSiloMonitorList = m_PspHostSiloGlobals = NULL;
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
@@ -228,6 +228,8 @@ void ntoskrnl_hack::dump() const
     printf("PspSiloMonitorLock: %p\n", PVOID(m_PspSiloMonitorLock - mz));
   if ( m_PspSiloMonitorList != NULL )
     printf("PspSiloMonitorList: %p\n", PVOID(m_PspSiloMonitorList - mz));
+  if ( m_PspHostSiloGlobals != NULL )
+    printf("PspHostSiloGlobals: %p\n", PVOID(m_PspHostSiloGlobals - mz));
   // kpte
   if ( m_MiGetPteAddress != NULL )
     printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));
@@ -343,9 +345,13 @@ int ntoskrnl_hack::hack(int verbose)
     if ( m_SeCiCallbacks == NULL )
       res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000007);
   }
+  // silo data
   exp = m_ed->find("PsStartSiloMonitor");
   if ( exp != NULL )
     res += hack_start_silo(mz + exp->rva);
+  exp = m_ed->find("PsGetServerSiloServiceSessionId");
+  if ( exp != NULL )
+    res += hack_silo_global(mz + exp->rva);
   exp = m_ed->find("ExRegisterExtension");
   if ( exp != NULL )
     res += hack_reg_ext(mz + exp->rva);

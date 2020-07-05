@@ -63,6 +63,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_IoWMIDeviceObjectToProviderId(PBYTE, PBYTE &);
     int disasm_WmipDoFindRegEntryByDevice(PBYTE);
     int hack_start_silo(PBYTE);
+    int hack_silo_global(PBYTE);
     int find_crash_tab(PBYTE mz);
     int disasm_crash_tab(PBYTE);
     int try_KiGetSystemServiceTraceTable_by_sign(PBYTE mz);
@@ -193,6 +194,7 @@ class ntoskrnl_hack: public arm64_hack
     // silo data
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;
+    PBYTE m_PspHostSiloGlobals;
     // hypervisor data
     PBYTE m_HvlpAa64Connected;
     PBYTE m_HvlpFlags;
