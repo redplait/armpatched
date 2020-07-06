@@ -41,6 +41,8 @@ void ntoskrnl_hack::zero_data()
   m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
   m_PspSiloMonitorLock = m_PspSiloMonitorList = m_PspHostSiloGlobals = NULL;
+  m_EmpDatabaseLock = m_EmpEntryListHead = NULL;
+  m_emp_item_size = 0;
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
@@ -230,6 +232,13 @@ void ntoskrnl_hack::dump() const
     printf("PspSiloMonitorList: %p\n", PVOID(m_PspSiloMonitorList - mz));
   if ( m_PspHostSiloGlobals != NULL )
     printf("PspHostSiloGlobals: %p\n", PVOID(m_PspHostSiloGlobals - mz));
+  // emp
+  if ( m_EmpDatabaseLock != NULL )
+    printf("EmpDatabaseLock: %p\n", PVOID(m_EmpDatabaseLock - mz));
+  if ( m_EmpEntryListHead != NULL )
+    printf("EmpEntryListHead: %p\n", PVOID(m_EmpEntryListHead - mz));
+  if ( m_emp_item_size )
+    printf("emp item size: %X\n", m_emp_item_size);
   // kpte
   if ( m_MiGetPteAddress != NULL )
     printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));
@@ -364,6 +373,10 @@ int ntoskrnl_hack::hack(int verbose)
     else
       res += hack_timers(mz + exp->rva);
   }
+  // emp data
+  exp = m_ed->find("EmpProviderRegister");
+  if ( exp != NULL )
+    res += hack_emp(mz + exp->rva);
   // kernel notifications
   exp = m_ed->find("PsEstablishWin32Callouts");
   if ( exp != NULL )

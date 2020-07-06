@@ -33,6 +33,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_tracepoints(PBYTE psp);
     int find_trace_sdt(PBYTE mz);
     int find_stab_types(PBYTE mz);
+    int hack_emp(PBYTE mz);
+    int find_emp_list(PBYTE mz);
     int hack_ex_cbs_aux(PBYTE psp);
     int hack_timers(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
@@ -195,6 +197,10 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;
     PBYTE m_PspHostSiloGlobals;
+    // emp data
+    PBYTE m_EmpDatabaseLock;
+    PBYTE m_EmpEntryListHead;
+    DWORD m_emp_item_size;
     // hypervisor data
     PBYTE m_HvlpAa64Connected;
     PBYTE m_HvlpFlags;
