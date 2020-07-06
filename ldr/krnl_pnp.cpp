@@ -2,6 +2,14 @@
 #include "krnl_hack.h"
 #include "cf_graph.h"
 
+void ntoskrnl_hack::dump_pnp(PBYTE mz) const
+{
+  if ( m_PnpDeviceClassNotifyLock != NULL )
+    printf("PnpDeviceClassNotifyLock: %p\n", PVOID(m_PnpDeviceClassNotifyLock - mz));
+  if ( m_PnpDeviceClassNotifyList != NULL )
+    printf("PnpDeviceClassNotifyList: %p, item_size %X\n", PVOID(m_PnpDeviceClassNotifyList - mz), m_pnp_item_size);
+}
+
 static const DWORD s_tag = 0x44706E50;
 
 // state - 0 - wait for tag

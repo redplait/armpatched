@@ -3,6 +3,29 @@
 #include "bm_search.h"
 #include "cf_graph.h"
 
+void ntoskrnl_hack::init_dbg_data()
+{
+  m_DbgkDebugObjectType = m_RtlpDebugPrintCallbackLock = m_RtlpDebugPrintCallbackList = NULL;
+  m_DebugPrintCallback_size = m_KdComponentTable_size = 0;
+  m_KdComponentTable = m_Kd_WIN2000_Mask = NULL;
+}
+
+void ntoskrnl_hack::dump_dbg_data(PBYTE mz) const
+{
+  if ( m_DbgkDebugObjectType != NULL )
+    printf("DbgkDebugObjectType: %p\n", PVOID(m_DbgkDebugObjectType - mz));
+  if ( m_RtlpDebugPrintCallbackLock != NULL )
+    printf("RtlpDebugPrintCallbackLock: %p\n", PVOID(m_RtlpDebugPrintCallbackLock - mz));
+  if ( m_RtlpDebugPrintCallbackList != NULL )
+    printf("RtlpDebugPrintCallbackList: %p\n", PVOID(m_RtlpDebugPrintCallbackList - mz));
+  if ( m_DebugPrintCallback_size )
+    printf("DebugPrintCallback size: %X\n", m_DebugPrintCallback_size);
+  if ( m_KdComponentTable != NULL )
+    printf("KdComponentTable: %p, size %X\n", PVOID(m_KdComponentTable - mz), m_KdComponentTable_size);
+  if ( m_Kd_WIN2000_Mask != NULL )
+    printf("Kd_WIN2000_Mask: %p\n", PVOID(m_Kd_WIN2000_Mask - mz));
+}
+
 int ntoskrnl_hack::hack_kd_masks(PBYTE psp)
 {
   if ( !setup(psp) )

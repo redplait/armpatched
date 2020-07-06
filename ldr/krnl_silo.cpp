@@ -2,6 +2,21 @@
 #include "krnl_hack.h"
 #include "cf_graph.h"
 
+void ntoskrnl_hack::init_silo()
+{
+  m_PspSiloMonitorLock = m_PspSiloMonitorList = m_PspHostSiloGlobals = NULL;
+}
+
+void ntoskrnl_hack::dump_silo(PBYTE mz) const
+{
+  if ( m_PspSiloMonitorLock != NULL )
+    printf("PspSiloMonitorLock: %p\n", PVOID(m_PspSiloMonitorLock - mz));
+  if ( m_PspSiloMonitorList != NULL )
+    printf("PspSiloMonitorList: %p\n", PVOID(m_PspSiloMonitorList - mz));
+  if ( m_PspHostSiloGlobals != NULL )
+    printf("PspHostSiloGlobals: %p\n", PVOID(m_PspHostSiloGlobals - mz));
+}
+
 int ntoskrnl_hack::hack_silo_global(PBYTE psp)
 {
   if ( !setup(psp) )

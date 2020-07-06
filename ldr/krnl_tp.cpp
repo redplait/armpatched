@@ -15,6 +15,25 @@ DWORD tp_hash(const char *name)
   return res;
 }
 
+void ntoskrnl_hack::init_tracepoints()
+{
+  m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = m_KiSystemServiceTraceCallbackTable = NULL;
+}
+
+void ntoskrnl_hack::dump_tracepoints(PBYTE mz) const
+{
+  if ( m_KiDynamicTraceEnabled != NULL ) 
+    printf("KiDynamicTraceEnabled: %p\n", PVOID(m_KiDynamicTraceEnabled - mz));
+  if ( m_KiTpStateLock != NULL )
+    printf("KiTpStateLock: %p\n", PVOID(m_KiTpStateLock - mz));
+  if ( m_KiTpHashTable != NULL )
+    printf("KiTpHashTable: %p\n", PVOID(m_KiTpHashTable - mz));
+  if ( m_KiSystemServiceTraceCallbackTable != NULL )
+    printf("KiSystemServiceTraceCallbackTable: %p size %X\n", PVOID(m_KiSystemServiceTraceCallbackTable - mz), m_KiSystemServiceTraceCallbackTable_size);
+  if ( !m_stab.empty() )
+    printf("tp sdt size: %X\n", (DWORD)m_stab.size());
+}
+
 int ntoskrnl_hack::find_stab_types(PBYTE mz)
 {
   int res = 0;

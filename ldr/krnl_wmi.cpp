@@ -2,6 +2,24 @@
 #include "krnl_hack.h"
 #include "cf_graph.h"
 
+void ntoskrnl_hack::init_wmi()
+{
+  m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
+  m_EtwSiloState_offset = 0;
+}
+
+void ntoskrnl_hack::dump_wmi(PBYTE mz) const
+{
+  if ( m_WmipGuidObjectType != NULL )
+    printf("WmipGuidObjectType: %p\n", PVOID(m_WmipGuidObjectType - mz));
+  if ( m_WmipRegistrationSpinLock != NULL )
+    printf("WmipRegistrationSpinLock: %p\n", PVOID(m_WmipRegistrationSpinLock - mz));
+  if ( m_WmipInUseRegEntryHead != NULL )
+    printf("WmipInUseRegEntryHead: %p\n", PVOID(m_WmipInUseRegEntryHead - mz));
+  if ( m_EtwSiloState_offset )
+    printf("ESERVERSILO_GLOBALS.EtwSiloState offset: %X\n", m_EtwSiloState_offset);
+}
+
 int ntoskrnl_hack::disasm_IoWMIDeviceObjectToProviderId(PBYTE psp, PBYTE &out_call)
 {
   if (!setup(psp))
@@ -153,4 +171,34 @@ int ntoskrnl_hack::try_wmip_obj(PBYTE psp)
     }
   }
   return (m_WmipGuidObjectType != NULL);
+}
+
+int ntoskrnl_hack::hack_wmi_clock(PBYTE psp)
+{
+  if (!setup(psp))
+    return 0;
+  int state = 0;
+  for ( DWORD i = 0; i < 20; i++ )
+  {
+    if (!disasm() || is_ret())
+      break;
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+       if ( !state )
+       {
+         aux_PsGetCurrentServerSiloGlobals = caddr;
+         state = 1;
+         continue;
+       }
+       break;
+    }
+    // after call to PsGetCurrentServerSiloGlobals I expect something like ldr reg, [x0 + offset]
+    if ( state && is_ldr() && (get_reg(1) == AD_REG_X0) )
+    {
+      m_EtwSiloState_offset = (DWORD)m_dis.operands[2].op_imm.bits;
+      break;
+    }
+  }
+  return (m_EtwSiloState_offset != 0);
 }

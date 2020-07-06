@@ -1,6 +1,22 @@
 #include "stdafx.h"
 #include "krnl_hack.h"
 
+void ntoskrnl_hack::init_emp()
+{
+  m_EmpDatabaseLock = m_EmpEntryListHead = NULL;
+  m_emp_item_size = 0;
+}
+
+void ntoskrnl_hack::dump_emp(PBYTE mz) const
+{
+  if ( m_EmpDatabaseLock != NULL )
+    printf("EmpDatabaseLock: %p\n", PVOID(m_EmpDatabaseLock - mz));
+  if ( m_EmpEntryListHead != NULL )
+    printf("EmpEntryListHead: %p\n", PVOID(m_EmpEntryListHead - mz));
+  if ( m_emp_item_size )
+    printf("emp item size: %X\n", m_emp_item_size);
+}
+
 int ntoskrnl_hack::find_emp_list(PBYTE psp)
 {
   if ( !setup(psp) )

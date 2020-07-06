@@ -22,6 +22,20 @@ class ntoskrnl_hack: public arm64_hack
       return (m_CmpCallbackListLock != NULL) && (m_CallbackListHead != NULL);
     }
   protected:
+    // init methods
+    void init_wmi();
+    void init_emp();
+    void init_silo();
+    void init_tracepoints();
+    void init_dbg_data();
+    // dumpers
+    void dump_wmi(PBYTE mz) const;
+    void dump_emp(PBYTE mz) const;
+    void dump_silo(PBYTE mz) const;
+    void dump_pnp(PBYTE mz) const;
+    void dump_dbg_data(PBYTE mz) const;
+    void dump_tracepoints(PBYTE mz) const;
+
     void zero_data();
     void zero_sign_data();
     void dump_sign_data() const;
@@ -61,6 +75,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_enum_tab(PBYTE);
     int hack_ObReferenceProcessHandleTable(PBYTE);
     int try_wmip_obj(PBYTE);
+    int hack_wmi_clock(PBYTE);
     int disasm_IoWMIQueryAllData(PBYTE);
     int disasm_IoWMIDeviceObjectToProviderId(PBYTE, PBYTE &);
     int disasm_WmipDoFindRegEntryByDevice(PBYTE);
@@ -98,6 +113,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExAllocateCallBack;
     PBYTE aux_ExCompareExchangeCallBack;
     PBYTE aux_dispatch_icall; // guard_dispatch_icall
+    PBYTE aux_PsGetCurrentServerSiloGlobals;
     // lookaside lists data
     PBYTE m_ExNPagedLookasideLock;
     PBYTE m_ExNPagedLookasideListHead;
@@ -193,6 +209,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_WmipGuidObjectType;
     PBYTE m_WmipRegistrationSpinLock;
     PBYTE m_WmipInUseRegEntryHead;
+    DWORD m_EtwSiloState_offset;
     // silo data
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;

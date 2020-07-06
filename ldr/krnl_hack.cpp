@@ -36,14 +36,13 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   init_aux("RtlImageNtHeader", aux_RtlImageNtHeader);
   init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
-  aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = aux_tp_stab = NULL;
+  aux_PsGetCurrentServerSiloGlobals = aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = aux_tp_stab = NULL;
   // zero output data
   m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
-  m_PspSiloMonitorLock = m_PspSiloMonitorList = m_PspHostSiloGlobals = NULL;
-  m_EmpDatabaseLock = m_EmpEntryListHead = NULL;
-  m_emp_item_size = 0;
-  m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
+  init_silo();
+  init_emp();
+  init_wmi();
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
   m_CmRegistryTransactionType = m_ExpKeyedEventObjectType = m_ExpWorkerFactoryObjectType = m_IopWaitCompletionPacketObjectType = m_ObpDirectoryObjectType = NULL;
@@ -52,15 +51,13 @@ void ntoskrnl_hack::zero_data()
   m_ExPagedLookasideLock = NULL;
   m_ExPagedLookasideListHead = NULL;
   m_KiSystemServiceTraceCallbackTable_size = 0;
-  m_KiDynamicTraceEnabled = m_KiTpStateLock = m_KiTpHashTable = m_KiSystemServiceTraceCallbackTable = NULL;
+  init_tracepoints();
   m_stack_base_off = m_stack_limit_off = m_thread_id_off = m_thread_process_off = m_thread_prevmod_off = m_thread_silo_off = m_thread_TopLevelIrp_off = 0;
   m_proc_pid_off = m_proc_peb_off = m_proc_job_off = m_proc_protection_off = m_proc_debport_off = m_proc_flags3_off = m_proc_secport_off = m_proc_wow64_off = m_proc_win32proc_off = m_proc_DxgProcess_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
   m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = m_EtwpRegistrationObjectType = NULL;
-  m_RtlpDebugPrintCallbackLock = m_RtlpDebugPrintCallbackList = NULL;
-  m_KdComponentTable = m_Kd_WIN2000_Mask = NULL;
-  m_DebugPrintCallback_size = m_KdComponentTable_size = 0;
+  init_dbg_data();
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
   m_CmpCallbackListLock = m_CallbackListHead = NULL;
@@ -90,21 +87,9 @@ void ntoskrnl_hack::dump() const
   if ( m_ExPagedLookasideListHead != NULL )
     printf("ExPagedLookasideListHead: %p\n", PVOID(m_ExPagedLookasideListHead - mz));
   // dump pnp data
-  if ( m_PnpDeviceClassNotifyLock != NULL )
-    printf("PnpDeviceClassNotifyLock: %p\n", PVOID(m_PnpDeviceClassNotifyLock - mz));
-  if ( m_PnpDeviceClassNotifyList != NULL )
-    printf("PnpDeviceClassNotifyList: %p, item_size %X\n", PVOID(m_PnpDeviceClassNotifyList - mz), m_pnp_item_size);
+  dump_pnp(mz);
   // dump tracepoints
-  if ( m_KiDynamicTraceEnabled != NULL ) 
-    printf("KiDynamicTraceEnabled: %p\n", PVOID(m_KiDynamicTraceEnabled - mz));
-  if ( m_KiTpStateLock != NULL )
-    printf("KiTpStateLock: %p\n", PVOID(m_KiTpStateLock - mz));
-  if ( m_KiTpHashTable != NULL )
-    printf("KiTpHashTable: %p\n", PVOID(m_KiTpHashTable - mz));
-  if ( m_KiSystemServiceTraceCallbackTable != NULL )
-    printf("KiSystemServiceTraceCallbackTable: %p size %X\n", PVOID(m_KiSystemServiceTraceCallbackTable - mz), m_KiSystemServiceTraceCallbackTable_size);
-  if ( !m_stab.empty() )
-    printf("tp sdt size: %X\n", (DWORD)m_stab.size());
+  dump_tracepoints(mz);
 
   if ( m_KeLoaderBlock != NULL )
     printf("KeLoaderBlock: %p\n", PVOID(m_KeLoaderBlock - mz));
@@ -137,18 +122,7 @@ void ntoskrnl_hack::dump() const
   if ( m_AlpcPortObjectType != NULL )
     printf("AlpcPortObjectType: %p\n", PVOID(m_AlpcPortObjectType - mz));
   // dbg data
-  if ( m_DbgkDebugObjectType != NULL )
-    printf("DbgkDebugObjectType: %p\n", PVOID(m_DbgkDebugObjectType - mz));
-  if ( m_RtlpDebugPrintCallbackLock != NULL )
-    printf("RtlpDebugPrintCallbackLock: %p\n", PVOID(m_RtlpDebugPrintCallbackLock - mz));
-  if ( m_RtlpDebugPrintCallbackList != NULL )
-    printf("RtlpDebugPrintCallbackList: %p\n", PVOID(m_RtlpDebugPrintCallbackList - mz));
-  if ( m_DebugPrintCallback_size )
-    printf("DebugPrintCallback size: %X\n", m_DebugPrintCallback_size);
-  if ( m_KdComponentTable != NULL )
-    printf("KdComponentTable: %p, size %X\n", PVOID(m_KdComponentTable - mz), m_KdComponentTable_size);
-  if ( m_Kd_WIN2000_Mask != NULL )
-    printf("Kd_WIN2000_Mask: %p\n", PVOID(m_Kd_WIN2000_Mask - mz));
+  dump_dbg_data(mz);
 
   if ( m_PsWin32CallBack != NULL )
     printf("PsWin32CallBack: %p\n", PVOID(m_PsWin32CallBack - mz));
@@ -219,26 +193,11 @@ void ntoskrnl_hack::dump() const
   if ( ObjectTable_pushlock_off )
     printf("HANDLE_TABLE.HandleContentionEvent: %X\n", ObjectTable_pushlock_off);
   // wmi
-  if ( m_WmipGuidObjectType != NULL )
-    printf("WmipGuidObjectType: %p\n", PVOID(m_WmipGuidObjectType - mz));
-  if ( m_WmipRegistrationSpinLock != NULL )
-    printf("WmipRegistrationSpinLock: %p\n", PVOID(m_WmipRegistrationSpinLock - mz));
-  if ( m_WmipInUseRegEntryHead != NULL )
-    printf("WmipInUseRegEntryHead: %p\n", PVOID(m_WmipInUseRegEntryHead - mz));
+  dump_wmi(mz);
   // silo
-  if ( m_PspSiloMonitorLock != NULL )
-    printf("PspSiloMonitorLock: %p\n", PVOID(m_PspSiloMonitorLock - mz));
-  if ( m_PspSiloMonitorList != NULL )
-    printf("PspSiloMonitorList: %p\n", PVOID(m_PspSiloMonitorList - mz));
-  if ( m_PspHostSiloGlobals != NULL )
-    printf("PspHostSiloGlobals: %p\n", PVOID(m_PspHostSiloGlobals - mz));
+  dump_silo(mz);
   // emp
-  if ( m_EmpDatabaseLock != NULL )
-    printf("EmpDatabaseLock: %p\n", PVOID(m_EmpDatabaseLock - mz));
-  if ( m_EmpEntryListHead != NULL )
-    printf("EmpEntryListHead: %p\n", PVOID(m_EmpEntryListHead - mz));
-  if ( m_emp_item_size )
-    printf("emp item size: %X\n", m_emp_item_size);
+  dump_emp(mz);
   // kpte
   if ( m_MiGetPteAddress != NULL )
     printf("MiGetPteAddress: %p\n", PVOID(m_MiGetPteAddress - mz));
@@ -299,6 +258,9 @@ int ntoskrnl_hack::hack(int verbose)
     if ( res_call != NULL )
       res += disasm_WmipDoFindRegEntryByDevice(res_call);
   }
+  exp = m_ed->find("WmiGetClock");
+  if ( exp != NULL )
+    res += hack_wmi_clock(mz + exp->rva);
 
   exp = m_ed->find("IoRegisterPlugPlayNotification");
   if ( exp != NULL )
