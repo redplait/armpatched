@@ -67,6 +67,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_cm_cbs(PBYTE psp);
     int hack_cm_cbs2(PBYTE psp); // under 19041 lock inside separate function CmpLockCallbackListExclusive
     int hack_cm_lock(PBYTE psp);
+    int hack_EtwpAllocGuidEntry(PBYTE);
+    int find_EtwpAllocGuidEntry_by_sign(PBYTE mz);
     int find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign);
     int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
     int disasm_SepInitializeCodeIntegrity(PBYTE, PBYTE where);
@@ -210,6 +212,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_WmipRegistrationSpinLock;
     PBYTE m_WmipInUseRegEntryHead;
     DWORD m_EtwSiloState_offset;
+    DWORD m_etw_guid_entry_size;
     // silo data
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;

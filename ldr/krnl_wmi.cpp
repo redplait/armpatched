@@ -1,11 +1,12 @@
 #include "stdafx.h"
 #include "krnl_hack.h"
 #include "cf_graph.h"
+#include "bm_search.h"
 
 void ntoskrnl_hack::init_wmi()
 {
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
-  m_EtwSiloState_offset = 0;
+  m_EtwSiloState_offset = m_etw_guid_entry_size = 0;
 }
 
 void ntoskrnl_hack::dump_wmi(PBYTE mz) const
@@ -18,6 +19,74 @@ void ntoskrnl_hack::dump_wmi(PBYTE mz) const
     printf("WmipInUseRegEntryHead: %p\n", PVOID(m_WmipInUseRegEntryHead - mz));
   if ( m_EtwSiloState_offset )
     printf("ESERVERSILO_GLOBALS.EtwSiloState offset: %X\n", m_EtwSiloState_offset);
+  if ( m_etw_guid_entry_size )
+    printf("ETW_GUID_ENTRY size: %X\n", m_etw_guid_entry_size);
+}
+
+static const DWORD s_tag = 0x47777445;
+
+int ntoskrnl_hack::hack_EtwpAllocGuidEntry(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 30; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_mov_rimm() )
+    {
+      used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+      continue;
+    }
+    PBYTE b_addr = NULL;
+    if ( is_bl_jimm(b_addr) )
+    {
+      if ( b_addr == aux_ExAllocatePoolWithTag )
+        m_etw_guid_entry_size = (DWORD)used_regs.get(AD_REG_X1);
+      break;
+    }
+  }
+  return (m_etw_guid_entry_size != 0);
+}
+
+int ntoskrnl_hack::find_EtwpAllocGuidEntry_by_sign(PBYTE mz)
+{
+  const one_section *s = m_pe->find_section_by_name("PAGE");
+  if ( NULL == s )
+    return 0;
+  PBYTE start = mz + s->va;
+  PBYTE end = start + s->size;
+  bm_search srch((const PBYTE)&s_tag, sizeof(s_tag));
+  PBYTE curr = start;
+  std::list<PBYTE> founds;
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    try
+    {
+      founds.push_back(fres);
+    } catch(std::bad_alloc)
+    { return 0; }
+    curr = fres + sizeof(s_tag);
+  }
+  if ( founds.empty() )
+    return 0;
+  for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
+  {
+    PBYTE func = find_pdata(*citer);
+    if ( NULL == func )
+      continue;
+#ifdef _DEBUG
+    printf("find_EtwpAllocGuidEntry_by_sign: found at %p, func %p\n", *citer - mz, func);
+#endif/* _DEBUG */
+    if ( hack_EtwpAllocGuidEntry(func) )
+      return 1;
+  }
+  return 0;
+  
 }
 
 int ntoskrnl_hack::disasm_IoWMIDeviceObjectToProviderId(PBYTE psp, PBYTE &out_call)

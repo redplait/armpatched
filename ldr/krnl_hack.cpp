@@ -261,6 +261,8 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("WmiGetClock");
   if ( exp != NULL )
     res += hack_wmi_clock(mz + exp->rva);
+  if ( m_EtwSiloState_offset )
+    res += find_EtwpAllocGuidEntry_by_sign(mz);
 
   exp = m_ed->find("IoRegisterPlugPlayNotification");
   if ( exp != NULL )
