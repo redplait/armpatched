@@ -151,6 +151,16 @@ int arm64_hack::is_ldrb() const
   ;
 }
 
+int arm64_hack::is_ldrh() const
+{
+  return (m_dis.instr_id == AD_INSTR_LDRH) && 
+         (m_dis.num_operands == 3) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_REG) &&
+         (m_dis.operands[2].type == AD_OP_IMM)
+  ;
+}
+
 int arm64_hack::is_ldr() const
 {
   return (m_dis.instr_id == AD_INSTR_LDR) && 

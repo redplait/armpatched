@@ -18,6 +18,7 @@ class ntdll_hack: public arm64_hack
     void zero_data();
     int hack_veh(PBYTE);
     int hack_add_dll_dirs(PBYTE);
+    int hack_dll_dir(PBYTE);
     // aux data
     PBYTE aux_RtlAcquireSRWLockExclusive;
     PBYTE aux_RtlAllocateHeap;
@@ -26,4 +27,6 @@ class ntdll_hack: public arm64_hack
     PBYTE m_LdrpVectorHandlerList;
     PBYTE m_LdrpDllDirectoryLock;
     PBYTE m_LdrpUserDllDirectories;
+    PBYTE m_LdrpPolicyBits;
+    PBYTE m_LdrpDllDirectory;
 };
