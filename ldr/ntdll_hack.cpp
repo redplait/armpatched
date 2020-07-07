@@ -7,12 +7,14 @@ void ntdll_hack::zero_data()
   // fill auxilary data
   init_aux("RtlAcquireSRWLockExclusive", aux_RtlAcquireSRWLockExclusive);
   init_aux("RtlAllocateHeap", aux_RtlAllocateHeap);
+  init_aux("RtlEnterCriticalSection", aux_RtlEnterCriticalSection);
   aux_LdrpMrdataLock = NULL;
   // zero output data
   m_LdrpVectorHandlerList = NULL;
   m_LdrpPolicyBits = NULL;
   m_LdrpDllDirectory = NULL;
   m_LdrpDllDirectoryLock = m_LdrpUserDllDirectories = NULL;
+  m_LdrpDllNotificationLock = m_LdrpDllNotificationList = NULL;
 }
 
 void ntdll_hack::dump() const
@@ -28,6 +30,10 @@ void ntdll_hack::dump() const
     printf("LdrpPolicyBits: %p\n", PVOID(m_LdrpPolicyBits - mz));
   if ( m_LdrpDllDirectory != NULL )
     printf("LdrpDllDirectory: %p\n", PVOID(m_LdrpDllDirectory - mz));
+  if ( m_LdrpDllNotificationLock != NULL )
+    printf("LdrpDllNotificationLock: %p\n", PVOID(m_LdrpDllNotificationLock - mz));
+  if ( m_LdrpDllNotificationList != NULL )
+    printf("LdrpDllNotificationList: %p\n", PVOID(m_LdrpDllNotificationList - mz));
 }
 
 int ntdll_hack::hack(int verbose)
@@ -54,7 +60,56 @@ int ntdll_hack::hack(int verbose)
   if ( exp != NULL )
     res += hack_dll_dir(mz + exp->rva);
 
+  exp = m_ed->find("LdrUnregisterDllNotification");
+  if ( exp != NULL )
+    res += find_dll_ntfy(mz + exp->rva);
+
   return res;
+}
+
+int ntdll_hack::find_dll_ntfy(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  int state = 0; // 0 - wait RtlEnterCriticalSection
+  for ( DWORD i = 0; i < 40; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".data") )
+         used_regs.zero(get_reg(0));
+       continue;
+    }
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+      if ( caddr == aux_RtlEnterCriticalSection )
+      {
+        m_LdrpDllNotificationLock = (PBYTE)used_regs.get(AD_REG_X0);
+        state = 1;
+      }
+      continue;
+    }
+    // ldr
+    if ( state && is_ldr() ) 
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".data") )
+       {
+          used_regs.zero(get_reg(0));
+          continue;
+       }
+       m_LdrpDllNotificationList = what;
+       break;
+    }
+  }
+  return (m_LdrpDllNotificationList != NULL);
 }
 
 int ntdll_hack::hack_dll_dir(PBYTE psp)
