@@ -16,6 +16,7 @@ void ntoskrnl_hack::init_aux(const char *aux_name, PBYTE &aux)
 void ntoskrnl_hack::zero_data()
 {
   // fill auxilary data
+  init_aux("KeAcquireSpinLockAtDpcLevel", aux_KeAcquireSpinLockAtDpcLevel);
   init_aux("ExAcquireSpinLockExclusiveAtDpcLevel", aux_ExAcquireSpinLockExclusiveAtDpcLevel);
   init_aux("KeAcquireSpinLockRaiseToDpc", aux_KeAcquireSpinLockRaiseToDpc);
   init_aux("ExAcquirePushLockExclusiveEx", aux_ExAcquirePushLockExclusiveEx);
@@ -36,13 +37,15 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   init_aux("RtlImageNtHeader", aux_RtlImageNtHeader);
   init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
-  aux_PsGetCurrentServerSiloGlobals = aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_dispatch_icall = aux_tp_stab = NULL;
+  aux_PsGetCurrentServerSiloGlobals = aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_KxAcquireSpinLock =
+  aux_dispatch_icall = aux_tp_stab = NULL;
   // zero output data
   m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
   init_silo();
   init_emp();
   init_wmi();
+  init_bugcheck_data();
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
   m_CmRegistryTransactionType = m_ExpKeyedEventObjectType = m_ExpWorkerFactoryObjectType = m_IopWaitCompletionPacketObjectType = m_ObpDirectoryObjectType = NULL;
@@ -90,6 +93,8 @@ void ntoskrnl_hack::dump() const
   dump_pnp(mz);
   // dump tracepoints
   dump_tracepoints(mz);
+  // bugcheck data
+  dump_bugcheck_data(mz);
 
   if ( m_KeLoaderBlock != NULL )
     printf("KeLoaderBlock: %p\n", PVOID(m_KeLoaderBlock - mz));
@@ -318,6 +323,15 @@ int ntoskrnl_hack::hack(int verbose)
     if ( m_SeCiCallbacks == NULL )
       res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000007);
   }
+
+  // bugcheck data
+  exp = m_ed->find("FsRtlUninitializeFileLock");
+  if ( exp != NULL )
+    res += find_KxAcquireSpinLock(mz + exp->rva);
+  exp = m_ed->find("KeRegisterBugCheckCallback");
+  if ( exp != NULL )
+    res += hack_bugcheck(mz + exp->rva);
+
   // silo data
   exp = m_ed->find("PsStartSiloMonitor");
   if ( exp != NULL )

@@ -160,6 +160,7 @@
     <ClCompile Include="exports_dict.cpp" />
     <ClCompile Include="hack.cpp" />
     <ClCompile Include="imports_dict.cpp" />
+    <ClCompile Include="krnl_bugcheck.cpp" />
     <ClCompile Include="krnl_crsh.cpp" />
     <ClCompile Include="krnl_dbg.cpp" />
     <ClCompile Include="krnl_emp.cpp" />

@@ -28,6 +28,7 @@ class ntoskrnl_hack: public arm64_hack
     void init_silo();
     void init_tracepoints();
     void init_dbg_data();
+    void init_bugcheck_data();
     // dumpers
     void dump_wmi(PBYTE mz) const;
     void dump_emp(PBYTE mz) const;
@@ -35,6 +36,7 @@ class ntoskrnl_hack: public arm64_hack
     void dump_pnp(PBYTE mz) const;
     void dump_dbg_data(PBYTE mz) const;
     void dump_tracepoints(PBYTE mz) const;
+    void dump_bugcheck_data(PBYTE mz) const;
 
     void zero_data();
     void zero_sign_data();
@@ -50,6 +52,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_emp(PBYTE mz);
     int find_emp_list(PBYTE mz);
     int hack_ex_cbs_aux(PBYTE psp);
+    int find_KxAcquireSpinLock(PBYTE psp);
+    int hack_bugcheck(PBYTE psp);
     int hack_timers(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
     int hack_x0_ldr(PBYTE psp, DWORD &off);
@@ -95,6 +99,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_MmSystemRangeStart;
     PBYTE aux_MmHighestUserAddress;
     PBYTE aux_MmBadPointer;
+    PBYTE aux_KeAcquireSpinLockAtDpcLevel;
     PBYTE aux_ExAcquireSpinLockExclusiveAtDpcLevel;
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
@@ -116,11 +121,15 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExCompareExchangeCallBack;
     PBYTE aux_dispatch_icall; // guard_dispatch_icall
     PBYTE aux_PsGetCurrentServerSiloGlobals;
+    PBYTE aux_KxAcquireSpinLock; // from FsRtlUninitializeFileLock
     // lookaside lists data
     PBYTE m_ExNPagedLookasideLock;
     PBYTE m_ExNPagedLookasideListHead;
     PBYTE m_ExPagedLookasideLock;
     PBYTE m_ExPagedLookasideListHead;
+    // bugcheck data
+    PBYTE m_KeBugCheckCallbackLock;
+    PBYTE m_KeBugCheckCallbackListHead;
     // tracepoints data
     PBYTE m_KiDynamicTraceEnabled;
     PBYTE m_KiTpStateLock;
