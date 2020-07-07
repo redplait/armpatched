@@ -15,6 +15,7 @@ void ntdll_hack::zero_data()
   m_LdrpDllDirectory = NULL;
   m_LdrpDllDirectoryLock = m_LdrpUserDllDirectories = NULL;
   m_LdrpDllNotificationLock = m_LdrpDllNotificationList = NULL;
+  m_LdrpShutdownInProgress = NULL;
 }
 
 void ntdll_hack::dump() const
@@ -34,6 +35,8 @@ void ntdll_hack::dump() const
     printf("LdrpDllNotificationLock: %p\n", PVOID(m_LdrpDllNotificationLock - mz));
   if ( m_LdrpDllNotificationList != NULL )
     printf("LdrpDllNotificationList: %p\n", PVOID(m_LdrpDllNotificationList - mz));
+  if ( m_LdrpShutdownInProgress != NULL )
+    printf("LdrpShutdownInProgress: %p\n", PVOID(m_LdrpShutdownInProgress - mz));
 }
 
 int ntdll_hack::hack(int verbose)
@@ -64,7 +67,37 @@ int ntdll_hack::hack(int verbose)
   if ( exp != NULL )
     res += find_dll_ntfy(mz + exp->rva);
 
+  exp = m_ed->find("RtlDllShutdownInProgress");
+  if ( exp != NULL )
+    res += find_shut(mz + exp->rva);
+
   return res;
+}
+
+int ntdll_hack::find_shut(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 6; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_ldrb() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".data") )
+       {
+          used_regs.zero(get_reg(0));
+          continue;
+       }
+       m_LdrpShutdownInProgress = what;
+       break;
+    }
+  }
+  return (m_LdrpShutdownInProgress != NULL);
 }
 
 int ntdll_hack::find_dll_ntfy(PBYTE psp)

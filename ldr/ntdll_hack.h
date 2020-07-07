@@ -20,6 +20,7 @@ class ntdll_hack: public arm64_hack
     int hack_add_dll_dirs(PBYTE);
     int hack_dll_dir(PBYTE);
     int find_dll_ntfy(PBYTE);
+    int find_shut(PBYTE);
     // aux data
     PBYTE aux_RtlAcquireSRWLockExclusive;
     PBYTE aux_RtlAllocateHeap;
@@ -33,4 +34,5 @@ class ntdll_hack: public arm64_hack
     PBYTE m_LdrpDllDirectory;
     PBYTE m_LdrpDllNotificationLock;
     PBYTE m_LdrpDllNotificationList;
+    PBYTE m_LdrpShutdownInProgress;
 };
