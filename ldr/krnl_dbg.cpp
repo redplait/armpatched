@@ -8,6 +8,7 @@ void ntoskrnl_hack::init_dbg_data()
   m_DbgkDebugObjectType = m_RtlpDebugPrintCallbackLock = m_RtlpDebugPrintCallbackList = NULL;
   m_DebugPrintCallback_size = m_KdComponentTable_size = 0;
   m_KdComponentTable = m_Kd_WIN2000_Mask = NULL;
+  m_KdPitchDebugger = NULL;
 }
 
 void ntoskrnl_hack::dump_dbg_data(PBYTE mz) const
@@ -24,6 +25,8 @@ void ntoskrnl_hack::dump_dbg_data(PBYTE mz) const
     printf("KdComponentTable: %p, size %X\n", PVOID(m_KdComponentTable - mz), m_KdComponentTable_size);
   if ( m_Kd_WIN2000_Mask != NULL )
     printf("Kd_WIN2000_Mask: %p\n", PVOID(m_Kd_WIN2000_Mask - mz));
+  if ( m_KdPitchDebugger != NULL )
+    printf("KdPitchDebugger: %p\n", PVOID(m_KdPitchDebugger - mz));
 }
 
 int ntoskrnl_hack::hack_kd_masks(PBYTE psp)
@@ -185,4 +188,30 @@ int ntoskrnl_hack::hack_DbgpInsertDebugPrintCallback(PBYTE psp)
   }
 end:
   return (m_RtlpDebugPrintCallbackLock != NULL) && (m_RtlpDebugPrintCallbackList != NULL);
+}
+
+int ntoskrnl_hack::resolve_KdPitchDebugger(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 20; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_ldrb() ) 
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".data") )
+       {
+          used_regs.zero(get_reg(0));
+          continue;
+       }
+       m_KdPitchDebugger = what;
+       break;
+    }
+  }
+  return (m_KdPitchDebugger != NULL);
 }

@@ -242,22 +242,7 @@ int ntoskrnl_hack::hack(int verbose)
      res += disasm_MiGetPteAddress(m_MiGetPteAddress);
   }
   // WMI data
-  exp = m_ed->find("IoWMIQueryAllData");
-  if ( exp != NULL )
-    res += disasm_IoWMIQueryAllData(mz + exp->rva);
-  exp = m_ed->find("IoWMIDeviceObjectToProviderId");
-  if ( exp != NULL )
-  {
-    PBYTE res_call = NULL;
-    res += disasm_IoWMIDeviceObjectToProviderId(mz + exp->rva, res_call);
-    if ( res_call != NULL )
-      res += disasm_WmipDoFindRegEntryByDevice(res_call);
-  }
-  exp = m_ed->find("WmiGetClock");
-  if ( exp != NULL )
-    res += hack_wmi_clock(mz + exp->rva);
-  if ( m_EtwSiloState_offset )
-    res += find_EtwpAllocGuidEntry_by_sign(mz);
+  res += hack_wmi(mz);
 
   exp = m_ed->find("IoRegisterPlugPlayNotification");
   if ( exp != NULL )
@@ -304,6 +289,9 @@ int ntoskrnl_hack::hack(int verbose)
     if ( find_first_jmp(mz + exp->rva, next) )
       res += hack_kd_masks(next);
   }
+  exp = m_ed->find("KdRefreshDebuggerNotPresent");
+  if ( exp != NULL )
+    res += resolve_KdPitchDebugger(mz + exp->rva);
 
   if ( m_KeLoaderBlock != NULL )
   {
@@ -329,6 +317,7 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsGetServerSiloServiceSessionId");
   if ( exp != NULL )
     res += hack_silo_global(mz + exp->rva);
+
   exp = m_ed->find("ExRegisterExtension");
   if ( exp != NULL )
     res += hack_reg_ext(mz + exp->rva);
@@ -432,7 +421,6 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsIsSystemProcess");
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_flags3_off);
-
 
   // hypervisor
   exp = m_ed->find("HvlQueryActiveProcessors");

@@ -41,6 +41,7 @@ class ntoskrnl_hack: public arm64_hack
     void zero_data();
     void zero_sign_data();
     void dump_sign_data() const;
+    int hack_wmi(PBYTE mz);
     int try_find_PsKernelRangeList(PBYTE mz);
     int disasm_MiGetPteAddress(PBYTE psp);
     int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);
@@ -92,6 +93,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_KiSystemServiceTraceCallbackTable(PBYTE mz, PBYTE psp);
     int find_DbgpInsertDebugPrintCallback_by_sign(PBYTE mz);
     int hack_DbgpInsertDebugPrintCallback(PBYTE);
+    int resolve_KdPitchDebugger(PBYTE);
     int hack_kd_masks(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
@@ -215,6 +217,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KdComponentTable;
     DWORD m_KdComponentTable_size;
     PBYTE m_Kd_WIN2000_Mask;
+    PBYTE m_KdPitchDebugger;
     // wmi data
     PBYTE m_WmipGuidObjectType;
     PBYTE m_WmipRegistrationSpinLock;

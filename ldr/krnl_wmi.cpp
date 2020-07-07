@@ -23,6 +23,29 @@ void ntoskrnl_hack::dump_wmi(PBYTE mz) const
     printf("ETW_GUID_ENTRY size: %X\n", m_etw_guid_entry_size);
 }
 
+int ntoskrnl_hack::hack_wmi(PBYTE mz)
+{
+  int res = 0;
+  const export_item *exp = m_ed->find("IoWMIQueryAllData");
+  if ( exp != NULL )
+    res += disasm_IoWMIQueryAllData(mz + exp->rva);
+  exp = m_ed->find("IoWMIDeviceObjectToProviderId");
+  if ( exp != NULL )
+  {
+    PBYTE res_call = NULL;
+    res += disasm_IoWMIDeviceObjectToProviderId(mz + exp->rva, res_call);
+    if ( res_call != NULL )
+      res += disasm_WmipDoFindRegEntryByDevice(res_call);
+  }
+  exp = m_ed->find("WmiGetClock");
+  if ( exp != NULL )
+    res += hack_wmi_clock(mz + exp->rva);
+  if ( m_EtwSiloState_offset )
+    res += find_EtwpAllocGuidEntry_by_sign(mz);
+
+  return res;
+}
+
 static const DWORD s_tag = 0x47777445;
 
 int ntoskrnl_hack::hack_EtwpAllocGuidEntry(PBYTE psp)
