@@ -3,6 +3,7 @@
 #include "skci_hack.h"
 #include "krnl_hack.h"
 #include "ndis_hack.h"
+#include "ntdll_hack.h"
 #include "../source/armadillo.h"
 
 void usage(const wchar_t *progname)
@@ -233,6 +234,13 @@ int wmain(int argc, wchar_t **argv)
              skci.hack(verb_mode);
              skci.dump();
            }
+         } else if ( !_stricmp(exp_name, "ntdll.dll") )
+         {
+           krnl = 0;
+           ntdll_hack ntdll(&f, ed);
+           ed = NULL; // will be killed inside ~arm64_hack
+           ntdll.hack(verb_mode);
+           ntdll.dump();
          }
        }
        if ( krnl )

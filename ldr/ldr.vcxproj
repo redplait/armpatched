@@ -174,6 +174,7 @@
     <ClCompile Include="krnl_wmi.cpp" />
     <ClCompile Include="ldr.cpp" />
     <ClCompile Include="ndis_hack.cpp" />
+    <ClCompile Include="ntdll_hack.cpp" />
     <ClCompile Include="pe_file.cpp" />
     <ClCompile Include="skci_hack.cpp" />
   </ItemGroup>

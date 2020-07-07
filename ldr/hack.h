@@ -212,6 +212,7 @@ class arm64_hack
    arm64_hack(arm64_pe_file *pe, exports_dict *ed);
    virtual ~arm64_hack();   
   protected:
+   void init_aux(const char *, PBYTE &aux);
    void fill_lc();
    // disasm methods
    int setup(PBYTE psp)

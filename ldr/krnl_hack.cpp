@@ -3,16 +3,6 @@
 #include "cf_graph.h"
 #include "bm_search.h"
 
-void ntoskrnl_hack::init_aux(const char *aux_name, PBYTE &aux)
-{
-  aux = NULL;
-  if ( m_ed == NULL )
-    return;
-  const export_item *exp = m_ed->find(aux_name);
-  if ( exp != NULL )
-    aux = m_pe->base_addr() + exp->rva;
-}
-
 void ntoskrnl_hack::zero_data()
 {
   // fill auxilary data

@@ -41,7 +41,6 @@ class ntoskrnl_hack: public arm64_hack
     void zero_data();
     void zero_sign_data();
     void dump_sign_data() const;
-    void init_aux(const char *, PBYTE &aux);
     int try_find_PsKernelRangeList(PBYTE mz);
     int disasm_MiGetPteAddress(PBYTE psp);
     int resolve_notify(PBYTE psp, PBYTE &lock, PBYTE &list);

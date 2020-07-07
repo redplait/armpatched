@@ -275,6 +275,16 @@ int arm64_hack::find_first_load(PBYTE addr, const char *s_name, PBYTE &out)
   return (out != NULL);
 }
 
+void arm64_hack::init_aux(const char *aux_name, PBYTE &aux)
+{
+  aux = NULL;
+  if ( m_ed == NULL )
+    return;
+  const export_item *exp = m_ed->find(aux_name);
+  if ( exp != NULL )
+    aux = m_pe->base_addr() + exp->rva;
+}
+
 struct pdata_item
 {
   DWORD off;
