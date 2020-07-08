@@ -19,6 +19,7 @@ void ntdll_hack::zero_data()
   m_LdrpShutdownInProgress = NULL;
   wnf_block = NULL;
   wnf_block_size = 0;
+  m_RtlpDynamicFunctionTableLock = m_RtlpDynamicFunctionTable = NULL;
 }
 
 void ntdll_hack::dump() const
@@ -26,6 +27,10 @@ void ntdll_hack::dump() const
   PBYTE mz = m_pe->base_addr();
   if ( m_LdrpVectorHandlerList != NULL )
     printf("LdrpVectorHandlerList: %p\n", PVOID(m_LdrpVectorHandlerList - mz));
+  if ( m_RtlpDynamicFunctionTableLock != NULL )
+    printf("RtlpDynamicFunctionTableLock: %p\n", PVOID(m_RtlpDynamicFunctionTableLock - mz));
+  if ( m_RtlpDynamicFunctionTable != NULL ) 
+    printf("RtlpDynamicFunctionTable: %p\n", PVOID(m_RtlpDynamicFunctionTable - mz));
   if ( m_LdrpDllDirectoryLock != NULL )
     printf("LdrpDllDirectoryLock: %p\n", PVOID(m_LdrpDllDirectoryLock - mz));
   if ( m_LdrpUserDllDirectories != NULL )
@@ -60,6 +65,10 @@ int ntdll_hack::hack(int verbose)
     else
       res += hack_veh(mz + exp->rva);
   }
+  exp = m_ed->find("RtlDeleteFunctionTable");
+  if ( exp != NULL )
+    res += hack_func_tab(mz + exp->rva);
+
   exp = m_ed->find("LdrAddDllDirectory");
   if ( exp != NULL )
     res += hack_add_dll_dirs(mz + exp->rva);
@@ -191,6 +200,51 @@ int ntdll_hack::hack_wnf_root(PBYTE psp)
   }
 end:
   return (wnf_block != NULL);
+}
+
+int ntdll_hack::hack_func_tab(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  int state = 0; // wait for RtlAcquireSRWLockExclusive
+  for ( DWORD i = 0; i < 40; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !state && !in_section(what, ".data") )
+         used_regs.zero(get_reg(0));
+       continue;
+    }
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+      if ( caddr == aux_RtlAcquireSRWLockExclusive )
+      {
+        m_RtlpDynamicFunctionTableLock = (PBYTE)used_regs.get(AD_REG_X0);
+        state = 1;
+      }
+      continue;
+    }
+    // ldr
+    if ( state && is_ldr() ) 
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".mrdata") )
+       {
+          used_regs.zero(get_reg(0));
+          continue;
+       }
+       m_RtlpDynamicFunctionTable = what;
+       break;
+    }
+  }
+  return (m_RtlpDynamicFunctionTable != NULL);
 }
 
 int ntdll_hack::find_shut(PBYTE psp)

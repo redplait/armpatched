@@ -23,6 +23,7 @@ class ntdll_hack: public arm64_hack
     int find_shut(PBYTE);
     int find_wnf_root(PBYTE);
     int hack_wnf_root(PBYTE);
+    int hack_func_tab(PBYTE);
     // aux data
     PBYTE aux_RtlAcquireSRWLockExclusive;
     PBYTE aux_RtlAllocateHeap;
@@ -40,4 +41,6 @@ class ntdll_hack: public arm64_hack
     PBYTE m_LdrpShutdownInProgress;
     PBYTE wnf_block;
     DWORD wnf_block_size;
+    PBYTE m_RtlpDynamicFunctionTableLock;
+    PBYTE m_RtlpDynamicFunctionTable;
 };
