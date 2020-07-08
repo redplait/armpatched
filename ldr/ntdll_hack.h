@@ -21,10 +21,13 @@ class ntdll_hack: public arm64_hack
     int hack_dll_dir(PBYTE);
     int find_dll_ntfy(PBYTE);
     int find_shut(PBYTE);
+    int find_wnf_root(PBYTE);
+    int hack_wnf_root(PBYTE);
     // aux data
     PBYTE aux_RtlAcquireSRWLockExclusive;
     PBYTE aux_RtlAllocateHeap;
     PBYTE aux_RtlEnterCriticalSection;
+    PBYTE aux_RtlRunOnceExecuteOnce;
     PBYTE aux_LdrpMrdataLock; // not exported
     // output data
     PBYTE m_LdrpVectorHandlerList;
@@ -35,4 +38,6 @@ class ntdll_hack: public arm64_hack
     PBYTE m_LdrpDllNotificationLock;
     PBYTE m_LdrpDllNotificationList;
     PBYTE m_LdrpShutdownInProgress;
+    PBYTE wnf_block;
+    DWORD wnf_block_size;
 };
