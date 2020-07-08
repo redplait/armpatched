@@ -19,7 +19,8 @@ void ntdll_hack::zero_data()
   m_LdrpShutdownInProgress = NULL;
   wnf_block = NULL;
   wnf_block_size = 0;
-  m_RtlpDynamicFunctionTableLock = m_RtlpDynamicFunctionTable = NULL;
+  m_RtlpDynamicFunctionTableLock = m_RtlpDynamicFunctionTable = m_RtlpDynamicFunctionTableTree = NULL;
+  m_func_tab_tree_item_size = 0;
 }
 
 void ntdll_hack::dump() const
@@ -31,6 +32,8 @@ void ntdll_hack::dump() const
     printf("RtlpDynamicFunctionTableLock: %p\n", PVOID(m_RtlpDynamicFunctionTableLock - mz));
   if ( m_RtlpDynamicFunctionTable != NULL ) 
     printf("RtlpDynamicFunctionTable: %p\n", PVOID(m_RtlpDynamicFunctionTable - mz));
+  if ( m_RtlpDynamicFunctionTableTree != NULL )
+    printf("RtlpDynamicFunctionTableTree: %p, item size %X\n", PVOID(m_RtlpDynamicFunctionTableTree - mz), m_func_tab_tree_item_size);
   if ( m_LdrpDllDirectoryLock != NULL )
     printf("LdrpDllDirectoryLock: %p\n", PVOID(m_LdrpDllDirectoryLock - mz));
   if ( m_LdrpUserDllDirectories != NULL )
@@ -68,6 +71,9 @@ int ntdll_hack::hack(int verbose)
   exp = m_ed->find("RtlDeleteFunctionTable");
   if ( exp != NULL )
     res += hack_func_tab(mz + exp->rva);
+  exp = m_ed->find("RtlAddFunctionTable");
+  if ( exp != NULL )
+    res += hack_func_tree(mz + exp->rva);
 
   exp = m_ed->find("LdrAddDllDirectory");
   if ( exp != NULL )
@@ -200,6 +206,56 @@ int ntdll_hack::hack_wnf_root(PBYTE psp)
   }
 end:
   return (wnf_block != NULL);
+}
+
+int ntdll_hack::hack_func_tree(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  int state = 0; // 0 wait for RtlAllocateHeap, 1 - RtlAcquireSRWLockExclusive(RtlpDynamicFunctionTableLock)
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm(state) || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".data") && !in_section(what, ".mrdata") )
+         used_regs.zero(get_reg(0));
+       continue;
+    }
+    if ( is_mov_rimm() )
+    {
+       used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+       continue;
+    }
+    PBYTE caddr = NULL;
+    if ( is_bl_jimm(caddr) )
+    {
+      if ( caddr == aux_RtlAllocateHeap )
+      {
+        m_func_tab_tree_item_size = (DWORD)used_regs.get(AD_REG_X2);
+        state = 1;
+        continue;
+      }
+      if ( (1 == state) && (caddr == aux_RtlAcquireSRWLockExclusive) )
+        state = 2;
+      continue;
+    }
+    // ldr
+    if ( (2 == state) && is_ldr() ) 
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".mrdata") )
+          continue;
+       m_RtlpDynamicFunctionTableTree = what;
+       break;
+    }
+  }
+  return (m_RtlpDynamicFunctionTableTree != NULL);
 }
 
 int ntdll_hack::hack_func_tab(PBYTE psp)
