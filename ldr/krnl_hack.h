@@ -54,6 +54,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_ex_cbs_aux(PBYTE psp);
     int find_KxAcquireSpinLock(PBYTE psp);
     int hack_bugcheck(PBYTE psp);
+    int hack_bugcheck_reason(PBYTE psp);
     int hack_timers(PBYTE psp);
     int hack_x18(PBYTE psp, DWORD &off);
     int hack_x0_ldr(PBYTE psp, DWORD &off);
@@ -132,6 +133,8 @@ class ntoskrnl_hack: public arm64_hack
     // bugcheck data
     PBYTE m_KeBugCheckCallbackLock;
     PBYTE m_KeBugCheckCallbackListHead;
+    PBYTE m_KeBugCheckReasonCallbackListHead;
+    PBYTE m_KeBugCheckAddRemovePagesCallbackListHead;
     // tracepoints data
     PBYTE m_KiDynamicTraceEnabled;
     PBYTE m_KiTpStateLock;

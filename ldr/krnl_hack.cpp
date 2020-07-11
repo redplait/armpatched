@@ -316,6 +316,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("KeRegisterBugCheckCallback");
   if ( exp != NULL )
     res += hack_bugcheck(mz + exp->rva);
+  exp = m_ed->find("KeRegisterBugCheckReasonCallback");
+  if ( exp != NULL )
+    res += hack_bugcheck_reason(mz + exp->rva);
 
   // silo data
   exp = m_ed->find("PsStartSiloMonitor");
