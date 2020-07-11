@@ -95,6 +95,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_DbgpInsertDebugPrintCallback(PBYTE);
     int resolve_KdPitchDebugger(PBYTE);
     int hack_kd_masks(PBYTE);
+    int hack_CmpTraceRoutine(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -180,6 +181,8 @@ class ntoskrnl_hack: public arm64_hack
     DWORD eproc_ObjectTable_off;
     DWORD ObjectTable_pushlock_off;
     DWORD eproc_ProcessLock_off;
+    // etw stuff
+    PBYTE m_CmpTraceRoutine;
     // kpte stuff
     PBYTE m_MiGetPteAddress;
     PBYTE m_pte_base_addr;

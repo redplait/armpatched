@@ -30,6 +30,7 @@ void ntoskrnl_hack::zero_data()
   aux_PsGetCurrentServerSiloGlobals = aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_KxAcquireSpinLock =
   aux_dispatch_icall = aux_tp_stab = NULL;
   // zero output data
+  m_CmpTraceRoutine = NULL;
   m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
   init_silo();
@@ -79,6 +80,9 @@ void ntoskrnl_hack::dump() const
     printf("ExPagedLookasideLock: %p\n", PVOID(m_ExPagedLookasideLock - mz));
   if ( m_ExPagedLookasideListHead != NULL )
     printf("ExPagedLookasideListHead: %p\n", PVOID(m_ExPagedLookasideListHead - mz));
+  // etw
+  if ( m_CmpTraceRoutine != NULL )
+    printf("CmpTraceRoutine: %p\n", PVOID(m_CmpTraceRoutine - mz));
   // dump pnp data
   dump_pnp(mz);
   // dump tracepoints
@@ -278,6 +282,9 @@ int ntoskrnl_hack::hack(int verbose)
       res += hack_obref_type(addr, m_ObpSymbolicLinkObjectType, ".data");
 //    if ( get_nt_addr("ZwWaitForDebugEvent", addr) )
 //      res += hack_obref_type(addr, m_DbgkDebugObjectType, "ALMOSTRO");
+    addr = NULL;
+    if ( get_nt_addr("ZwDeleteKey", addr) )
+     res += hack_CmpTraceRoutine(addr);
   }
   if ( m_DbgkDebugObjectType == NULL )
     res += find_DbgkDebugObjectType_by_sign(mz, 0xC0000712);

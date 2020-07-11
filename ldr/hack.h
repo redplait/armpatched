@@ -288,6 +288,37 @@ class arm64_hack
       }
       return 0;
     }
+    template <typename T, typename S>
+    int check_jmps(T &graph, S state)
+    {
+      PBYTE addr = NULL;
+      if ( is_cbnz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_cbz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_tbz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_tbnz_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      if ( is_bxx_jimm(addr) )
+      {
+        graph.add(addr, state);
+        return 1;
+      }
+      return 0;
+    }
    // variadic methods
    template <typename T>
    int is_xx(T op) const
@@ -325,6 +356,10 @@ class arm64_hack
    int is_b_jimm(PBYTE &addr) const;
    int is_bxx_jimm(PBYTE &addr) const;
    int is_bl_jimm(PBYTE &addr) const;
+   inline int is_br_reg() const
+   {
+     return (m_dis.instr_id == AD_INSTR_BR && m_dis.num_operands == 1 && m_dis.operands[0].type == AD_OP_REG);
+   }
    inline int is_bl_reg() const
    {
      return (m_dis.instr_id == AD_INSTR_BLR && m_dis.num_operands == 1 && m_dis.operands[0].type == AD_OP_REG);
