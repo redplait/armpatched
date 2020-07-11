@@ -4,6 +4,7 @@
 #include "krnl_hack.h"
 #include "ndis_hack.h"
 #include "ntdll_hack.h"
+#include "rpcrt4_hack.h"
 #include "../source/armadillo.h"
 
 void usage(const wchar_t *progname)
@@ -241,6 +242,13 @@ int wmain(int argc, wchar_t **argv)
            ed = NULL; // will be killed inside ~arm64_hack
            ntdll.hack(verb_mode);
            ntdll.dump();
+         } else if ( !_stricmp(exp_name, "rpcrt4.dll") )
+         {
+           krnl = 0;
+           rpcrt4_hack rpcrt4(&f, ed);
+           ed = NULL; // will be killed inside ~arm64_hack
+           rpcrt4.hack(verb_mode);
+           rpcrt4.dump();
          }
        }
        if ( krnl )

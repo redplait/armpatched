@@ -176,6 +176,7 @@
     <ClCompile Include="ndis_hack.cpp" />
     <ClCompile Include="ntdll_hack.cpp" />
     <ClCompile Include="pe_file.cpp" />
+    <ClCompile Include="rpcrt4_hack.cpp" />
     <ClCompile Include="skci_hack.cpp" />
   </ItemGroup>
   <ItemGroup>
