@@ -9,7 +9,7 @@ void rpcrt4_hack::zero_data()
   m_RpcHasBeenInitialized = m_GlobalRpcServer = NULL;
   m_ForwardFunction_offset = 0;
   m_MgmtAuthorizationFn = NULL;
-  m_RpcLegacyEvents_Context = m_Networking_CorrelationHandle = NULL;
+  m_RpcEtwGuid_Context = m_RpcLegacyEvents_Context = m_Networking_CorrelationHandle = NULL;
   m_WmiTraceData = NULL;
 }
 
@@ -62,6 +62,7 @@ int rpcrt4_hack::find_etw_by_signs(PBYTE mz)
   const BYTE rpc_guid[16] = { 0x32, 0x2B, 0xD5, 0x6A, 9, 0xD6, 0xE9, 0x4B, 0xAE, 7, 0xCE, 0x8D, 0xAE, 0x93, 0x7E, 0x39 };
   const BYTE net_guid[16] = { 0xF0, 0x54, 0xED, 0x83, 0x48, 0x4D, 0x45, 0x4E, 0xB1, 0x6E, 0x72, 0x6F, 0xFD, 0x1F, 0xA4, 0xAF };
   const BYTE legacy_guid[16] = { 0xC7, 0xD7, 0xAE, 0xF4, 0x98, 0xA8, 0x27, 0x46, 0xB0, 0x53, 0x44, 0xA7, 0xCA, 0xA1, 0x2F, 0xCD }; 
+  aux_RpcEtwGuid = aux_Networking_CorrelationId = aux_RpcLegacyEvents = NULL;
   int res = find_etw_guid((const PBYTE)rpc_guid, mz, aux_RpcEtwGuid);
   res += find_etw_guid((const PBYTE)net_guid, mz, aux_Networking_CorrelationId);
   res += find_etw_guid((const PBYTE)legacy_guid, mz, aux_RpcLegacyEvents);
