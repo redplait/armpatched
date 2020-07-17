@@ -19,4 +19,6 @@ class combase_hack: public etw_umod
     int resolve_gfEnableTracing(PBYTE);
     // output data
     PBYTE m_gfEnableTracing;
+    PBYTE tlg_PoFAggregate;
+    PBYTE tlg_CombaseTraceLoggingProviderProv;
 };
