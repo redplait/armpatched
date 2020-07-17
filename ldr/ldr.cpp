@@ -3,6 +3,7 @@
 #include "skci_hack.h"
 #include "krnl_hack.h"
 #include "ndis_hack.h"
+#include "combase_hack.h"
 #include "ntdll_hack.h"
 #include "rpcrt4_hack.h"
 #include "../source/armadillo.h"
@@ -35,6 +36,14 @@ void dump_import(module_import *mi)
 }
 
 typedef int (arm64_pe_file::*TDirGet)(DWORD &, DWORD &) const;
+
+template <typename T>
+void hack_dump(arm64_pe_file *f, exports_dict *ed, int verb_mode)
+{
+  T usermod(f, ed);
+  usermod.hack(verb_mode);
+  usermod.dump();
+}
 
 int wmain(int argc, wchar_t **argv)
 {
@@ -238,17 +247,18 @@ int wmain(int argc, wchar_t **argv)
          } else if ( !_stricmp(exp_name, "ntdll.dll") )
          {
            krnl = 0;
-           ntdll_hack ntdll(&f, ed);
+           hack_dump<ntdll_hack>(&f, ed, verb_mode);
            ed = NULL; // will be killed inside ~arm64_hack
-           ntdll.hack(verb_mode);
-           ntdll.dump();
          } else if ( !_stricmp(exp_name, "rpcrt4.dll") )
          {
            krnl = 0;
-           rpcrt4_hack rpcrt4(&f, ed);
+           hack_dump<rpcrt4_hack>(&f, ed, verb_mode);
            ed = NULL; // will be killed inside ~arm64_hack
-           rpcrt4.hack(verb_mode);
-           rpcrt4.dump();
+         } else if ( !_stricmp(exp_name, "combase.dll") )
+         {
+           krnl = 0;
+           hack_dump<combase_hack>(&f, ed, verb_mode);
+           ed = NULL; // will be killed inside ~arm64_hack
          }
        }
        if ( krnl )
