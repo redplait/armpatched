@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClCompile Include="bm_search.cpp" />
     <ClCompile Include="dict.c" />
+    <ClCompile Include="etw_umod.cpp" />
     <ClCompile Include="exports_dict.cpp" />
     <ClCompile Include="hack.cpp" />
     <ClCompile Include="imports_dict.cpp" />
