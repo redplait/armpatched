@@ -92,6 +92,70 @@ end:
   return (out_res != NULL);
 }
 
+int etw_umod::find_tlgs_guid4(PBYTE sign, PBYTE mz, std::list<PBYTE> &out_list)
+{
+  const one_section *s = m_pe->find_section_by_name(".rdata");
+  if ( NULL == s )
+    return 0;
+  PBYTE curr = mz + s->va;
+  PBYTE end = curr + s->size;
+  curr++; // tlgProv.Type
+  bm_search srch(sign, guid_size);
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    // check type
+    if ( fres[-1] == 4 )
+    {
+      try
+      {
+        out_list.push_back(fres);
+      } catch(std::bad_alloc)
+      { return 0; }
+    }
+    curr = fres + guid_size;
+  }
+  if ( out_list.empty() )
+    return 0;
+  return 1;
+}
+
+int etw_umod::find_tlg_guid4(PBYTE sign, PBYTE mz, PBYTE &out_res)
+{
+  const one_section *s = m_pe->find_section_by_name(".rdata");
+  if ( NULL == s )
+    return 0;
+  PBYTE curr = mz + s->va;
+  PBYTE end = curr + s->size;
+  curr++; // tlgProv.Type
+  bm_search srch(sign, guid_size);
+  std::list<PBYTE> founds;
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    // check type
+    if ( fres[-1] == 4 )
+    {
+      try
+      {
+        founds.push_back(fres);
+      } catch(std::bad_alloc)
+      { return 0; }
+    }
+    curr = fres + guid_size;
+  }
+  if ( founds.empty() )
+    return 0;
+  if ( 1 != founds.size() )
+    return 0;
+  out_res = *(founds.cbegin());
+  return 1;
+}
+
 int etw_umod::find_etw_guid(const PBYTE sign, PBYTE mz, PBYTE &out_res)
 {
   const one_section *s = m_pe->find_section_by_name(".rdata");
@@ -124,10 +188,32 @@ int etw_umod::find_etw_guid(const PBYTE sign, PBYTE mz, PBYTE &out_res)
 int etw_umod::find_tlg_by_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
 {
   PBYTE aux = NULL;
-  find_etw_guid((const PBYTE)guid, mz, aux);
+  find_tlg_guid4((const PBYTE)guid, mz, aux);
   if ( aux == NULL )
     return 0;
   return find_tlg_ref(aux + guid_size, mz, out_res);
+}
+
+int etw_umod::find_tlgs_by_guid(const PBYTE guid, PBYTE mz, std::list<PBYTE> &out_list)
+{
+  std::list<PBYTE> aux;
+  if ( !find_tlgs_guid4((const PBYTE)guid, mz, aux) )
+    return 0;
+  for ( auto citer = aux.cbegin(); citer != aux.cend(); ++citer )
+  {
+    PBYTE tmp = NULL;
+    if ( find_tlg_ref(*citer + guid_size, mz, tmp) )
+    {
+       try
+       {
+         out_list.push_back(tmp);
+       } catch(std::bad_alloc)
+       { break; }
+    }
+  }
+  if ( out_list.empty() )
+    return 0;
+  return 1;
 }
 
 int etw_umod::find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res)
@@ -156,6 +242,6 @@ int etw_umod::find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res)
     return 0;
   if ( 1 != founds.size() )
     return 0;
-  out_res = *(founds.cbegin()) + 8;
+  out_res = *(founds.cbegin()) - 8;
   return 1;
 }

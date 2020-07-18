@@ -4,7 +4,7 @@
 void combase_hack::zero_data()
 {
   m_gfEnableTracing = NULL;
-  tlg_PoFAggregate = tlg_CombaseTraceLoggingProviderProv = NULL;
+  tlg_PoFAggregate = NULL;
 }
 
 void combase_hack::dump() const
@@ -14,8 +14,12 @@ void combase_hack::dump() const
     printf("gfEnableTracing: %p\n", PVOID(m_gfEnableTracing - mz));
   if ( tlg_PoFAggregate != NULL )
     printf("tlg_PoFAggregate: %p\n", PVOID(tlg_PoFAggregate - mz));
-  if ( tlg_CombaseTraceLoggingProviderProv != NULL )
-    printf("tlg_CombaseTraceLoggingProviderProv: %p\n", PVOID(tlg_CombaseTraceLoggingProviderProv - mz));
+  if ( !tlg_CombaseTraceLoggingProviderProv.empty() )
+  {
+    printf("tlg_CombaseTraceLoggingProviderProv:\n");
+    for ( auto citer = tlg_CombaseTraceLoggingProviderProv.cbegin(); citer != tlg_CombaseTraceLoggingProviderProv.cend(); ++citer )
+      printf(" %p\n", PVOID(*citer - mz));
+  }
 }
 
 #include <initguid.h>
@@ -32,8 +36,8 @@ int combase_hack::hack(int verbose)
   const export_item *exp = m_ed->find("RoGetAgileReference");
   if ( exp != NULL )
     res += resolve_gfEnableTracing(mz + exp->rva);
-//  res += find_tlg_by_guid((const PBYTE)&PoFAggregate_GUID, mz, tlg_PoFAggregate);
-  res += find_tlg_by_guid((const PBYTE)&CombaseTraceLoggingProviderProv_GUID, mz, tlg_CombaseTraceLoggingProviderProv);
+  res += find_tlg_by_guid((const PBYTE)&PoFAggregate_GUID, mz, tlg_PoFAggregate);
+  res += find_tlgs_by_guid((const PBYTE)&CombaseTraceLoggingProviderProv_GUID, mz, tlg_CombaseTraceLoggingProviderProv);
   return res;
 }
 

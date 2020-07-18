@@ -20,5 +20,5 @@ class combase_hack: public etw_umod
     // output data
     PBYTE m_gfEnableTracing;
     PBYTE tlg_PoFAggregate;
-    PBYTE tlg_CombaseTraceLoggingProviderProv;
+    std::list<PBYTE> tlg_CombaseTraceLoggingProviderProv;
 };
