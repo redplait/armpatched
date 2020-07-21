@@ -25,12 +25,14 @@ class ntoskrnl_hack: public arm64_hack
     // init methods
     void init_wmi();
     void init_emp();
+    void init_etw();
     void init_silo();
     void init_tracepoints();
     void init_dbg_data();
     void init_bugcheck_data();
     // dumpers
     void dump_wmi(PBYTE mz) const;
+    void dump_etw(PBYTE mz) const;
     void dump_emp(PBYTE mz) const;
     void dump_silo(PBYTE mz) const;
     void dump_pnp(PBYTE mz) const;
@@ -72,6 +74,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_cm_cbs(PBYTE psp);
     int hack_cm_cbs2(PBYTE psp); // under 19041 lock inside separate function CmpLockCallbackListExclusive
     int hack_cm_lock(PBYTE psp);
+    int hack_EtwpSessionDemuxObjectType(PBYTE);
+    int find_EtwpSessionDemuxObjectType(PBYTE mz);
     int hack_EtwpAllocGuidEntry(PBYTE);
     int find_EtwpAllocGuidEntry_by_sign(PBYTE mz);
     int find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign);
@@ -119,6 +123,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExfUnblockPushLock;
     PBYTE aux_RtlImageNtHeader;
     PBYTE aux_PsInitialSystemProcess;
+    PBYTE aux_ObCreateObjectTypeEx;
+    PBYTE aux_EtwRegister;
     // not exported
     PBYTE aux_ExAllocateCallBack;
     PBYTE aux_ExCompareExchangeCallBack;
@@ -186,6 +192,7 @@ class ntoskrnl_hack: public arm64_hack
     DWORD eproc_ProcessLock_off;
     // etw stuff
     PBYTE m_CmpTraceRoutine;
+    PBYTE m_EtwpSessionDemuxObjectType;
     // kpte stuff
     PBYTE m_MiGetPteAddress;
     PBYTE m_pte_base_addr;

@@ -13,6 +13,8 @@ void ntoskrnl_hack::zero_data()
   init_aux("ObReferenceObjectByPointer", aux_ObReferenceObjectByPointer);
   init_aux("ObReferenceObjectByHandle", aux_ObReferenceObjectByHandle);
   init_aux("ObOpenObjectByPointer", aux_ObOpenObjectByPointer);
+  init_aux("ObCreateObjectTypeEx", aux_ObCreateObjectTypeEx);
+  init_aux("EtwRegister", aux_EtwRegister);
   init_aux("ExAcquireFastMutexUnsafe", aux_ExAcquireFastMutexUnsafe);
   init_aux("ExAcquireFastMutex", aux_ExAcquireFastMutex);
   init_aux("KeAcquireGuardedMutex", aux_KeAcquireGuardedMutex);
@@ -30,9 +32,9 @@ void ntoskrnl_hack::zero_data()
   aux_PsGetCurrentServerSiloGlobals = aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_KxAcquireSpinLock =
   aux_dispatch_icall = aux_tp_stab = NULL;
   // zero output data
-  m_CmpTraceRoutine = NULL;
   m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
+  init_etw();
   init_silo();
   init_emp();
   init_wmi();
@@ -81,8 +83,7 @@ void ntoskrnl_hack::dump() const
   if ( m_ExPagedLookasideListHead != NULL )
     printf("ExPagedLookasideListHead: %p\n", PVOID(m_ExPagedLookasideListHead - mz));
   // etw
-  if ( m_CmpTraceRoutine != NULL )
-    printf("CmpTraceRoutine: %p\n", PVOID(m_CmpTraceRoutine - mz));
+  dump_etw(mz);
   // dump pnp data
   dump_pnp(mz);
   // dump tracepoints
@@ -344,6 +345,8 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("EmpProviderRegister");
   if ( exp != NULL )
     res += hack_emp(mz + exp->rva);
+  // etw data
+  res += find_EtwpSessionDemuxObjectType(mz);
   // kernel notifications
   exp = m_ed->find("PsEstablishWin32Callouts");
   if ( exp != NULL )
