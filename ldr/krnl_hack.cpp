@@ -52,7 +52,7 @@ void ntoskrnl_hack::zero_data()
   m_proc_pid_off = m_proc_peb_off = m_proc_job_off = m_proc_protection_off = m_proc_debport_off = m_proc_flags3_off = m_proc_secport_off = m_proc_wow64_off = m_proc_win32proc_off = m_proc_DxgProcess_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
-  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = m_EtwpRegistrationObjectType = NULL;
+  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = NULL;
   init_dbg_data();
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
@@ -347,6 +347,7 @@ int ntoskrnl_hack::hack(int verbose)
     res += hack_emp(mz + exp->rva);
   // etw data
   res += find_EtwpSessionDemuxObjectType(mz);
+  res += hack_etw_handles(mz);
   // kernel notifications
   exp = m_ed->find("PsEstablishWin32Callouts");
   if ( exp != NULL )
@@ -873,8 +874,6 @@ int ntoskrnl_hack::find_lock_list(PBYTE psp, PBYTE &lock, PBYTE &list)
 
 int ntoskrnl_hack::hack_sdt(PBYTE psp)
 {
-  if ( !setup(psp) )
-    return 0;
   cf_graph<PBYTE> cgraph;
   std::list<PBYTE> addr_list;
   addr_list.push_back(psp);

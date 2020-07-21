@@ -426,6 +426,7 @@ class arm64_hack
    {
      return (m_pdata_rva != 0) && (m_pdata_size != 0);
    }
+   void adjust_pdata();
    PBYTE find_pdata(PBYTE);
    // load config data
    PBYTE m_cookie;

@@ -12,6 +12,8 @@ arm64_hack::arm64_hack(arm64_pe_file *pe, exports_dict *ed)
   {
     m_pdata_rva = s->va;
     m_pdata_size = s->size;
+    // there is some strange .pdata with leading zeros, so correct size
+    adjust_pdata();
   } else
    m_pdata_rva = m_pdata_size = 0;
 }
@@ -301,6 +303,20 @@ struct pdata_item
   DWORD seh_off;
 };
 
+void arm64_hack::adjust_pdata()
+{
+  PBYTE mz = m_pe->base_addr();
+  const pdata_item *first = (const pdata_item *)(mz + m_pdata_rva);
+  const pdata_item *last = (const pdata_item *)(mz + m_pdata_rva + m_pdata_size);
+  for ( --last; last > first; --last )
+  {
+    if ( !last->off && !last->seh_off )
+      m_pdata_size -= sizeof(pdata_item);
+    else
+      break;
+  }
+}
+
 PBYTE arm64_hack::find_pdata(PBYTE where)
 {
   if ( where == NULL )
@@ -311,7 +327,9 @@ PBYTE arm64_hack::find_pdata(PBYTE where)
   DWORD diff = (DWORD)(where - mz);
   const pdata_item *first = (const pdata_item *)(mz + m_pdata_rva);
   const pdata_item *last = (const pdata_item *)(mz + m_pdata_rva + m_pdata_size);
-  const pdata_item *found = std::lower_bound(first, last, diff, [](const pdata_item &l, DWORD off) -> bool { return l.off < off; });
+  const pdata_item *found = std::lower_bound(first, last, diff, [](const pdata_item &l, DWORD off) -> 
+      bool { return l.off < off; }
+  );
   if (found == last)
     return 0;
   if (found == first)
