@@ -26,6 +26,9 @@ void ntoskrnl_hack::init_etw()
     // FileProvGuid
     { { 0x27, 0x89, 0xD0, 0xED, 0xC4, 0x9C, 0x65, 0x4E, 0xB9, 0x70, 0xC2, 0x56, 0xF, 0xB5, 0xC2, 0x89 },
       "EtwpFileProvRegHandle", NULL, NULL },
+    // RegistryProvGuid - in build 20xxx?
+    { { 3, 0x4F, 0xEB, 0x70, 0xDE, 0xC1, 0x73, 0x4F, 0xA0, 0x51, 0x33, 0xD1, 0x3D, 0x54, 0x13, 0xBD },
+      "EtwpRegTraceHandle", NULL, NULL },
     // MemoryProvGuid
     { { 0xF7, 0x3E, 0xD9, 0xD1, 0xF2, 0xE1, 0x45, 0x4F, 0x99, 0x43, 3, 0xD2, 0x45, 0xFE, 0x6C, 0 },
       "EtwpMemoryProvRegHandle", NULL, NULL },
@@ -180,7 +183,7 @@ int ntoskrnl_hack::disasm_EtwpInitialize(PBYTE psp)
             if ( guid == NULL || value == NULL )
               continue;
             // check if etw handles located inside .data section
-            if ( !in_section(value, ".data") )
+            if ( !in_section(value, ".data") && !in_section(value, "PAGEDATA") )
               continue;
             asgn_etw_handle(guid, value);
             res++;
