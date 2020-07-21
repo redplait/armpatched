@@ -303,6 +303,8 @@ int ntoskrnl_hack::hack(int verbose)
 
   if ( m_KeLoaderBlock != NULL )
   {
+    res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA00000A);
+    if ( m_SeCiCallbacks == NULL )
     res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000009);
     if ( m_SeCiCallbacks == NULL )
       res += find_SepInitializeCodeIntegrity_by_sign(mz, 0xA000008);
