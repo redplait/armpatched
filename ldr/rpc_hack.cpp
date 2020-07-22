@@ -221,6 +221,17 @@ int rpc_hack::hack_one_func(PBYTE psp, PBYTE what)
           iter->second.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           continue;
         }
+        if ( is_ldr() )
+        {
+          PBYTE data = (PBYTE)iter->second.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( NULL == data || !m_pe->is_inside(data) )
+            continue;
+          PBYTE deref = (PBYTE)*((reg64_t *)data);
+          if ( NULL == deref || !m_pe->is_inside(deref) )
+            continue;
+          iter->second.adrp(get_reg(0), (reg64_t)deref);
+          continue;
+        }
         // check for blr
         if ( is_bl_reg() )
         {
