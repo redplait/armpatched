@@ -3,10 +3,10 @@
 #include "hack.h"
 #include "imports_dict.h"
 
-class drv_hack: public arm64_hack
+class iat_mod: public arm64_hack
 {
   public:
-    drv_hack(arm64_pe_file *pe, exports_dict *ed, module_import *iat)
+    iat_mod(arm64_pe_file *pe, exports_dict *ed, module_import *iat)
      : arm64_hack(pe, ed)
     {
       m_iat = iat;
@@ -19,11 +19,11 @@ class drv_hack: public arm64_hack
     module_import *m_iat;
 };
 
-class ndis_hack: public drv_hack
+class ndis_hack: public iat_mod
 {
   public:
     ndis_hack(arm64_pe_file *pe, exports_dict *ed, module_import *iat)
-     : drv_hack(pe, ed, iat)
+     : iat_mod(pe, ed, iat)
     {
       zero_data();
     }

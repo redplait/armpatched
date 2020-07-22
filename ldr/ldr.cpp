@@ -5,6 +5,7 @@
 #include "ndis_hack.h"
 #include "combase_hack.h"
 #include "ntdll_hack.h"
+#include "rpc_hack.h"
 #include "rpcrt4_hack.h"
 #include "../source/armadillo.h"
 
@@ -231,6 +232,10 @@ int wmain(int argc, wchar_t **argv)
        if ( rpc_mode )
        {
          krnl = 0;
+         rpc_hack mod(&f, ed, mimp);
+         ed = NULL; // will be killed inside ~arm64_hack
+         mod.hack(verb_mode);
+         mod.dump();
        } else if ( exp_name != NULL )
        {
          printf("%s\n", exp_name);

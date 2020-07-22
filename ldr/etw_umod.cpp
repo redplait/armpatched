@@ -74,7 +74,7 @@ int arm64_hack::disasm_etw(PBYTE psp, PBYTE aux_addr, PBYTE &out_res)
           out_res = (PBYTE)used_regs.get(AD_REG_X3);
           goto end;
         }
-        // check for blr
+        // check for bl
         if ( state && is_bl_reg() )
         {
           out_res = (PBYTE)used_regs.get(AD_REG_X3);

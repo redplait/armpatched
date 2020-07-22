@@ -336,3 +336,125 @@ PBYTE arm64_hack::find_pdata(PBYTE where)
     return 0;
   return mz + (found - 1)->off;
 }
+
+int xref_finder::find_bl(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &out_list)
+{
+  int res = 0;
+  size &= ~3;
+  struct ad_insn dis;
+  for ( DWORD i = 0; i < size / sizeof(DWORD); i++, start += 4 )
+  {
+    DWORD val = *(PDWORD)start;
+    // check for bl
+    if ( (val & 0xfc000000) == 0x94000000 )
+    {
+      if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+        continue;
+      disasm_cnt++;
+      if ( (dis.instr_id != AD_INSTR_BL) || 
+           (dis.num_operands != 1) ||
+           (dis.operands[0].type != AD_OP_IMM)
+         )
+        continue;
+      adrp_cnt++;
+      if ( (PBYTE)dis.operands[0].op_imm.bits == what )
+      {
+        try
+        {
+          out_list.push_back(start);
+          res++;
+        } catch(std::bad_alloc)
+        { break; }
+      }
+      continue;
+    }
+    // check for b
+    if ( (val & 0xfc000000) == 0x14000000 )
+    {
+      if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+        continue;
+      disasm_cnt++;
+      if ( (dis.instr_id != AD_INSTR_B) || 
+           (dis.num_operands != 1) ||
+           (dis.operands[0].type != AD_OP_IMM)
+         )
+        continue;
+      adrp_cnt++;
+      if ( (PBYTE)dis.operands[0].op_imm.bits == what )
+      {
+        try
+        {
+          out_list.push_back(start);
+          res++;
+        } catch(std::bad_alloc)
+        { break; }
+      }
+      continue;
+    }
+  }
+  return res;
+}
+
+int xref_finder::find(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &out_list)
+{
+  int res = 0;
+  size &= ~3;
+  struct ad_insn dis;
+  int reg_n;
+  for ( DWORD i = 0; i < size / sizeof(DWORD); i++, start += 4 )
+  {
+    DWORD val = *(PDWORD)start;
+    // check for adrp
+    if ( (val & 0x9f000000) == 0x90000000 )
+    {
+      if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+        continue;
+      disasm_cnt++;
+      if ( dis.instr_id != AD_INSTR_ADRP )
+        continue;
+      adrp_cnt++;
+      reg_n = dis.operands[0].op_reg.rn;
+      if ( reg_n >= AD_REG_SP )
+        continue;
+      m_regs[reg_n].addr = (PBYTE)dis.operands[1].op_imm.bits;
+      if ( m_regs[reg_n].addr == what )
+      {
+        try
+        {
+          out_list.push_back(start);
+          res++;
+        } catch(std::bad_alloc)
+        { break; }
+      }
+      m_regs[reg_n].where = start;
+      continue;
+    }
+    // check for add
+    if ( (val & 0x7f000000) == 0x11000000 )
+    {
+      if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+        continue;
+      disasm_cnt++;
+      if ( dis.instr_id != AD_INSTR_ADD )
+        continue;
+      add_cnt++;
+      reg_n = dis.operands[1].op_reg.rn;
+      if ( reg_n >= AD_REG_SP )
+        continue;
+      if ( !purge(reg_n, start) )
+        continue;
+      if ( NULL == m_regs[reg_n].addr )
+        continue;
+      if ( m_regs[reg_n].addr + (reg64_t)dis.operands[2].op_imm.bits == what )
+      {
+        try
+        {
+          out_list.push_back(start);
+          res++;
+        } catch(std::bad_alloc)
+        { break; }
+      }
+    }
+  }
+  return res;
+}

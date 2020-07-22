@@ -20,6 +20,12 @@ class regs_pad
    {
      memset(m_regs, 0, sizeof(m_regs));
    }
+   bool operator<(const regs_pad& s) const
+   {
+     auto my = std::count_if(m_regs, m_regs + _countof(m_regs), [](const reg64_t &l) -> bool { return l != 0; });
+     auto their = std::count_if(s.m_regs, s.m_regs + _countof(s.m_regs), [](const reg64_t &l) -> bool { return l != 0; });
+     return (my < their);
+   }
    // http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0802a/ADRP.html
    void adrp(int reg, reg64_t val)
    {
@@ -37,6 +43,15 @@ class regs_pad
      m_regs[reg1] = m_regs[reg2] + val;
      if ( reg1 != reg2 )
        m_regs[reg2] = 0;
+     return m_regs[reg1];
+   }
+   reg64_t add2(int reg1, int reg2, reg64_t val)
+   {
+     if ( (reg1 >= AD_REG_SP) || (reg2 >= AD_REG_SP) ) 
+       return 0;
+     if ( !m_regs[reg2] )
+       return 0;
+     m_regs[reg1] = m_regs[reg2] + val;
      return m_regs[reg1];
    }
    int ldar(int reg1, int reg2)
@@ -101,6 +116,8 @@ class xref_finder
      return 0;
    }
    // find pair of adrp/add pointing to what
+   int find_bl(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &);
+   int find(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &);
    PBYTE find(PBYTE start, DWORD size, PBYTE what)
    {
      size &= ~3;
@@ -414,13 +431,22 @@ class arm64_hack
      used_regs.ldar(get_reg(0), get_reg(1));
      return 1;
    }
-   int in_section(PBYTE addr, const char *sname) const
+   inline int in_section(PBYTE addr, const char *sname) const
    {
      ptrdiff_t off = addr - m_pe->base_addr();
      const one_section *s = m_pe->find_section_v(off);
      if ( NULL == s )
        return 0;
      return !strcmp(s->name, sname);
+   }
+   inline int in_executable_section(PBYTE addr) const
+   {
+     ptrdiff_t off = addr - m_pe->base_addr();
+     const one_section *s = m_pe->find_section_rva(off);
+     if ( NULL == s )
+       return 0;
+     return (s->flags & IMAGE_SCN_CNT_CODE) ||
+            (s->flags & IMAGE_SCN_MEM_EXECUTE);
    }
    inline int has_pdata() const
    {

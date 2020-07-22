@@ -2,11 +2,11 @@
 
 #include "ndis_hack.h"
 
-class skci_hack: public drv_hack
+class skci_hack: public iat_mod
 {
   public:
     skci_hack(arm64_pe_file *pe, exports_dict *ed, module_import *iat)
-     : drv_hack(pe, ed, iat)
+     : iat_mod(pe, ed, iat)
     {
       zero_data();
     }

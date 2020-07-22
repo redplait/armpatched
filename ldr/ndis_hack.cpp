@@ -48,7 +48,7 @@ void ndis_hack::dump() const
     printf("ndisGlobalOpenList: %p\n", PVOID(m_ndisGlobalOpenList - mz));
 }
 
-int drv_hack::is_inside_IAT(PBYTE psp) const
+int iat_mod::is_inside_IAT(PBYTE psp) const
 {
   if ( NULL == m_iat )
     return 0;
@@ -60,7 +60,7 @@ int drv_hack::is_inside_IAT(PBYTE psp) const
   return 0;
 }
 
-int drv_hack::is_iat_func(PBYTE psp, const char *name) const
+int iat_mod::is_iat_func(PBYTE psp, const char *name) const
 {
   if ( NULL == m_iat )
     return 0;
@@ -76,7 +76,7 @@ int drv_hack::is_iat_func(PBYTE psp, const char *name) const
   return 0;
 }
 
-DWORD drv_hack::get_iat_by_name(const char *name) const
+DWORD iat_mod::get_iat_by_name(const char *name) const
 {
   if ( NULL == m_iat )
     return NULL;
