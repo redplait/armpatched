@@ -18,6 +18,7 @@ void usage(const wchar_t *progname)
   printf(" -dr - dump relocs\n");
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
+  printf(" -rpc - find rpc interfaces\n");
   printf(" -v - verbose output\n");
   exit(6);
 }
@@ -53,6 +54,7 @@ int wmain(int argc, wchar_t **argv)
    int dump_relocs = 0;
    int dump_lc = 0;
    int verb_mode = 0;
+   int rpc_mode = 0;
    std::pair<TDirGet, const char *> dir_get[] = { 
      std::make_pair(&arm64_pe_file::get_export, "export"),
      std::make_pair(&arm64_pe_file::get_import, "import"),
@@ -108,6 +110,11 @@ int wmain(int argc, wchar_t **argv)
      if ( !wcscmp(argv[i], L"-v") )
      {
        verb_mode = 1;
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-rpc") )
+     {
+       rpc_mode = 1;
        continue;
      }
      printf("%S:\n", argv[i]);
@@ -221,7 +228,10 @@ int wmain(int argc, wchar_t **argv)
        // quick and dirty test
        const char *exp_name = f.get_exp_name();
        int krnl = 1;
-       if ( exp_name != NULL )
+       if ( rpc_mode )
+       {
+         krnl = 0;
+       } else if ( exp_name != NULL )
        {
          printf("%s\n", exp_name);
          if ( !_stricmp(exp_name, "ndis.sys") )

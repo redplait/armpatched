@@ -14,6 +14,7 @@ class drv_hack: public arm64_hack
    protected:
     int is_inside_IAT(PBYTE) const;
     int is_iat_func(PBYTE, const char *) const;
+    DWORD get_iat_by_name(const char *) const;
 
     module_import *m_iat;
 };

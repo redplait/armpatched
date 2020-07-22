@@ -76,6 +76,21 @@ int drv_hack::is_iat_func(PBYTE psp, const char *name) const
   return 0;
 }
 
+DWORD drv_hack::get_iat_by_name(const char *name) const
+{
+  if ( NULL == m_iat )
+    return NULL;
+  DWORD addr = m_iat->iat_rva;
+  for ( DWORD index = 0; index < m_iat->iat_count; index++, addr += 8 )
+  {
+    if ( m_iat->iat[index].name == NULL )
+      continue;
+    if ( !strcmp(m_iat->iat[index].name, name) )
+      return addr;
+  }
+  return 0;
+}
+
 int ndis_hack::hack(int verbose)
 {
   m_verbose = verbose;

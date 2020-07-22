@@ -1,11 +1,11 @@
 #include "stdafx.h"
-#include "etw_umod.h"
+#include "hack.h"
 #include "bm_search.h"
 #include "cf_graph.h"
 
 static const int guid_size = 16;
 
-int etw_umod::find_simple_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
+int arm64_hack::find_simple_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
 {
   PBYTE aux = NULL;
   find_etw_guid((const PBYTE)guid, mz, aux);
@@ -14,7 +14,7 @@ int etw_umod::find_simple_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
   return resolve_etw(aux, mz, out_res);
 }
 
-int etw_umod::resolve_etw(PBYTE what, PBYTE mz, PBYTE &out_res)
+int arm64_hack::resolve_etw(PBYTE what, PBYTE mz, PBYTE &out_res)
 {
   const one_section *s = m_pe->find_section_by_name(".text");
   if ( NULL == s )
@@ -29,7 +29,7 @@ int etw_umod::resolve_etw(PBYTE what, PBYTE mz, PBYTE &out_res)
   return disasm_etw(func, what, out_res);
 }
 
-int etw_umod::disasm_etw(PBYTE psp, PBYTE aux_addr, PBYTE &out_res)
+int arm64_hack::disasm_etw(PBYTE psp, PBYTE aux_addr, PBYTE &out_res)
 {
   if ( !setup(psp) )
     return 0;
@@ -92,7 +92,7 @@ end:
   return (out_res != NULL);
 }
 
-int etw_umod::find_tlgs_guid4(PBYTE sign, PBYTE mz, std::list<PBYTE> &out_list)
+int arm64_hack::find_tlgs_guid4(PBYTE sign, PBYTE mz, std::list<PBYTE> &out_list)
 {
   const one_section *s = m_pe->find_section_by_name(".rdata");
   if ( NULL == s )
@@ -122,7 +122,7 @@ int etw_umod::find_tlgs_guid4(PBYTE sign, PBYTE mz, std::list<PBYTE> &out_list)
   return 1;
 }
 
-int etw_umod::find_tlg_guid4(PBYTE sign, PBYTE mz, PBYTE &out_res)
+int arm64_hack::find_tlg_guid4(PBYTE sign, PBYTE mz, PBYTE &out_res)
 {
   const one_section *s = m_pe->find_section_by_name(".rdata");
   if ( NULL == s )
@@ -156,7 +156,7 @@ int etw_umod::find_tlg_guid4(PBYTE sign, PBYTE mz, PBYTE &out_res)
   return 1;
 }
 
-int etw_umod::find_etw_guid(const PBYTE sign, PBYTE mz, PBYTE &out_res)
+int arm64_hack::find_etw_guid(const PBYTE sign, PBYTE mz, PBYTE &out_res)
 {
   const one_section *s = m_pe->find_section_by_name(".rdata");
   if ( NULL == s )
@@ -185,7 +185,7 @@ int etw_umod::find_etw_guid(const PBYTE sign, PBYTE mz, PBYTE &out_res)
   return 1;
 }
 
-int etw_umod::find_tlg_by_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
+int arm64_hack::find_tlg_by_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
 {
   PBYTE aux = NULL;
   find_tlg_guid4((const PBYTE)guid, mz, aux);
@@ -194,7 +194,7 @@ int etw_umod::find_tlg_by_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
   return find_tlg_ref(aux + guid_size, mz, out_res);
 }
 
-int etw_umod::find_tlgs_by_guid(const PBYTE guid, PBYTE mz, std::list<PBYTE> &out_list)
+int arm64_hack::find_tlgs_by_guid(const PBYTE guid, PBYTE mz, std::list<PBYTE> &out_list)
 {
   std::list<PBYTE> aux;
   if ( !find_tlgs_guid4((const PBYTE)guid, mz, aux) )
@@ -216,7 +216,7 @@ int etw_umod::find_tlgs_by_guid(const PBYTE guid, PBYTE mz, std::list<PBYTE> &ou
   return 1;
 }
 
-int etw_umod::find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res)
+int arm64_hack::find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res)
 {
   const one_section *s = m_pe->find_section_by_name(".data");
   if ( NULL == s )

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "etw_umod.h"
+#include "hack.h"
 
-class combase_hack: public etw_umod
+class combase_hack: public arm64_hack
 {
   public:
     combase_hack(arm64_pe_file *pe, exports_dict *ed)
-     : etw_umod(pe, ed)
+     : arm64_hack(pe, ed)
     {
       zero_data();
     }
