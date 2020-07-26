@@ -15,5 +15,6 @@ class rpc_hack: public iat_mod
     int hack_one_import(PBYTE mz, PBYTE addr, const char *fname);
     int hack_one_func(PBYTE func, PBYTE what);
     int hack_caller(PBYTE func, PBYTE what);
+    int is_already_stored(const GUID *, PBYTE);
     std::list<std::pair<GUID, PBYTE> > m_out_res;
 };

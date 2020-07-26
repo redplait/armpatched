@@ -69,6 +69,7 @@ int rpc_hack::hack_one_import(PBYTE mz, PBYTE psp, const char *fname)
   if ( !res )
     return 0;
   res = 0;
+  std::set<PBYTE> func_cache;
   for ( auto citer = refs.cbegin(); citer != refs.cend(); ++citer )
   {
     PBYTE func = find_pdata(*citer);
@@ -78,9 +79,19 @@ int rpc_hack::hack_one_import(PBYTE mz, PBYTE psp, const char *fname)
         printf("cannot find function for %s at %p\n", fname, PVOID(*citer - mz));
       continue;
     }
+    auto found = func_cache.find(func);
+    if ( found != func_cache.end() )
+      continue;
     if ( m_verbose )
       printf("function at %p for %s\n", PVOID(func - mz), fname);
     int tmp = hack_one_func(func, psp);
+    // add to cache
+    try
+    {
+      func_cache.insert(func);
+    } catch(std::bad_alloc)
+    { break; }
+    // check result
     if ( tmp )
     {
       res += tmp;
@@ -95,10 +106,29 @@ int rpc_hack::hack_one_import(PBYTE mz, PBYTE psp, const char *fname)
       PBYTE caller_func = find_pdata(*calliter);
       if ( NULL == caller_func )
         continue;
+      found = func_cache.find(caller_func);
+      if ( found != func_cache.end() )
+        continue;
       res += hack_caller(caller_func, func);
+      // add to cache
+      try
+      {
+        func_cache.insert(caller_func);
+      } catch(std::bad_alloc)
+      { break; }
     }
   }
   return res;
+}
+
+int rpc_hack::is_already_stored(const GUID *pguid, PBYTE addr)
+{
+  for ( auto citer = m_out_res.cbegin(); citer != m_out_res.cend(); ++citer )
+  {
+    if ( !memcmp(&citer->first, pguid, sizeof(GUID)) && (citer->second == addr) )
+      return 1;
+  }
+  return 0;
 }
 
 int rpc_hack::hack_caller(PBYTE psp, PBYTE what)
@@ -163,9 +193,12 @@ int rpc_hack::hack_caller(PBYTE psp, PBYTE what)
            try
            {
              GUID *tmp_guid = (GUID *)(data + 4);
-             auto pair = std::make_pair(*tmp_guid, data);
-             m_out_res.push_back(pair);
-             res++;
+             if ( !is_already_stored(tmp_guid, data) )
+             {
+               auto pair = std::make_pair(*tmp_guid, data);
+               m_out_res.push_back(pair);
+               res++;
+             }
            } catch(std::bad_alloc)
            { return res; }
         }
@@ -255,9 +288,12 @@ int rpc_hack::hack_one_func(PBYTE psp, PBYTE what)
             try
             {
               GUID *tmp_guid = (GUID *)(data + 4);
-              auto pair = std::make_pair(*tmp_guid, data);
-              m_out_res.push_back(pair);
-              res++;
+              if ( !is_already_stored(tmp_guid, data) )
+              {
+                auto pair = std::make_pair(*tmp_guid, data);
+                m_out_res.push_back(pair);
+                res++;
+              }
             } catch(std::bad_alloc)
             { return res; }
           }
