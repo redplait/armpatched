@@ -117,7 +117,7 @@ int rpc_hack::hack_caller(PBYTE psp, PBYTE what)
     {
       psp = iter->first;
       if ( m_verbose )
-        printf("hack_caller: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
+        printf("rpc_hack::hack_caller: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
       if ( cgraph.in_ranges(psp) )
         continue;
       if ( !setup(psp) )
@@ -128,14 +128,18 @@ int rpc_hack::hack_caller(PBYTE psp, PBYTE what)
           break;
         if ( check_jmps(cgraph, iter->second) )
           continue;
+        PBYTE b_addr = NULL;
+        if ( is_b_jimm(b_addr) )
+        {
+          cgraph.add(b_addr, iter->second);
+          break;
+        }
         if ( is_br_reg() )
         {
           PBYTE what = (PBYTE)iter->second.get(get_reg(0));
           if ( what != NULL && in_executable_section(what) )
-          {
              cgraph.add(what, iter->second);
-             continue;
-          }
+          break;
         }
         if ( is_adrp(iter->second) )
           continue;
@@ -192,7 +196,7 @@ int rpc_hack::hack_one_func(PBYTE psp, PBYTE what)
     {
       psp = iter->first;
       if ( m_verbose )
-        printf("hack_one_func: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
+        printf("rpc_hack::hack_one_func: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
       if ( cgraph.in_ranges(psp) )
         continue;
       if ( !setup(psp) )
@@ -203,14 +207,18 @@ int rpc_hack::hack_one_func(PBYTE psp, PBYTE what)
           break;
         if ( check_jmps(cgraph, iter->second) )
           continue;
+        PBYTE b_addr = NULL;
+        if ( is_b_jimm(b_addr) )
+        {
+          cgraph.add(b_addr, iter->second);
+          break;
+        }
         if ( is_br_reg() )
         {
           PBYTE what = (PBYTE)iter->second.get(get_reg(0));
           if ( what != NULL && in_executable_section(what) )
-          {
              cgraph.add(what, iter->second);
-             continue;
-          }
+          break;
         }
         if ( is_adrp(iter->second) )
           continue;
