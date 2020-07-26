@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "cf_graph.h"
 #include "combase_hack.h"
 
 void combase_hack::zero_data()
@@ -20,6 +21,12 @@ void combase_hack::dump() const
     for ( auto citer = tlg_CombaseTraceLoggingProviderProv.cbegin(); citer != tlg_CombaseTraceLoggingProviderProv.cend(); ++citer )
       printf(" %p\n", PVOID(*citer - mz));
   }
+  if ( !m_wpp.empty() )
+  {
+    printf("WPP_GLOBAL_Controls:\n");
+    for ( auto citer = m_wpp.cbegin(); citer != m_wpp.cend(); ++citer )
+      printf(" %p\n", PVOID(*citer - mz));
+  }
 }
 
 #include <initguid.h>
@@ -38,6 +45,7 @@ int combase_hack::hack(int verbose)
     res += resolve_gfEnableTracing(mz + exp->rva);
   res += find_tlg_by_guid((const PBYTE)&PoFAggregate_GUID, mz, tlg_PoFAggregate);
   res += find_tlgs_by_guid((const PBYTE)&CombaseTraceLoggingProviderProv_GUID, mz, tlg_CombaseTraceLoggingProviderProv);
+  res += find_wpps(mz, m_wpp);
   return res;
 }
 

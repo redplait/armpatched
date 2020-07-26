@@ -48,49 +48,6 @@ void ndis_hack::dump() const
     printf("ndisGlobalOpenList: %p\n", PVOID(m_ndisGlobalOpenList - mz));
 }
 
-int iat_mod::is_inside_IAT(PBYTE psp) const
-{
-  if ( NULL == m_iat )
-    return 0;
-  ptrdiff_t off = psp - m_pe->base_addr();
-  if ( (off >= m_iat->iat_rva) &&
-       (off < (m_iat->iat_rva + m_iat->iat_size))
-     )
-    return 1;
-  return 0;
-}
-
-int iat_mod::is_iat_func(PBYTE psp, const char *name) const
-{
-  if ( NULL == m_iat )
-    return 0;
-  ptrdiff_t off = psp - m_pe->base_addr();
-  if ( (off >= m_iat->iat_rva) &&
-       (off < (m_iat->iat_rva + m_iat->iat_size))
-     )
-  {
-    size_t index = (off - m_iat->iat_rva) / 8;
-    if ( m_iat->iat[index].name != NULL && !strcmp(m_iat->iat[index].name, name) )
-      return 1;
-  }
-  return 0;
-}
-
-DWORD iat_mod::get_iat_by_name(const char *name) const
-{
-  if ( NULL == m_iat )
-    return NULL;
-  DWORD addr = m_iat->iat_rva;
-  for ( DWORD index = 0; index < m_iat->iat_count; index++, addr += 8 )
-  {
-    if ( m_iat->iat[index].name == NULL )
-      continue;
-    if ( !strcmp(m_iat->iat[index].name, name) )
-      return addr;
-  }
-  return 0;
-}
-
 int ndis_hack::hack(int verbose)
 {
   m_verbose = verbose;

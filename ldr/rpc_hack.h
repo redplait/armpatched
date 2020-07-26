@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ndis_hack.h"
+#include "iat_mod.h"
 
 class rpc_hack: public iat_mod
 {

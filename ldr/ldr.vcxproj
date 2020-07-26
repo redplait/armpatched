@@ -161,6 +161,7 @@
     <ClCompile Include="etw_umod.cpp" />
     <ClCompile Include="exports_dict.cpp" />
     <ClCompile Include="hack.cpp" />
+    <ClCompile Include="iat_mod.cpp" />
     <ClCompile Include="imports_dict.cpp" />
     <ClCompile Include="krnl_bugcheck.cpp" />
     <ClCompile Include="krnl_crsh.cpp" />

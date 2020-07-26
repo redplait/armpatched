@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hack.h"
+#include "iat_mod.h"
 
-class combase_hack: public arm64_hack
+class combase_hack: public iat_mod
 {
   public:
-    combase_hack(arm64_pe_file *pe, exports_dict *ed)
-     : arm64_hack(pe, ed)
+    combase_hack(arm64_pe_file *pe, exports_dict *ed, module_import *iat)
+     : iat_mod(pe, ed, iat)
     {
       zero_data();
     }
@@ -21,4 +21,5 @@ class combase_hack: public arm64_hack
     PBYTE m_gfEnableTracing;
     PBYTE tlg_PoFAggregate;
     std::list<PBYTE> tlg_CombaseTraceLoggingProviderProv;
+    std::set<PBYTE> m_wpp;
 };

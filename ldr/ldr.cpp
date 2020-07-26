@@ -21,6 +21,7 @@ void usage(const wchar_t *progname)
   printf(" -d  - dump all\n");
   printf(" -rpc - find rpc interfaces\n");
   printf(" -v - verbose output\n");
+  printf(" -wpp - try to find WPP_GLOBAL_Controls\n");
   exit(6);
 }
 
@@ -47,6 +48,29 @@ void hack_dump(arm64_pe_file *f, exports_dict *ed, int verb_mode)
   usermod.dump();
 }
 
+template <typename T>
+void process_iat_mod(arm64_pe_file *f, exports_dict *ed, module_import *iat, int verb_mode)
+{
+  T usermod(f, ed, iat);
+  usermod.hack(verb_mode);
+  usermod.dump();
+}
+
+template <typename T>
+void process_wpp(arm64_pe_file *f, exports_dict *ed, module_import *iat, int verb_mode)
+{
+  T usermod(f, ed, iat);
+  std::set<PBYTE> res;
+  usermod.hack_wpp(res, verb_mode);
+  if ( !res.empty() )
+  {
+    printf("WPP_GLOBAL_Controls:\n");
+    PBYTE mz = f->base_addr();
+    for ( auto citer = res.cbegin(); citer != res.cend(); ++citer )
+      printf(" %p\n", PVOID(*citer - mz));
+  }
+}
+
 int wmain(int argc, wchar_t **argv)
 {
    int dump_exp = 0;
@@ -56,6 +80,7 @@ int wmain(int argc, wchar_t **argv)
    int dump_lc = 0;
    int verb_mode = 0;
    int rpc_mode = 0;
+   int find_wpp = 0;
    std::pair<TDirGet, const char *> dir_get[] = { 
      std::make_pair(&arm64_pe_file::get_export, "export"),
      std::make_pair(&arm64_pe_file::get_import, "import"),
@@ -116,6 +141,11 @@ int wmain(int argc, wchar_t **argv)
      if ( !wcscmp(argv[i], L"-rpc") )
      {
        rpc_mode = 1;
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-wpp") )
+     {
+       find_wpp = 1;
        continue;
      }
      printf("%S:\n", argv[i]);
@@ -229,7 +259,12 @@ int wmain(int argc, wchar_t **argv)
        // quick and dirty test
        const char *exp_name = f.get_exp_name();
        int krnl = 1;
-       if ( rpc_mode )
+       if ( find_wpp )
+       {
+         krnl = 0;
+         process_wpp<iat_mod>(&f, ed, mimp, verb_mode);
+         ed = NULL; // will be killed inside ~arm64_hack
+       } else if ( rpc_mode )
        {
          krnl = 0;
          rpc_hack mod(&f, ed, mimp);
@@ -272,7 +307,7 @@ int wmain(int argc, wchar_t **argv)
          } else if ( !_stricmp(exp_name, "combase.dll") )
          {
            krnl = 0;
-           hack_dump<combase_hack>(&f, ed, verb_mode);
+           process_iat_mod<combase_hack>(&f, ed, mimp, verb_mode);
            ed = NULL; // will be killed inside ~arm64_hack
          }
        }

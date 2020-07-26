@@ -1,23 +1,5 @@
 #pragma once
-
-#include "hack.h"
-#include "imports_dict.h"
-
-class iat_mod: public arm64_hack
-{
-  public:
-    iat_mod(arm64_pe_file *pe, exports_dict *ed, module_import *iat)
-     : arm64_hack(pe, ed)
-    {
-      m_iat = iat;
-    }
-   protected:
-    int is_inside_IAT(PBYTE) const;
-    int is_iat_func(PBYTE, const char *) const;
-    DWORD get_iat_by_name(const char *) const;
-
-    module_import *m_iat;
-};
+#include "iat_mod.h"
 
 class ndis_hack: public iat_mod
 {
