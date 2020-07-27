@@ -74,6 +74,21 @@ int iat_mod::find_wpps(PBYTE mz, std::set<PBYTE> &out_res)
       printf("EtwRegisterTraceGuidsA: %X\n", off);
     res += hack_one_imported(mz, mz + off, "EtwRegisterTraceGuidsA", out_res);
   }
+  // RegisterTraceGuids
+  off = get_iat_by_name("RegisterTraceGuidsW");
+  if ( off )
+  {
+    if ( m_verbose )
+      printf("RegisterTraceGuidsW: %X\n", off);
+    res += hack_one_imported(mz, mz + off, "RegisterTraceGuidsW", out_res);
+  }
+  off = get_iat_by_name("RegisterTraceGuidsA");
+  if ( off )
+  {
+    if ( m_verbose )
+      printf("RegisterTraceGuidsA: %X\n", off);
+    res += hack_one_imported(mz, mz + off, "RegisterTraceGuidsA", out_res);
+  }
   return res;
 }
 
@@ -166,6 +181,8 @@ int iat_mod::hack_wpp_func(PBYTE psp, PBYTE what, std::set<PBYTE> &out_res)
           continue;
         if ( is_ldar(iter->second) )
           continue;
+        if ( is_mov_rr(iter->second) )
+          continue;
         if ( is_add() )
         {
           iter->second.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
@@ -186,6 +203,11 @@ int iat_mod::hack_wpp_func(PBYTE psp, PBYTE what, std::set<PBYTE> &out_res)
           PBYTE data = (PBYTE)iter->second.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           if ( NULL == data || !m_pe->is_inside(data) )
             continue;
+          if (is_wpp_glob(data))
+          {
+            self_reffed = data;
+            continue;
+          }
           PBYTE deref = (PBYTE)*((reg64_t *)data);
           if ( NULL == deref || !m_pe->is_inside(deref) )
             continue;
@@ -210,14 +232,29 @@ int iat_mod::hack_wpp_func(PBYTE psp, PBYTE what, std::set<PBYTE> &out_res)
   	    x7 - PTRACEHANDLE             RegistrationHandle
   	     */
             PBYTE data = (PBYTE)iter->second.get(AD_REG_X7);
-            if ( data == NULL || (data != main_cb + 8) )
+            if ( data == NULL )
               continue;
-            try
+            if ( data == main_cb + 8 )
             {
-              out_res.insert(self_reffed);
-              res++;
-            } catch(std::bad_alloc)
-            { return res; }
+              try
+              {
+                out_res.insert(self_reffed);
+                res++;
+              } catch(std::bad_alloc)
+              { return res; }
+              continue;
+            }
+            // for functions like WppInitUm I know only WPP_GLOBAL_Control and x7 must point to self_reffed + 8
+            if ( (self_reffed != NULL) && (data == self_reffed + 8) )
+            {
+              try
+              {
+                out_res.insert(self_reffed);
+                res++;
+              } catch(std::bad_alloc)
+              { return res; }
+              continue;
+            }
           }
         }
       }
