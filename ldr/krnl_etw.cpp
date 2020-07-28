@@ -8,51 +8,64 @@ void ntoskrnl_hack::init_etw()
   m_CmpTraceRoutine = NULL;
   m_EtwpRegistrationObjectType = m_EtwpSessionDemuxObjectType = NULL;
   m_etw_handles = {
-    // EventTracingProvGuid
+    // 0) EventTracingProvGuid
     { { 0x37, 0xEC, 0x75, 0xB6, 0xB6, 0xBD, 0x48, 0x46, 0xBC, 0x92, 0xF3, 0xFD, 0xC7, 0x4D, 0x3C, 0xA2 },
       "EtwpEventTracingProvRegHandle", NULL, NULL },
-    // KernelProvGuid
+    // 1) KernelProvGuid
     { { 0xB7, 0xA8, 0x8C, 0xA6, 0x4F, 0, 0xB6, 0xD7, 0xA6, 0x98, 7, 0xE2, 0xDE, 0xF, 0x1F, 0x5D },
       "EtwKernelProvRegHandle", NULL, NULL },
-    // PsProvGuid
+    // 2) PsProvGuid
     { { 0xD6, 0x2C, 0xFB, 0x22, 0x7B, 0xE, 0x2B, 0x42, 0xA0, 0xC7, 0x2F, 0xAD, 0x1F, 0xD0, 0xE7, 0x16 },
        "EtwpPsProvRegHandle", NULL, NULL },
-    // NetProvGuid
+    // 3) NetProvGuid
     { { 0x49, 0x2A, 0xD4, 0x7D, 0x29, 0x53, 0x32, 0x48, 0x8D, 0xFD, 0x43, 0xD9, 0x79, 0x15, 0x3A, 0x88 },
       "EtwpNetProvRegHandle", NULL, NULL },
-    // DiskProvGuid
+    // 4) DiskProvGuid
     { { 0x9A, 0xE6, 0xBD, 0xC7, 0xE0, 0xE1, 0x77, 0x41, 0xB6, 0xEF, 0x28, 0x3A, 0xD1, 0x52, 0x52, 0x71 },
       "EtwpDiskProvRegHandle", NULL, NULL },
-    // FileProvGuid
+    // 5) FileProvGuid
     { { 0x27, 0x89, 0xD0, 0xED, 0xC4, 0x9C, 0x65, 0x4E, 0xB9, 0x70, 0xC2, 0x56, 0xF, 0xB5, 0xC2, 0x89 },
       "EtwpFileProvRegHandle", NULL, NULL },
-    // RegistryProvGuid - in build 20xxx?
+    // 6) RegistryProvGuid - in build 20xxx?
     { { 3, 0x4F, 0xEB, 0x70, 0xDE, 0xC1, 0x73, 0x4F, 0xA0, 0x51, 0x33, 0xD1, 0x3D, 0x54, 0x13, 0xBD },
       "EtwpRegTraceHandle", NULL, NULL },
-    // MemoryProvGuid
+    // 7) MemoryProvGuid
     { { 0xF7, 0x3E, 0xD9, 0xD1, 0xF2, 0xE1, 0x45, 0x4F, 0x99, 0x43, 3, 0xD2, 0x45, 0xFE, 0x6C, 0 },
       "EtwpMemoryProvRegHandle", NULL, NULL },
-    // MS_Windows_Kernel_AppCompat_Provider
+    // 8) MS_Windows_Kernel_AppCompat_Provider
     { { 0xC1, 0xAD, 0xA1, 0x16, 0x7F, 0x9B, 0xD9, 0x4C, 0x94, 0xB3, 0xD8, 0x29, 0x6A, 0xB1, 0xB1, 0x30 },
       "EtwAppCompatProvRegHandle", NULL, NULL },
-    // KernelAuditApiCallsGuid
+    // 9) KernelAuditApiCallsGuid
     { { 0x1C, 0x84, 0x2A, 0xE0, 0xA3, 0x75, 0xA7, 0x4F, 0xAF, 0xC8, 0xAE, 9, 0xCF, 0x9B, 0x7F, 0x23 },
       "EtwApiCallsProvRegHandle", NULL, NULL },
-    // CVEAuditProviderGuid
+    // 10) CVEAuditProviderGuid
     { { 0xD, 0x2A, 0xA6, 0x85, 0x17, 0x7E, 0x5F, 0x48, 0x9D, 0x4F, 0x74, 0x9A, 0x28, 0x71, 0x93, 0xA6 },
       "EtwCVEAuditProvRegHandle", NULL, NULL },
-    // ThreatIntProviderGuid
+    // 11) ThreatIntProviderGuid
     { { 0x7C, 0x89, 0xE1, 0xF4, 0x5D, 0xBB, 0x68, 0x56, 0xF1, 0xD8, 4, 0xF, 0x4D, 0x8D, 0xD3, 0x44 },
       "EtwThreatIntProvRegHandle", NULL, NULL },
-    // MS_Windows_Security_LPAC_Provider
+    // 12) MS_Windows_Security_LPAC_Provider
     { { 0xE5, 0xC9, 0xEE, 0x45, 0x1B, 0x4A, 0x46, 0x54, 0x7A, 0xD8, 0xA4, 0xAB, 0x13, 0x13, 0xC4, 0x37 },
       "EtwLpacProvRegHandle", NULL, NULL },
-    // MS_Windows_Security_Adminless_Provider
+    // 13) MS_Windows_Security_Adminless_Provider
     { { 0x62, 0x69, 0x21, 0xEA, 0x7B, 0x87, 0x73, 0x5B, 0xF7, 0xC5, 0x8A, 0xEF, 0x53, 0x75, 0x95, 0x9E },
       "EtwAdminlessProvRegHandle", NULL, NULL },
-    // SecurityMitigationsProviderGuid
+    // 14) SecurityMitigationsProviderGuid
     { { 0x92, 3, 0xE1, 0xFA, 0xAF, 0xF0, 0xC0, 0x4A, 0xB8, 0xFF, 0x9F, 0x4D, 0x92, 0xC, 0x3C, 0xDF },
       "EtwSecurityMitigationsRegHandle", NULL, NULL },
+    // from PerfDiagInitialize
+    // 15) MS_Kernel_BootDiagnostics_SystemProxy_Provider
+    { { 0xB3, 0x4A, 0xFE, 0x7E, 0x0D, 0x99, 0x50, 0x43, 0xA8, 0x78, 0xCD, 0x87, 0x72, 0x88, 0x81, 0x99 },
+      "PerfDiagGlobals", NULL, NULL },
+    // 16) MS_Kernel_BootDiagnostics_UserProxy_Provider
+    { { 0xAB, 0x2C, 0x93, 0x41, 0x12, 0x7E, 0xD6, 0x40, 0xA7, 0x28, 0x62, 0xD3, 0xE, 0x5, 0x45, 0x93 },
+      "PerfDiagGlobals[1]", NULL, NULL },
+    // 17) MS_Kernel_SecondaryLogonDiagnostics_Proxy_Provider
+    { { 0x15, 0x2C, 0x7A, 0xB2, 0xF4, 0x40, 0xA3, 0x4E, 0x96, 0x37, 0x62, 0x8F, 0xC6, 0x12, 0xA1, 0xD0 },
+      "PerfDiagGlobals[2]", NULL, NULL },
+    // 18) MS_Kernel_ShutdownDiagnostics_Proxy_Provider
+    { { 0x10, 0x7A, 0x5C, 0xAD, 8, 0x4E, 0xE1, 0x45, 0x81, 0xB5, 0xCB, 0x5E, 0xB6, 0xEC, 0x89, 0x17 },
+     "PerfDiagGlobals[3]", NULL, NULL },
   };
 }
 
@@ -100,6 +113,20 @@ void ntoskrnl_hack::find_guid_addr(PBYTE mz, etw_descriptor *curr_item)
     curr_item->aux_addr = fres;
     return;
   }
+  // ok, check .data section too
+  s = m_pe->find_section_by_name(".data");
+  if ( NULL == s )
+    return;
+  curr = mz + s->va;
+  end = curr + s->size;
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    curr_item->aux_addr = fres;
+    return;
+  }
 }
 
 int ntoskrnl_hack::hack_etw_handles(PBYTE mz)
@@ -119,10 +146,21 @@ int ntoskrnl_hack::hack_etw_handles(PBYTE mz)
   if ( res == NULL )
     return 0;
   // find function start from pdata
+  int value = 0;
   PBYTE func_start = find_pdata(res);
-  if ( func_start == NULL )
-    return 0;
-  return disasm_EtwpInitialize(func_start);
+  if ( func_start != NULL )
+    value += disasm_EtwpInitialize(func_start);
+  // try to find PerfDiagInitialize
+  found = std::find_if(std::next(m_etw_handles.begin(), 15), m_etw_handles.end(), [](const etw_descriptor &l) -> bool { return l.aux_addr != NULL; });
+  if ( found == m_etw_handles.end() )
+    return value;
+  res = xf.find(mz + s->va, s->size, found->aux_addr);
+  if ( res == NULL )
+    return value;
+  func_start = find_pdata(res);
+  if ( func_start != NULL ) 
+    value += disasm_EtwpInitialize(func_start);
+  return value;
 }
 
 int ntoskrnl_hack::disasm_EtwpInitialize(PBYTE psp)
@@ -163,9 +201,11 @@ int ntoskrnl_hack::disasm_EtwpInitialize(PBYTE psp)
           continue;
         if ( is_add() )
         {
-          used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           continue;
         }
+        if ( is_mov_rr(used_regs) )
+          continue;
         // check for call
         PBYTE caddr = NULL;
         if ( is_bl_jimm(caddr) )
