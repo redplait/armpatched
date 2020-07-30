@@ -39,4 +39,8 @@ class ndis_hack: public iat_mod
     // ndis!_NDIS_COMMON_OPEN_BLOCK - from NdisOpenAdapterEx
     PBYTE m_ndisGlobalOpenListLock;
     PBYTE m_ndisGlobalOpenList;
+    // tlg data
+    PBYTE tlg_TelemetryAssert;
+    PBYTE tlg_TelemetryAssertDiagTrack;
+    PBYTE tlg_TelemetryAssertDiagTrack_KM;
 };

@@ -194,6 +194,15 @@ int arm64_hack::find_tlg_by_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
   return find_tlg_ref(aux + guid_size, mz, out_res);
 }
 
+int arm64_hack::find_tlg_by_guid(const PBYTE guid, PBYTE mz, const char *section_name, PBYTE &out_res)
+{
+  PBYTE aux = NULL;
+  find_tlg_guid4((const PBYTE)guid, mz, aux);
+  if ( aux == NULL )
+    return 0;
+  return find_tlg_ref(aux + guid_size, mz, section_name, out_res);
+}
+
 int arm64_hack::find_tlgs_by_guid(const PBYTE guid, PBYTE mz, std::list<PBYTE> &out_list)
 {
   std::list<PBYTE> aux;
@@ -219,6 +228,36 @@ int arm64_hack::find_tlgs_by_guid(const PBYTE guid, PBYTE mz, std::list<PBYTE> &
 int arm64_hack::find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res)
 {
   const one_section *s = m_pe->find_section_by_name(".data");
+  if ( NULL == s )
+    return 0;
+  UINT64 sign = (UINT64)addr;
+  PBYTE curr = mz + s->va;
+  PBYTE end = curr + s->size;
+  bm_search srch((const PBYTE)&sign, sizeof(sign));
+  std::list<PBYTE> founds;
+  while ( curr < end )
+  {
+    const PBYTE fres = srch.search(curr, end - curr);
+    if ( NULL == fres )
+      break;
+    try
+    {
+      founds.push_back(fres);
+    } catch(std::bad_alloc)
+    { return 0; }
+    curr = fres + guid_size;
+  }
+  if ( founds.empty() )
+    return 0;
+  if ( 1 != founds.size() )
+    return 0;
+  out_res = *(founds.cbegin()) - 8;
+  return 1;
+}
+
+int arm64_hack::find_tlg_ref(PBYTE addr, PBYTE mz, const char *sec_name, PBYTE &out_res)
+{
+  const one_section *s = m_pe->find_section_by_name(sec_name);
   if ( NULL == s )
     return 0;
   UINT64 sign = (UINT64)addr;

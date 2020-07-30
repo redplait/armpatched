@@ -11,6 +11,7 @@ void ndis_hack::zero_data()
   m_ndisGlobalOpenListLock = m_ndisGlobalOpenList = NULL;
   NDIS_M_DRIVER_BLOCK_size = NDIS_PROTOCOL_BLOCK_size = 0;
   m_NextGlobalMiniport = 0;
+  tlg_TelemetryAssert = tlg_TelemetryAssertDiagTrack = tlg_TelemetryAssertDiagTrack_KM = 0;
 }
 
 void ndis_hack::dump() const
@@ -46,7 +47,19 @@ void ndis_hack::dump() const
     printf("ndisGlobalOpenListLock: %p\n", PVOID(m_ndisGlobalOpenListLock - mz));
   if ( m_ndisGlobalOpenList != NULL )
     printf("ndisGlobalOpenList: %p\n", PVOID(m_ndisGlobalOpenList - mz));
+
+  if ( tlg_TelemetryAssert != NULL )
+    printf("TelemetryAssert: %p\n", PVOID(tlg_TelemetryAssert - mz));
+  if ( tlg_TelemetryAssertDiagTrack != NULL )
+    printf("TelemetryAssertDiagTrack: %p\n", PVOID(tlg_TelemetryAssertDiagTrack - mz));
+  if ( tlg_TelemetryAssertDiagTrack_KM != NULL )
+    printf("TelemetryAssertDiagTrack_KM: %p\n", PVOID(tlg_TelemetryAssertDiagTrack_KM - mz));
 }
+
+#include <initguid.h>
+DEFINE_GUID( TelemetryAssert_GUID, 0x6D1B249D, 0x131B, 0x468A, 0x89, 0x9B, 0xFB, 0x0A, 0xD9, 0x55, 0x17, 0x72);
+DEFINE_GUID( TelemetryAssertDiagTrack_GUID, 0xAF2AE1C8, 0xCF6D, 0x4268, 0x81, 0x59, 0xFC, 0xCE, 0x3C, 0x2E, 0x67, 0xDB);
+DEFINE_GUID( TelemetryAssertDiagTrack_KM_GUID, 0x07785021, 0xA524, 0x4DED, 0x81, 0x37, 0x8A, 0xB5, 0xC9, 0x39, 0x0F, 0xA8);
 
 int ndis_hack::hack(int verbose)
 {
@@ -114,6 +127,10 @@ int ndis_hack::hack(int verbose)
   if ( exp != NULL )
     res += hack_lock_list(mz + exp->rva, 300, m_ndisGlobalOpenListLock, m_ndisGlobalOpenList);
 
+  // find tlg data
+  res += find_tlg_by_guid((const PBYTE)&TelemetryAssert_GUID, mz, "NONPAGE", tlg_TelemetryAssert);
+  res += find_tlg_by_guid((const PBYTE)&TelemetryAssertDiagTrack_GUID, mz, "NONPAGE", tlg_TelemetryAssertDiagTrack);
+  res += find_tlg_by_guid((const PBYTE)&TelemetryAssertDiagTrack_KM_GUID, mz, "NONPAGE", tlg_TelemetryAssertDiagTrack_KM);
   return res;
 }
 

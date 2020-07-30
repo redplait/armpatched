@@ -458,6 +458,7 @@ class arm64_hack
    int find_simple_guid(const PBYTE, PBYTE mz, PBYTE &out_res);
    // method to find tlg and reference to it from .data section
    int find_tlg_by_guid(const PBYTE, PBYTE mz, PBYTE &out_res);
+   int find_tlg_by_guid(const PBYTE, PBYTE mz, const char *section_name, PBYTE &out_res);
    int find_tlgs_by_guid(const PBYTE, PBYTE mz, std::list<PBYTE> &);
    // internal methods
    int find_etw_guid(const PBYTE, PBYTE mz, PBYTE &out_res);
@@ -466,6 +467,7 @@ class arm64_hack
    int find_tlg_guid4(PBYTE addr, PBYTE mz, PBYTE &out_res);
    int find_tlgs_guid4(PBYTE addr, PBYTE mz, std::list<PBYTE> &);
    int find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res);
+   int find_tlg_ref(PBYTE addr, PBYTE mz, const char *section_name, PBYTE &out_res);
    // load config data
    PBYTE m_cookie;
    PBYTE m_GuardCFCheckFunctionPointer;
