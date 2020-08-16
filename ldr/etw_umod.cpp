@@ -92,7 +92,7 @@ end:
   return (out_res != NULL);
 }
 
-int arm64_hack::find_tlgs_guid4(PBYTE sign, PBYTE mz, std::list<PBYTE> &out_list)
+int arm64_hack::find_tlgs_guid4(const PBYTE sign, PBYTE mz, std::list<PBYTE> &out_list)
 {
   const one_section *s = m_pe->find_section_by_name(".rdata");
   if ( NULL == s )
@@ -122,7 +122,7 @@ int arm64_hack::find_tlgs_guid4(PBYTE sign, PBYTE mz, std::list<PBYTE> &out_list
   return 1;
 }
 
-int arm64_hack::find_tlg_guid4(PBYTE sign, PBYTE mz, PBYTE &out_res)
+int arm64_hack::find_tlg_guid4(const PBYTE sign, PBYTE mz, PBYTE &out_res)
 {
   const one_section *s = m_pe->find_section_by_name(".rdata");
   if ( NULL == s )

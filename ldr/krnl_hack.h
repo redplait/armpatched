@@ -12,6 +12,14 @@ struct etw_descriptor
   PBYTE etw_addr;
 };
 
+struct tlg_descriptor
+{
+  BYTE guid[16];
+  const char *name;
+  PBYTE etw_addr;
+  const char *section_name;
+};
+
 class ntoskrnl_hack: public arm64_hack
 {
   public:
@@ -83,6 +91,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_cm_cbs2(PBYTE psp); // under 19041 lock inside separate function CmpLockCallbackListExclusive
     int hack_cm_lock(PBYTE psp);
     int hack_etw_handles(PBYTE mz);
+    int hack_tlg_handles(PBYTE mz);
     int disasm_EtwpInitialize(PBYTE);
     void find_guid_addr(PBYTE mz, etw_descriptor *);
     int hack_EtwpSessionDemuxObjectType(PBYTE);
@@ -206,6 +215,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_EtwpSessionDemuxObjectType;
     std::vector<etw_descriptor> m_etw_handles;
     void asgn_etw_handle(PBYTE guid_addr, PBYTE value);
+    // tlg stuff
+    std::vector<tlg_descriptor> m_tlg_handles;
     // kpte stuff
     PBYTE m_MiGetPteAddress;
     PBYTE m_pte_base_addr;

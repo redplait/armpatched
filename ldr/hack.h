@@ -464,8 +464,8 @@ class arm64_hack
    int find_etw_guid(const PBYTE, PBYTE mz, PBYTE &out_res);
    int resolve_etw(PBYTE aux_guid, PBYTE mz, PBYTE &out_res);
    int disasm_etw(PBYTE psp, PBYTE aux_addr, PBYTE &out_res);
-   int find_tlg_guid4(PBYTE addr, PBYTE mz, PBYTE &out_res);
-   int find_tlgs_guid4(PBYTE addr, PBYTE mz, std::list<PBYTE> &);
+   int find_tlg_guid4(const PBYTE addr, PBYTE mz, PBYTE &out_res);
+   int find_tlgs_guid4(const PBYTE addr, PBYTE mz, std::list<PBYTE> &);
    int find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res);
    int find_tlg_ref(PBYTE addr, PBYTE mz, const char *section_name, PBYTE &out_res);
    // load config data
