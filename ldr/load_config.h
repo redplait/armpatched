@@ -48,4 +48,14 @@ typedef struct _rfg_IMAGE_LOAD_CONFIG_DIRECTORY64 {
     // since w10 build 15003 ?
     ULONGLONG  GuardRFVerifyStackPointerFunctionPointer; // VA
     DWORD      HotPatchTableOffset;
+    // from sdk 16299
+    DWORD Reserved3;
+    ULONGLONG  EnclaveConfigurationPointer; // VA
+    ULONGLONG  VolatileMetadataPointer;   // VA
+    ULONGLONG  GuardEHContinuationTable;  // VA
+    ULONGLONG  GuardEHContinuationCount;
+    // from sdk 20190
+    ULONGLONG  GuardXFGCheckFunctionPointer; // VA
+    ULONGLONG  GuardXFGDispatchFunctionPointer; // VA
+    ULONGLONG  GuardXFGTableDispatchFunctionPointer; // VA    
 } rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, *Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64;

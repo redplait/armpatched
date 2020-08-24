@@ -217,6 +217,7 @@ int wmain(int argc, wchar_t **argv)
        Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64 lc = (Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64)f.read_load_config(lc_size);
        if ( lc != NULL && lc_size )
        {
+         printf("load_config size: %X\n", lc_size);
          if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, SEHandlerTable) && lc->SecurityCookie )
            printf("SecurityCookie: %I64X\n", lc->SecurityCookie);
          if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardCFDispatchFunctionPointer) && lc->GuardCFCheckFunctionPointer )
@@ -242,6 +243,25 @@ int wmain(int argc, wchar_t **argv)
          // dump RFG relocs
          if ( has_rfg )
            f.dump_rfg_relocs();
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, VolatileMetadataPointer) && lc->VolatileMetadataPointer )
+           printf("VolatileMetadataPointer: %I64X\n", lc->VolatileMetadataPointer);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardEHContinuationTable) && lc->GuardEHContinuationTable )
+           printf("GuardEHContinuationTable: %I64X\n", lc->GuardEHContinuationTable);
+         if ( lc_size >= offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardEHContinuationCount) && lc->GuardEHContinuationCount )
+           printf("GuardEHContinuationCount: %I64X\n", lc->GuardEHContinuationCount);
+         // dump XFG
+         if ( lc_size >= 0x130 )
+         {
+           UINT64 val = *(UINT64 *)((PBYTE)lc + 0x118);
+           if ( val != NULL )
+             printf("GuardXFGCheckFunctionPointer: %I64X\n", val);
+           val = *(UINT64 *)((PBYTE)lc + 0x120);
+           if ( val != NULL )
+             printf("GuardXFGDispatchFunctionPointer: %I64X\n", val);
+           val = *(UINT64 *)((PBYTE)lc + 0x128);
+           if ( val != NULL )
+             printf("GuardXFGTableDispatchFunctionPointer: %I64X\n", val);
+         }
        }
      }
      if ( f.map_pe(verb_mode) && ed != NULL )
