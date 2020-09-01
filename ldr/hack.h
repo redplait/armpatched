@@ -468,6 +468,10 @@ class arm64_hack
    int find_tlgs_guid4(const PBYTE addr, PBYTE mz, std::list<PBYTE> &);
    int find_tlg_ref(PBYTE addr, PBYTE mz, PBYTE &out_res);
    int find_tlg_ref(PBYTE addr, PBYTE mz, const char *section_name, PBYTE &out_res);
+   // mcgen data
+   int find_Provider_Context(const PBYTE guid, const char *section_name, PBYTE mz, PBYTE &out_res);
+   int resolve_Provider_Context(PBYTE what, PBYTE mz, const char *section_name, PBYTE &out_res);
+   int disasm_mcgen(PBYTE psp, PBYTE aux_addr, PBYTE &out_res);
    // load config data
    PBYTE m_cookie;
    PBYTE m_GuardCFCheckFunctionPointer;

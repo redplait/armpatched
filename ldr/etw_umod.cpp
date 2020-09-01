@@ -5,6 +5,102 @@
 
 static const int guid_size = 16;
 
+int arm64_hack::find_Provider_Context(const PBYTE guid, const char *section_name, PBYTE mz, PBYTE &out_res)
+{
+  PBYTE aux = NULL;
+  find_etw_guid((const PBYTE)guid, mz, aux);
+  if ( aux == NULL )
+    return 0;
+  return resolve_Provider_Context(aux, mz, section_name, out_res);
+}
+
+// find function which refs to guid address
+int arm64_hack::resolve_Provider_Context(PBYTE what, PBYTE mz, const char *section_name, PBYTE &out_res)
+{
+  const one_section *s = m_pe->find_section_by_name(section_name);
+  if ( NULL == s )
+    return 0;
+  xref_finder xf;
+  PBYTE res = xf.find(mz + s->va, s->size, what);
+  if ( res == NULL )
+    return 0;
+  PBYTE func = find_pdata(res);
+  if ( NULL == func )
+    return 0;
+  return disasm_mcgen(func, what, out_res);
+}
+
+int arm64_hack::disasm_mcgen(PBYTE psp, PBYTE aux_addr, PBYTE &out_res)
+{
+  if ( !setup(psp) )
+    return 0;
+  statefull_graph<PBYTE, regs_pad> cgraph;
+  std::list<std::pair<PBYTE, regs_pad> > addr_list;
+  regs_pad tmp;
+  auto curr = std::make_pair(psp, tmp);
+  addr_list.push_back(curr);
+  int edge_gen = 0;
+  int edge_n = 0;
+  int res = 0;
+  while( edge_gen < 100 )
+  {
+    for ( auto iter = addr_list.begin(); iter != addr_list.end(); ++iter )
+    {
+      psp = iter->first;
+      if ( m_verbose )
+        printf("disasm_mcgen: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
+      if ( cgraph.in_ranges(psp) )
+        continue;
+      if ( !setup(psp) )
+        continue;
+      edge_n++;
+      int state = 0;
+      for ( DWORD i = 0; i < 1000; i++ )
+      {
+        if ( !disasm(state) || is_ret() )
+          break;
+        if ( check_jmps(cgraph, iter->second) )
+          continue;
+        PBYTE b_addr = NULL;
+        if ( is_b_jimm(b_addr) )
+        {
+          cgraph.add(b_addr, iter->second);
+          break;
+        }
+        if ( is_adrp(iter->second) )
+          continue;
+        if ( is_add() )
+        {
+          PBYTE what = (PBYTE)iter->second.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( what == aux_addr )
+            state = 1;
+          continue;
+        }
+        // check for bl
+        PBYTE caddr = NULL;
+        if ( state && is_bl_jimm(caddr) )
+        {
+          out_res = (PBYTE)iter->second.get(AD_REG_X3);
+          goto end;
+        }
+        // check for bl
+        if ( state && is_bl_reg() )
+        {
+          out_res = (PBYTE)iter->second.get(AD_REG_X3);
+          goto end;
+        }
+      }
+      cgraph.add_range(psp, m_psp - psp);
+    }
+    // prepare for next edge generation
+    edge_gen++;
+    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
+      break;    
+  }
+end:
+  return (out_res != NULL);
+}
+
 int arm64_hack::find_simple_guid(const PBYTE guid, PBYTE mz, PBYTE &out_res)
 {
   PBYTE aux = NULL;

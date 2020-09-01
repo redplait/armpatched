@@ -92,6 +92,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_cm_lock(PBYTE psp);
     int hack_etw_handles(PBYTE mz);
     int hack_tlg_handles(PBYTE mz);
+    int hack_mcgen_contexts(PBYTE mz);
     int disasm_EtwpInitialize(PBYTE);
     void find_guid_addr(PBYTE mz, etw_descriptor *);
     int hack_EtwpSessionDemuxObjectType(PBYTE);
@@ -217,6 +218,11 @@ class ntoskrnl_hack: public arm64_hack
     void asgn_etw_handle(PBYTE guid_addr, PBYTE value);
     // tlg stuff
     std::vector<tlg_descriptor> m_tlg_handles;
+    // mcgeb stuff
+    PBYTE MS_KernelCc_Provider_Context;
+    PBYTE MS_StorageTiering_Provider_Context;
+    PBYTE IoMgrProvider_Context;
+    PBYTE MS_KernelPnP_Provider_Context;
     // kpte stuff
     PBYTE m_MiGetPteAddress;
     PBYTE m_pte_base_addr;

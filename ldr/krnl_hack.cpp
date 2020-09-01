@@ -351,6 +351,7 @@ int ntoskrnl_hack::hack(int verbose)
   res += find_EtwpSessionDemuxObjectType(mz);
   res += hack_etw_handles(mz);
   res += hack_tlg_handles(mz);
+  res += hack_mcgen_contexts(mz);
   // kernel notifications
   exp = m_ed->find("PsEstablishWin32Callouts");
   if ( exp != NULL )

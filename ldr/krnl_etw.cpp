@@ -127,6 +127,11 @@ void ntoskrnl_hack::init_etw()
     { { 0x10, 0x7A, 0x5C, 0xAD, 8, 0x4E, 0xE1, 0x45, 0x81, 0xB5, 0xCB, 0x5E, 0xB6, 0xEC, 0x89, 0x17 },
      "PerfDiagGlobals[3]", NULL, NULL },
   };
+  // zero mcgen data
+  MS_KernelCc_Provider_Context =
+  MS_StorageTiering_Provider_Context =
+  IoMgrProvider_Context =
+  MS_KernelPnP_Provider_Context = NULL;
 }
 
 void ntoskrnl_hack::dump_etw(PBYTE mz) const
@@ -147,6 +152,29 @@ void ntoskrnl_hack::dump_etw(PBYTE mz) const
        continue;
      printf("tlg %s: %p\n", tlg_citer->name, PVOID(tlg_citer->etw_addr - mz));
   }
+  // mcgen stuff
+  if ( MS_KernelCc_Provider_Context != NULL )
+    printf("MS_KernelCc_Provider_Context: %p\n", PVOID(MS_KernelCc_Provider_Context - mz));
+  if ( MS_StorageTiering_Provider_Context != NULL )
+    printf("MS_StorageTiering_Provider_Context: %p\n", PVOID(MS_StorageTiering_Provider_Context - mz));
+  if ( IoMgrProvider_Context != NULL )
+    printf("IoMgrProvider_Context: %p\n", PVOID(IoMgrProvider_Context - mz));
+  if ( MS_KernelPnP_Provider_Context != NULL )
+    printf("MS_KernelPnP_Provider_Context: %p\n", PVOID(MS_KernelPnP_Provider_Context - mz));
+}
+
+static const BYTE s_KernelCc_Provider[16] = { 0xF1, 0x4B, 0xD3, 0xA2, 0xAB, 0x70, 0x21, 0x5B, 0xC8, 0x19, 0x5A, 0x0D, 0xD4, 0x27, 0x48, 0xFD };
+static const BYTE s_StorageTiering_Provider[16] = { 0xFC, 0x55, 0x0C, 0x99, 0x62, 0x26, 0xF6, 0x47, 0xB7, 0xD7, 0xEB, 0x3C, 0x02, 0x7C, 0xB1, 0x3F };
+static const BYTE s_IoMgrProvider[16] = { 0x86, 0xF5, 0xF1, 0xAB, 0x50, 0x2E, 0xA8, 0x4B, 0x92, 0x8D, 0x49, 0x04, 0x4E, 0x6F, 0x0D, 0xB7 };
+static const BYTE s_KernelPnP_Provider[16] = { 0x39, 0x5A, 0x20, 0x9C, 0x50, 0x12, 0x7D, 0x48, 0xAB, 0xD7, 0xE8, 0x31, 0xC6, 0x29, 0x05, 0x39 };
+
+int ntoskrnl_hack::hack_mcgen_contexts(PBYTE mz)
+{
+  int res = find_Provider_Context((const PBYTE)s_KernelCc_Provider, ".text", mz, MS_KernelCc_Provider_Context);
+  res += find_Provider_Context((const PBYTE)s_StorageTiering_Provider, "PAGE", mz, MS_StorageTiering_Provider_Context);
+  res += find_Provider_Context((const PBYTE)s_IoMgrProvider, "INIT", mz, IoMgrProvider_Context);
+  res += find_Provider_Context((const PBYTE)s_KernelPnP_Provider, "INIT", mz, MS_KernelPnP_Provider_Context);
+  return res;
 }
 
 int ntoskrnl_hack::hack_tlg_handles(PBYTE mz)
