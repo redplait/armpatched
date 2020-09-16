@@ -1,0 +1,483 @@
+[
+    {
+        "ProviderGUID":  "CA967C75-04BF-40B5-9A16-98B5F9332A92",
+        "ProviderName":  "Microsoft.Windows.Security.MitigationPolicy",
+        "AssociatedFilenames":  [
+                                    "sechost.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "B6FD710B-F783-4B1C-AB9C-C68099DCC0C7",
+        "ProviderName":  "Microsoft.Windows.Security.IsolationApi",
+        "AssociatedFilenames":  [
+                                    "sechost.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "E36C4458-ED80-4AD7-A8BE-52DDA1EB5F1C",
+        "ProviderName":  "Microsoft.Windows.Base.Win32.Client",
+        "AssociatedFilenames":  [
+                                    "kernel32.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "57A6ED1A-79F7-5011-B242-4784E5620CF7",
+        "ProviderName":  "Microsoft.Windows.XfgAuditProvider",
+        "AssociatedFilenames":  [
+                                    "ntdll.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "27A8FDF4-9B77-575B-BE3B-E7163EF159BB",
+        "ProviderName":  "Microsoft.Windows.Security.Capabilities",
+        "AssociatedFilenames":  [
+                                    "ntdll.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "C0834DA2-8ABE-478F-848C-1DA4CBE18DAF",
+        "ProviderName":  "Microsoft.Windows.Kernel.VsmEnclaveLoader",
+        "AssociatedFilenames":  [
+                                    "ntdll.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "5FB75EAC-9F0B-550C-339F-FC21FDE966CD",
+        "ProviderName":  "InputCore",
+        "AssociatedFilenames":  [
+                                    "user32.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "E0910E25-6FCC-4F32-8F5E-A42CF7ACC5C3",
+        "ProviderName":  "Microsoft.Windows.OneCoreTransforms",
+        "AssociatedFilenames":  [
+                                    "user32.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "8C416C79-D49B-4F01-A467-E56D3AA8234C",
+        "ProviderName":  "Microsoft.Windows.Win32k.UIF",
+        "AssociatedFilenames":  [
+                                    "user32.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "C1376338-0984-48B8-B933-9C7D779FD84D",
+        "ProviderName":  "Microsoft.Windows.Security.Shutinit",
+        "AssociatedFilenames":  [
+                                    "advapi32.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "6035D7F9-6E24-44BF-B540-3ADE030D001A",
+        "ProviderName":  "Microsoft.Windows.Csrss.WinSrvExt",
+        "AssociatedFilenames":  [
+                                    "winsrvext.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "EA289C62-8C36-4904-9726-15ECD282AED5",
+        "ProviderName":  "Microsoft.Windows.NetworkListManager",
+        "AssociatedFilenames":  [
+                                    "netprofm.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "7E32A1C4-D502-5B7C-39E8-2B7B0B5F0424",
+        "ProviderName":  "Microsoft.Windows.Networking.WFP.User",
+        "AssociatedFilenames":  [
+                                    "FWPUCLNT.DLL"
+                                ]
+    },
+    {
+        "ProviderGUID":  "087E0A2D-9EA8-40AA-AA54-FA5AEF34BF3D",
+        "ProviderName":  "Microsoft.Windows.Security.CertPolEng",
+        "AssociatedFilenames":  [
+                                    "CertPolEng.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "07D067F1-E74B-5A46-0F32-5B34E42DB65E",
+        "ProviderName":  "Microsoft.Windows.Security.SystemSetupByInf",
+        "AssociatedFilenames":  [
+                                    "scesrv.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "1248334E-AC1E-4C8E-B439-E619BD6D0A27",
+        "ProviderName":  "EventLogActivityTracing",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "wevtsvc.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "6F2C1EE5-1DFD-519B-2D55-702756F5964D",
+        "ProviderName":  "Microsoft.Windows.Security.Vault.Cds",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "VaultCDS.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "4F56280A-220A-441E-84EE-C32E60BE65C5",
+        "ProviderName":  "Microsoft.Windows.Power.Toast",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "umpoext.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "1EB946EB-F63B-46D3-BECF-833D95CAD6C4",
+        "ProviderName":  "Microsoft.Windows.PowerRequest.HvRpcServer",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "umpoext.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "845D84D3-8996-4508-8688-3FEA3A426915",
+        "ProviderName":  "Microsoft.Windows.Power.EnergyMeter",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "umpoext.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "0506A50C-1B17-486C-80D7-04F7E128E3CC",
+        "ProviderName":  "Microsoft.Windows.Power.Umpo.SleepStudylib",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "umpoext.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "F64415B9-5FAE-48AB-A17E-0D3C6AFBECB9",
+        "ProviderName":  "Microsoft.Windows.Security.PlatformCryptoFlowProvider",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "PCPKsp.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "83649C85-5DA1-4F02-9CB9-84BD08EEB53F",
+        "ProviderName":  "Microsoft.Windows.Security.PlatformCryptoProviderAggregrate",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "PCPKsp.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "3A8D6942-B034-48E2-B314-F69C2B4655A3",
+        "ProviderName":  "Microsoft.Tpm.DebugTracing.KSP",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "PCPKsp.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "77CEF473-B39F-41D2-9472-0AD6FD741651",
+        "ProviderName":  "Microsoft.Windows.Security.Pku2u",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "pku2u.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "23218C03-D099-425A-8778-337A4DDC7BA9",
+        "ProviderName":  "Microsoft.Windows.ProcessStateManager.Refcount",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "psmsrv.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "E73D49D6-9EDA-5059-74D1-B879B18CF9AE",
+        "ProviderName":  "Microsoft.Windows.Print.APMon",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "APMon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "6184BC1F-417E-4443-BCCE-9F65BF844AA7",
+        "ProviderName":  "Microsoft.Windows.Print.IppConfigConverter",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "APMon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "48111F99-B3D5-5F69-587D-BE4ED8E22647",
+        "ProviderName":  "Microsoft.Windows.Print.IppAdapterCore",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "APMon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "F37111E5-8214-5E5D-6E69-E9CC34F73E7C",
+        "ProviderName":  "Microsoft.Windows.Print.IppAdapterCorePsa",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "APMon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "44050EA2-419D-5526-923B-B038E0F1E715",
+        "ProviderName":  "Microsoft.Windows.Print.CloudPrintHelper",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "APMon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "FBFBD628-251D-551D-C4DD-C7820AF723E4",
+        "ProviderName":  "Microsoft.Windows.Print.IppAdapterCommon",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "APMon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "139299BB-9394-5058-DD33-9422E5903FC3",
+        "ProviderName":  "Microsoft.Windows.SetupApi",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "setupapi.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "1A289BED-9134-4B49-9C10-4F98675CAD08",
+        "ProviderName":  "Microsoft.Windows.Dwm.DwmRedir",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "dwmredir.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "AB604427-D048-4139-8494-1246C81F09D5",
+        "ProviderName":  "Microsoft.Windows.Graphics.DXCore",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "DXCore.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "40654520-7460-5C90-3C10-E8B6C8B430C1",
+        "ProviderName":  "Microsoft.Windows.ProfExt",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "profext.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "592A4DF9-D924-4B85-BA54-94F96CFB548C",
+        "ProviderName":  "Microsoft-Xbox-GameInput",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "GameInput.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "D49E68C5-1D4A-4384-B42A-49E6ABD6B256",
+        "ProviderName":  "Microsoft.Windows.Cursor.CursorTests",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "ism.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "D71E5030-761B-51ED-C569-A89D4C503C4F",
+        "ProviderName":  "Microsoft.Windows.Input.Keyboard",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "ism.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "966AFB4E-A7EF-5EB7-5E31-38C352CA38B9",
+        "ProviderName":  "Microsoft.Windows.Sens",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "sens.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "0410D3AD-D839-4A75-9698-E6A9B4121BDC",
+        "ProviderName":  "Microsoft.Windows.Graphics.WindowsColorSystemDiagnostics",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "mscms.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "B3854706-6D90-58A4-415D-D86CD54F35F5",
+        "ProviderName":  "Microsoft-Windows-DispBroker-Desktop",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "DispBroker.Desktop.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "9B6A7FE4-D8BC-503D-C1DB-142892D7DA9B",
+        "ProviderName":  "Microsoft-Windows-DispBroker-DesktopSvc",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "DispBroker.Desktop.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "E5D3F7AD-54A2-404D-B50B-BF41C40D6CAB",
+        "ProviderName":  "Microsoft.Windows.Security.WinlogonNotify",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "winlogon.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "F8523A36-F90B-553F-3DFA-5B84DA6DAE96",
+        "ProviderName":  "Microsoft.Windows.Security.CandidateAccountManagerPolicy",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "winlogon.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "AA7F59E5-9792-58E7-C92A-A7D12AF3222B",
+        "ProviderName":  "Microsoft.Windows.Graphics.DisplayBroker.Aggregate",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "DispBroker.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "2B1BBE78-BF8D-57C1-007A-E8628F64E8B3",
+        "ProviderName":  "Microsoft-Windows-DispBroker",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "DispBroker.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "1070F044-721C-504B-C01C-671DADCBC77D",
+        "ProviderName":  "WinHTTP",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "winhttp.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "329CC1E5-3D02-4C6F-B411-0299BE591CD7",
+        "ProviderName":  "Microsoft.OneCore.WindowManagementApi",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "WindowManagementAPI.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "F0B53A1F-C7EB-41C3-8E61-CEA11271858F",
+        "ProviderName":  "Microsoft.Windows.Security.CandidateAccountManager",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "usermgr.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "A198AD71-4F5E-4BC2-9A60-7CAFB76F4E3C",
+        "ProviderName":  "Microsoft.Windows.UserMgr.UserModel",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "usermgr.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "60523747-6516-48B7-84B1-3264FA2CB359",
+        "ProviderName":  "Microsoft.OneCore.NetworkingTriage.GetConnected",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "ncsi.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "8F621A24-8318-4288-9EDD-3369D34D4CE9",
+        "ProviderName":  "Microsoft.Windows.IUIRadioManager",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "RMapi.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "CB306FBC-D202-5666-F075-23A1AB91BEA9",
+        "ProviderName":  "Microsoft.Windows.Audio.AudioClassExtension",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "Acx01000.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "9680893F-0696-4EC0-9AF5-65974897C9D4",
+        "ProviderName":  "Microsoft.Windows.Bluetooth.BthEnum",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "bthenum.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "CF38994B-91C9-4583-ACA1-B5638AC732C4",
+        "ProviderName":  "Microsoft.Windows.CmBatt",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "CmBatt.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "653880C0-4E64-56C1-5503-C1A609292702",
+        "ProviderName":  "Microsoft.Windows.Audio.HdAudBus",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "hdaudbus.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "93F6B8D0-DD30-53DB-E16C-8EB93C811CDA",
+        "ProviderName":  "Microsoft.Windows.Storage.Nvdimm",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "nvdimm.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "CF754638-26D7-4FEB-AE25-2527230BDA39",
+        "ProviderName":  "Microsoft-Windows-Storage-ScmBus",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "scmbus.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "C7AD62C6-5C99-5A1B-BBC4-0821AE5B765E",
+        "ProviderName":  "Microsoft.Windows.HyperV.StorageActivity",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "vhdmp.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "75441F26-C4ED-4585-90BD-1C7B9C6A55F7",
+        "ProviderName":  "Microsoft.Windows.Networking.WfpLwfs",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "wfplwfs.sys"
+                                ]
+    },
+    {
+        "ProviderGUID":  "1C5890B2-568C-4A10-88D0-2D99256F93EB",
+        "ProviderName":  "Microsoft.Windows.WiFiCx",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "WifiCx.sys"
+                                ]
+    },
+]
