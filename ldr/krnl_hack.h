@@ -85,6 +85,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_ob_types(PBYTE psp);
     int hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name);
     int hack_obopen_type(PBYTE psp, PBYTE &off, const char *s_name);
+    int hack_obpref_type(PBYTE psp, PBYTE &off, const char *s_name, PBYTE ignore_type);
     int hack_reg_ext(PBYTE psp);
     int hask_se_logon(PBYTE psp);
     int hack_cm_cbs(PBYTE psp);
@@ -132,6 +133,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
     PBYTE aux_ExAcquirePushLockExclusiveEx;
     PBYTE aux_ObReferenceObjectByHandle;
+    PBYTE aux_ObpReferenceObjectByHandleWithTag; // non-expored. can be found from ObReferenceObjectByHandle
     PBYTE aux_ObReferenceObjectByPointer;
     PBYTE aux_ObOpenObjectByPointer;
     PBYTE aux_ExAcquireFastMutexUnsafe;
@@ -297,4 +299,7 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_KeArm64VectorBase_size;
     PBYTE m_PsAltSystemCallHandlers;
     DWORD m_PsAltSystemCallHandlers_size;
+    // new state change object types
+    PBYTE m_PspProcessStateChangeType;
+    PBYTE m_PspThreadStateChangeType;
 };

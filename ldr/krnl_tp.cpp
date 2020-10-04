@@ -65,6 +65,23 @@ int ntoskrnl_hack::find_stab_types(PBYTE mz)
   c = m_stab.find(val);
   if ( c != m_stab.end() )
     res += hack_obref_type(c->second, m_EtwpRegistrationObjectType, "ALMOSTRO");
+  // new object types
+  val = tp_hash("NtChangeProcessState");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+  {
+    const export_item *exp = m_ed->find("PsProcessType");
+    if ( exp != NULL )
+      res += hack_obpref_type(c->second, m_PspProcessStateChangeType, "ALMOSTRO", mz + exp->rva);
+  }
+  val = tp_hash("NtChangeThreadState");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+  {
+    const export_item *exp = m_ed->find("PsThreadType");
+    if ( exp != NULL )
+      res += hack_obpref_type(c->second, m_PspThreadStateChangeType, "ALMOSTRO", mz + exp->rva);
+  }
   return res;
 }
 

@@ -68,6 +68,77 @@ end:
   return (off != NULL);
 }
 
+int ntoskrnl_hack::hack_obpref_type(PBYTE psp, PBYTE &off, const char *s_name, PBYTE ignore_type)
+{
+  if ( !setup(psp) )
+    return 0;
+  cf_graph<PBYTE> cgraph;
+  std::list<PBYTE> addr_list;
+  addr_list.push_back(psp);
+  int edge_n = 0;
+  int edge_gen = 0;
+  off = NULL;
+  while( edge_gen < 100 )
+  {
+    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
+    {
+      psp = *iter;
+      if ( m_verbose )
+        printf("hack_obpref_type: %p, edge_gen %d, edge_n %d\n", psp, edge_gen, edge_n);
+      if ( cgraph.in_ranges(psp) )
+        continue;
+      if ( !setup(psp) )
+        continue;
+      regs_pad used_regs;
+      edge_n++;
+      for ( DWORD i = 0; i < 100; i++ )
+      {
+        if ( !disasm() || is_ret() )
+          break;
+        if ( check_jmps(cgraph) )
+          continue;
+        // check for last b xxx
+        PBYTE b_addr = NULL;
+        if ( is_b_jimm(b_addr) )
+        {
+          cgraph.add(b_addr);
+          break;
+        }
+        if ( is_adrp(used_regs) )
+          continue;
+        if (is_ldrxx(AD_INSTR_ADD, AD_INSTR_LDR))
+        {
+          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( !in_section(what, s_name) )
+            used_regs.zero(get_reg(0));
+        }
+        // check for call
+        PBYTE caddr = NULL;
+        if ( is_bl_jimm(caddr) )
+        {
+           if ( caddr == aux_ObReferenceObjectByHandle ||
+                caddr == aux_ObpReferenceObjectByHandleWithTag
+              )
+           {
+             off = (PBYTE)used_regs.get(AD_REG_X2);
+             if ( off != ignore_type )
+               goto end;
+             else
+               off = NULL;
+           }
+        }
+      }
+      cgraph.add_range(psp, m_psp - psp);
+    }
+    // prepare for next edge generation
+    edge_gen++;
+    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
+      break;    
+  }
+end:
+  return (off != NULL);
+}
+
 int ntoskrnl_hack::hack_obref_type(PBYTE psp, PBYTE &off, const char *s_name)
 {
   if ( !setup(psp) )

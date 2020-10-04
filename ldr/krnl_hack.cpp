@@ -64,6 +64,7 @@ void ntoskrnl_hack::zero_data()
   m_pnp_item_size = 0;
   m_PnpDeviceClassNotifyLock = m_PnpDeviceClassNotifyList = NULL;
   zero_sign_data();
+  m_PspProcessStateChangeType = m_PspThreadStateChangeType = NULL;
 }
 
 void ntoskrnl_hack::dump() const
@@ -121,6 +122,10 @@ void ntoskrnl_hack::dump() const
     printf("EtwpRegistrationObjectType: %p\n", PVOID(m_EtwpRegistrationObjectType - mz));
   if ( m_AlpcPortObjectType != NULL )
     printf("AlpcPortObjectType: %p\n", PVOID(m_AlpcPortObjectType - mz));
+  if ( m_PspProcessStateChangeType != NULL )
+    printf("PspProcessStateChangeType: %p\n", PVOID(m_PspProcessStateChangeType - mz));
+  if ( m_PspThreadStateChangeType != NULL )
+    printf("PspThreadStateChangeType: %p\n", PVOID(m_PspThreadStateChangeType - mz));
   // dbg data
   dump_dbg_data(mz);
 
@@ -218,6 +223,8 @@ int ntoskrnl_hack::hack(int verbose)
     return 0;
   int res = 0;
   PBYTE mz = m_pe->base_addr();
+  if ( aux_ObReferenceObjectByHandle != NULL )
+    find_first_jmp(aux_ObReferenceObjectByHandle, aux_ObpReferenceObjectByHandleWithTag);
   // first resolve guard_dispatch_icall
   const export_item *exp = m_ed->find("RtlGetCompressionWorkSpaceSize");
   if ( exp != NULL )
