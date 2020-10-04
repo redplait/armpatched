@@ -99,7 +99,7 @@ class ntoskrnl_hack: public arm64_hack
     int find_EtwpSessionDemuxObjectType(PBYTE mz);
     int hack_EtwpAllocGuidEntry(PBYTE);
     int find_EtwpAllocGuidEntry_by_sign(PBYTE mz);
-    int find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign);
+    int find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign, int use_open);
     int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
     int disasm_SepInitializeCodeIntegrity(PBYTE, PBYTE where);
     int disasm_IoRegisterPlugPlayNotification(PBYTE);

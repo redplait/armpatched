@@ -288,7 +288,9 @@ int ntoskrnl_hack::hack(int verbose)
      res += hack_CmpTraceRoutine(addr);
   }
   if ( m_DbgkDebugObjectType == NULL )
-    res += find_DbgkDebugObjectType_by_sign(mz, 0xC0000712);
+    res += find_DbgkDebugObjectType_by_sign(mz, 0xC0000712, 0); // STATUS_PROCESS_IS_PROTECTED
+  if ( m_DbgkDebugObjectType == NULL )
+    res += find_DbgkDebugObjectType_by_sign(mz, 0xC0000353, 1); // STATUS_PORT_NOT_SET
   res += find_DbgpInsertDebugPrintCallback_by_sign(mz);
   exp = m_ed->find("DbgQueryDebugFilterState");
   if ( exp != NULL )
@@ -481,7 +483,7 @@ int ntoskrnl_hack::hack_hvl_flags(PBYTE psp, PBYTE &out_res, const char *s_name)
   return (out_res != NULL);
 }
 
-int ntoskrnl_hack::find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign)
+int ntoskrnl_hack::find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign, int use_open)
 {
   // try search in PAGE section
   const one_section *s = m_pe->find_section_by_name("PAGE");
@@ -514,8 +516,14 @@ int ntoskrnl_hack::find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign)
 #endif/* _DEBUG */
     if ( NULL == func )
       continue;
-    if ( hack_obref_type(func, m_DbgkDebugObjectType, "ALMOSTRO") )
-      return 1;
+    if ( use_open )
+    {
+      if ( hack_obopen_type(func, m_DbgkDebugObjectType, "ALMOSTRO") )
+        return 1;
+    } else {
+      if ( hack_obref_type(func, m_DbgkDebugObjectType, "ALMOSTRO") )
+        return 1;
+   }
   }
   return 0;
 }
