@@ -140,6 +140,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExAcquireFastMutex;
     PBYTE aux_KeAcquireGuardedMutex;
     PBYTE aux_ExAllocatePoolWithTag;
+    PBYTE aux_ExAllocatePool2;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_memset;
     PBYTE aux_ExEnumHandleTable;

@@ -25,6 +25,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("MmHighestUserAddress", aux_MmHighestUserAddress);
   init_aux("MmBadPointer", aux_MmBadPointer);
   init_aux("ExAllocatePoolWithTag", aux_ExAllocatePoolWithTag);
+  init_aux("ExAllocatePool2", aux_ExAllocatePool2);
   init_aux("ExEnumHandleTable", aux_ExEnumHandleTable);
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   init_aux("RtlImageNtHeader", aux_RtlImageNtHeader);

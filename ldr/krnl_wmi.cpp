@@ -65,7 +65,9 @@ int ntoskrnl_hack::hack_EtwpAllocGuidEntry(PBYTE psp)
     PBYTE b_addr = NULL;
     if ( is_bl_jimm(b_addr) )
     {
-      if ( b_addr == aux_ExAllocatePoolWithTag )
+      if ( b_addr == aux_ExAllocatePoolWithTag ||
+           b_addr == aux_ExAllocatePool2
+         )
         m_etw_guid_entry_size = (DWORD)used_regs.get(AD_REG_X1);
       break;
     }
