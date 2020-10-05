@@ -115,8 +115,6 @@ struct wmi_state
 
 int ntoskrnl_hack::hack_EtwpInitLoggerContext(PBYTE psp, PBYTE mz)
 {
-  if ( !setup(psp) )
-    return 0;
   PBYTE qtime = NULL;
   const export_item *exp = m_ed->find("KeQuerySystemTimePrecise");
   if ( exp != NULL )
@@ -163,7 +161,15 @@ int ntoskrnl_hack::hack_EtwpInitLoggerContext(PBYTE psp, PBYTE mz)
         }
         // add reg, res_reg
         if ( (iter->second.state > 1) && is_add() && get_reg(1) == iter->second.res_reg )
+        {
            last_add = (DWORD)m_dis.operands[2].op_imm.bits;
+           if ( iter->second.state == 2 && !m_wmi_logger_ctx_size )
+           {
+             m_wmi_logger_ctx_size = last_add;
+             last_add = 0;
+             ++iter->second.state;
+           }
+        }
         // check for call jimm
         PBYTE addr = NULL;
         if ( is_bl_jimm(addr) )
