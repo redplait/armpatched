@@ -20,6 +20,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("KeAcquireGuardedMutex", aux_KeAcquireGuardedMutex);
   init_aux("KfRaiseIrql", aux_KfRaiseIrql);
   init_aux("memset", aux_memset);
+  init_aux("RtlInitUnicodeString", aux_RtlInitUnicodeString);
   init_aux("MmUserProbeAddress", aux_MmUserProbeAddress);
   init_aux("MmSystemRangeStart", aux_MmSystemRangeStart);
   init_aux("MmHighestUserAddress", aux_MmHighestUserAddress);

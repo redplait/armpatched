@@ -37,6 +37,10 @@ class ntoskrnl_hack: public arm64_hack
     {
       return (m_CmpCallbackListLock != NULL) && (m_CallbackListHead != NULL);
     }
+    inline int is_wmi_ctx_ok() const
+    {
+      return (m_wmi_logger_ctx_size != 0) && (m_wmi_logger_ctx_loggername_offset != 0);
+    }
   protected:
     // init methods
     void init_wmi();
@@ -100,6 +104,8 @@ class ntoskrnl_hack: public arm64_hack
     int find_EtwpSessionDemuxObjectType(PBYTE mz);
     int hack_EtwpAllocGuidEntry(PBYTE);
     int find_EtwpAllocGuidEntry_by_sign(PBYTE mz);
+    int find_EtwpInitLoggerContext_by_sign(PBYTE mz);
+    int hack_EtwpInitLoggerContext(PBYTE, PBYTE mz);
     int find_DbgkDebugObjectType_by_sign(PBYTE mz, DWORD sign, int use_open);
     int find_SepInitializeCodeIntegrity_by_sign(PBYTE mz, DWORD sign);
     int disasm_SepInitializeCodeIntegrity(PBYTE, PBYTE where);
@@ -142,6 +148,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExAllocatePoolWithTag;
     PBYTE aux_ExAllocatePool2;
     PBYTE aux_KfRaiseIrql;
+    PBYTE aux_RtlInitUnicodeString;
     PBYTE aux_memset;
     PBYTE aux_ExEnumHandleTable;
     PBYTE aux_ExfUnblockPushLock;
@@ -270,6 +277,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_WmipInUseRegEntryHead;
     DWORD m_EtwSiloState_offset;
     DWORD m_etw_guid_entry_size;
+    DWORD m_wmi_logger_ctx_size;
+    DWORD m_wmi_logger_ctx_loggername_offset;
+    DWORD m_wmi_logger_ctx_starttime_offset;
     // silo data
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;
