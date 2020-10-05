@@ -27,6 +27,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("MmBadPointer", aux_MmBadPointer);
   init_aux("ExAllocatePoolWithTag", aux_ExAllocatePoolWithTag);
   init_aux("ExAllocatePool2", aux_ExAllocatePool2);
+  init_aux("ExFreePoolWithTag", aux_ExFreePoolWithTag);
   init_aux("ExEnumHandleTable", aux_ExEnumHandleTable);
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   init_aux("RtlImageNtHeader", aux_RtlImageNtHeader);
@@ -40,6 +41,7 @@ void ntoskrnl_hack::zero_data()
   init_silo();
   init_emp();
   init_wmi();
+  init_wnf();
   init_bugcheck_data();
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
@@ -199,6 +201,8 @@ void ntoskrnl_hack::dump() const
     printf("EPROCESS.RundownProtect: %X\n", eproc_ProcessLock_off);
   if ( ObjectTable_pushlock_off )
     printf("HANDLE_TABLE.HandleContentionEvent: %X\n", ObjectTable_pushlock_off);
+  // wnf
+  dump_wnf(mz);
   // wmi
   dump_wmi(mz);
   // silo

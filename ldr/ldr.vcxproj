@@ -176,6 +176,7 @@
     <ClCompile Include="krnl_silo.cpp" />
     <ClCompile Include="krnl_tp.cpp" />
     <ClCompile Include="krnl_wmi.cpp" />
+    <ClCompile Include="krnl_wnf.cpp" />
     <ClCompile Include="ldr.cpp" />
     <ClCompile Include="ndis_hack.cpp" />
     <ClCompile Include="ntdll_hack.cpp" />

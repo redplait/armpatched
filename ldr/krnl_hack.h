@@ -44,6 +44,7 @@ class ntoskrnl_hack: public arm64_hack
   protected:
     // init methods
     void init_wmi();
+    void init_wnf();
     void init_emp();
     void init_etw();
     void init_silo();
@@ -51,6 +52,7 @@ class ntoskrnl_hack: public arm64_hack
     void init_dbg_data();
     void init_bugcheck_data();
     // dumpers
+    void dump_wnf(PBYTE mz) const;
     void dump_wmi(PBYTE mz) const;
     void dump_etw(PBYTE mz) const;
     void dump_emp(PBYTE mz) const;
@@ -129,6 +131,8 @@ class ntoskrnl_hack: public arm64_hack
     int resolve_KdPitchDebugger(PBYTE);
     int hack_kd_masks(PBYTE);
     int hack_CmpTraceRoutine(PBYTE);
+    int try_wnf_proc_ctx(PBYTE, PBYTE mz);
+    int disasm_ExpWnfCreateProcessContext(PBYTE, PBYTE mz);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -147,6 +151,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_KeAcquireGuardedMutex;
     PBYTE aux_ExAllocatePoolWithTag;
     PBYTE aux_ExAllocatePool2;
+    PBYTE aux_ExFreePoolWithTag;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_RtlInitUnicodeString;
     PBYTE aux_memset;
@@ -284,6 +289,10 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;
     PBYTE m_PspHostSiloGlobals;
+    // wnf data
+    PBYTE m_ExpWnfProcessesListLock;
+    PBYTE m_ExpWnfProcessesListHead;
+    DWORD m_wnf_proc_ctx_size; // sizeof(WNF_PROCESS_CONTEXT) - from ExpWnfCreateProcessContext
     // emp data
     PBYTE m_EmpDatabaseLock;
     PBYTE m_EmpEntryListHead;

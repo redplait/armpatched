@@ -476,10 +476,8 @@ int ntoskrnl_hack::hack_CmpTraceRoutine(PBYTE psp)
         {
           PBYTE what = (PBYTE)used_regs.get(get_reg(0));
           if ( what != NULL && in_section(what, "PAGE") )
-          {
              cgraph.add(what, candidate);
-             continue;
-          }
+          break;
         }
         // mov reg, imm
         if ( state && is_mov_rimm() )

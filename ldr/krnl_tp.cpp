@@ -82,6 +82,11 @@ int ntoskrnl_hack::find_stab_types(PBYTE mz)
     if ( exp != NULL )
       res += hack_obpref_type(c->second, m_PspThreadStateChangeType, "ALMOSTRO", mz + exp->rva);
   }
+  // wnf process contexts data
+  val = tp_hash("NtSetWnfProcessNotificationEvent");
+  c = m_stab.find(val);
+  if ( c != m_stab.end() )
+    res += try_wnf_proc_ctx(c->second, mz);
   return res;
 }
 
