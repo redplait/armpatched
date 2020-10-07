@@ -287,6 +287,29 @@ int arm64_hack::find_first_load(PBYTE addr, const char *s_name, PBYTE &out)
   return (out != NULL);
 }
 
+void arm64_hack::collect_calls(PBYTE psp, std::set<PBYTE> &calls, const char *s_name)
+{
+  if ( !setup(psp) )
+    return;
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return;
+    PBYTE addr;
+    if ( is_b_jimm(addr) )
+    {
+      if ( in_section(addr, s_name) )
+        calls.insert(addr);
+      break;
+    }
+    if ( is_bl_jimm(addr) )
+    {
+      if ( in_section(addr, s_name) )
+        calls.insert(addr);
+    }
+  }
+}
+
 void arm64_hack::init_aux(const char *aux_name, PBYTE &aux)
 {
   aux = NULL;

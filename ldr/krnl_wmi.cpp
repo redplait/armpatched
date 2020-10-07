@@ -8,6 +8,7 @@ void ntoskrnl_hack::init_wmi()
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
   m_EtwSiloState_offset = m_etw_guid_entry_size = m_ejob_silo_globals_offset = 0;
   m_wmi_logger_ctx_size = m_wmi_logger_ctx_loggername_offset = m_wmi_logger_ctx_starttime_offset = 0;
+  m_EtwpHostSiloState = NULL;
 }
 
 void ntoskrnl_hack::dump_wmi(PBYTE mz) const
@@ -18,6 +19,8 @@ void ntoskrnl_hack::dump_wmi(PBYTE mz) const
     printf("WmipRegistrationSpinLock: %p\n", PVOID(m_WmipRegistrationSpinLock - mz));
   if ( m_WmipInUseRegEntryHead != NULL )
     printf("WmipInUseRegEntryHead: %p\n", PVOID(m_WmipInUseRegEntryHead - mz));
+  if ( m_EtwpHostSiloState != NULL )
+    printf("EtwpHostSiloState: %p\n", PVOID(m_EtwpHostSiloState - mz));
   if ( m_EtwSiloState_offset )
     printf("ESERVERSILO_GLOBALS.EtwSiloState offset: %X\n", m_EtwSiloState_offset);
   if ( m_etw_guid_entry_size )
@@ -52,8 +55,40 @@ int ntoskrnl_hack::hack_wmi(PBYTE mz)
   if ( m_EtwSiloState_offset )
     res += find_EtwpAllocGuidEntry_by_sign(mz);
 
+  exp = m_ed->find("WmiTraceMessage");
+  if ( exp != NULL )
+  {
+    std::set<PBYTE> calls;
+    collect_calls(mz + exp->rva, calls, ".text");
+    if ( calls.size() == 1 )
+      res += disasm_EtwpTraceMessageVa(*calls.begin());
+  }
   res += find_EtwpInitLoggerContext_by_sign(mz);
   return res;
+}
+
+int ntoskrnl_hack::disasm_EtwpTraceMessageVa(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      break;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_ldr() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( in_section(what, "ALMOSTRO") )
+      {
+        m_EtwpHostSiloState = what;
+        break;
+      }
+    }
+  }
+  return (m_EtwpHostSiloState != NULL);
 }
 
 static const DWORD s_tag = 0x47777445;

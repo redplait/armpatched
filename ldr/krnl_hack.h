@@ -135,6 +135,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_ExpWnfCreateProcessContext(PBYTE, PBYTE mz);
     int disasm_PsGetCurrentServerSiloGlobals(PBYTE);
     int find_ejob_siloglobals(PBYTE);
+    int disasm_EtwpTraceMessageVa(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -282,12 +283,13 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_WmipGuidObjectType;
     PBYTE m_WmipRegistrationSpinLock;
     PBYTE m_WmipInUseRegEntryHead;
-    DWORD m_EtwSiloState_offset;
+    DWORD m_EtwSiloState_offset;      // ESERVERSILO_GLOBALS.EtwSiloState offset
     DWORD m_etw_guid_entry_size;
     DWORD m_wmi_logger_ctx_size;
     DWORD m_wmi_logger_ctx_loggername_offset;
     DWORD m_wmi_logger_ctx_starttime_offset;
     DWORD m_ejob_silo_globals_offset; // EJOB.ServerSiloGlobals offset
+    PBYTE m_EtwpHostSiloState;
     // silo data
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;

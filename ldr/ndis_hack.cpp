@@ -134,29 +134,6 @@ int ndis_hack::hack(int verbose)
   return res;
 }
 
-void ndis_hack::collect_calls(PBYTE psp, std::set<PBYTE> &calls, const char *s_name)
-{
-  if ( !setup(psp) )
-    return;
-  for ( DWORD i = 0; i < 100; i++ )
-  {
-    if ( !disasm() || is_ret() )
-      return;
-    PBYTE addr;
-    if ( is_b_jimm(addr) )
-    {
-      if ( in_section(addr, s_name) )
-        calls.insert(addr);
-      break;
-    }
-    if ( is_bl_jimm(addr) )
-    {
-      if ( in_section(addr, s_name) )
-        calls.insert(addr);
-    }
-  }
-}
-
 int ndis_hack::hack_lock_list(PBYTE psp, DWORD num, PBYTE &lock, PBYTE &list)
 {
   lock = NULL;
