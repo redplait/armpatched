@@ -345,6 +345,10 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("PsGetServerSiloServiceSessionId");
   if ( exp != NULL )
     res += hack_silo_global(mz + exp->rva);
+  // now try extract siloglobals in ejob
+  if ( (aux_PsGetCurrentServerSiloGlobals != NULL) && (m_PspHostSiloGlobals != NULL) )
+    res += disasm_PsGetCurrentServerSiloGlobals(aux_PsGetCurrentServerSiloGlobals);
+
 
   exp = m_ed->find("ExRegisterExtension");
   if ( exp != NULL )

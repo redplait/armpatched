@@ -6,7 +6,7 @@
 void ntoskrnl_hack::init_wmi()
 {
   m_WmipGuidObjectType = m_WmipRegistrationSpinLock = m_WmipInUseRegEntryHead = NULL;
-  m_EtwSiloState_offset = m_etw_guid_entry_size = 0;
+  m_EtwSiloState_offset = m_etw_guid_entry_size = m_ejob_silo_globals_offset = 0;
   m_wmi_logger_ctx_size = m_wmi_logger_ctx_loggername_offset = m_wmi_logger_ctx_starttime_offset = 0;
 }
 
@@ -28,6 +28,8 @@ void ntoskrnl_hack::dump_wmi(PBYTE mz) const
     printf("WMI_LOGGER_CONTEXT.LoggerName offset: %X\n", m_wmi_logger_ctx_loggername_offset);
   if ( m_wmi_logger_ctx_starttime_offset )
     printf("WMI_LOGGER_CONTEXT.StartTime offset: %X\n", m_wmi_logger_ctx_starttime_offset);
+  if ( m_ejob_silo_globals_offset )
+    printf("EJOB.ServerSiloGlobals offset: %X\n", m_ejob_silo_globals_offset);
 }
 
 int ntoskrnl_hack::hack_wmi(PBYTE mz)

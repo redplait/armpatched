@@ -133,6 +133,8 @@ class ntoskrnl_hack: public arm64_hack
     int hack_CmpTraceRoutine(PBYTE);
     int try_wnf_proc_ctx(PBYTE, PBYTE mz);
     int disasm_ExpWnfCreateProcessContext(PBYTE, PBYTE mz);
+    int disasm_PsGetCurrentServerSiloGlobals(PBYTE);
+    int find_ejob_siloglobals(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -285,6 +287,7 @@ class ntoskrnl_hack: public arm64_hack
     DWORD m_wmi_logger_ctx_size;
     DWORD m_wmi_logger_ctx_loggername_offset;
     DWORD m_wmi_logger_ctx_starttime_offset;
+    DWORD m_ejob_silo_globals_offset; // EJOB.ServerSiloGlobals offset
     // silo data
     PBYTE m_PspSiloMonitorLock;
     PBYTE m_PspSiloMonitorList;
