@@ -137,6 +137,7 @@ class ntoskrnl_hack: public arm64_hack
     int find_ejob_siloglobals(PBYTE);
     int disasm_EtwpTraceMessageVa(PBYTE);
     int disasm_EtwpTraceMessageVa2(PBYTE);
+    int find_DisplayStringFilter(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -176,6 +177,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_ExNPagedLookasideListHead;
     PBYTE m_ExPagedLookasideLock;
     PBYTE m_ExPagedLookasideListHead;
+    // undocumented invb trash
+    PBYTE m_InbvDisplayFilter;
     // bugcheck data
     PBYTE m_KeBugCheckCallbackLock;
     PBYTE m_KeBugCheckCallbackListHead;

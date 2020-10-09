@@ -37,6 +37,7 @@ void ntoskrnl_hack::zero_data()
   // zero output data
   m_HvlpAa64Connected = m_HvlpFlags = NULL;
   m_CrashdmpCallTable = NULL;
+  m_InbvDisplayFilter = NULL;
   init_etw();
   init_silo();
   init_emp();
@@ -78,6 +79,8 @@ void ntoskrnl_hack::dump() const
     printf("guard_dispatch_icall: %p\n", PVOID(aux_dispatch_icall - mz));
   if ( m_CrashdmpCallTable != NULL ) 
     printf("CrashdmpCallTable: %p\n", PVOID(m_CrashdmpCallTable - mz));
+  if ( m_InbvDisplayFilter != NULL )
+    printf("InbvDisplayFilter: %p\n", PVOID(m_InbvDisplayFilter - mz));
   // lookaside lists & locks
   if ( m_ExNPagedLookasideLock != NULL )
     printf("ExNPagedLookasideLock: %p\n", PVOID(m_ExNPagedLookasideLock - mz));
@@ -237,6 +240,10 @@ int ntoskrnl_hack::hack(int verbose)
     res += find_first_jmp(mz + exp->rva, aux_dispatch_icall);
   if ( aux_dispatch_icall != NULL )
     res += find_crash_tab(mz);
+  // Inbv
+  exp = m_ed->find("InbvInstallDisplayStringFilter");
+  if ( exp != NULL )
+    res += find_DisplayStringFilter(mz + exp->rva);
   // lookaside lists & locks
   exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )
@@ -469,6 +476,30 @@ int ntoskrnl_hack::hack(int verbose)
 
   res += try_find_PsKernelRangeList(mz);
   return res;
+}
+
+int ntoskrnl_hack::find_DisplayStringFilter(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 10; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_str() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( in_section(what, ".data") )
+       {
+         m_InbvDisplayFilter = what;
+         break;
+       }
+    }
+  }
+  return (m_InbvDisplayFilter != NULL);
 }
 
 int ntoskrnl_hack::hack_hvl_flags(PBYTE psp, PBYTE &out_res, const char *s_name)
