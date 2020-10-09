@@ -72,6 +72,46 @@ int ntoskrnl_hack::disasm_EtwpTraceMessageVa(PBYTE psp)
   if ( !setup(psp) )
     return 0;
   regs_pad used_regs;
+  PBYTE last_cbz = NULL;
+  for ( DWORD i = 0; i < 100; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      break;
+    if ( is_adrp(used_regs) )
+      continue;
+    // check cbz
+    if ( is_cbz_jimm(last_cbz) )
+      continue;
+    // check for bl
+    PBYTE addr = NULL;
+    if ( is_bl_jimm(addr) )
+    {
+      if ( addr == aux_PsGetCurrentServerSiloGlobals )
+        break;
+    }
+    if ( is_ldr() )
+    {
+      PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+      if ( in_section(what, "ALMOSTRO") )
+      {
+        m_EtwpHostSiloState = what;
+        break;
+      }
+    }
+  }
+  if ( m_EtwpHostSiloState != NULL )
+    return 1;
+  if ( last_cbz == NULL )
+    return 0;
+  return disasm_EtwpTraceMessageVa2(last_cbz);
+}
+
+// disasm cbz branch in EtwpTraceMessageVa
+int ntoskrnl_hack::disasm_EtwpTraceMessageVa2(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
   for ( DWORD i = 0; i < 100; i++ )
   {
     if ( !disasm() || is_ret() )
@@ -114,7 +154,7 @@ int ntoskrnl_hack::find_EtwpInitLoggerContext_by_sign(PBYTE mz)
       founds.push_back(fres);
     } catch(std::bad_alloc)
     { return 0; }
-    curr = fres + sizeof(s_tag);
+    curr = fres + sizeof(s_wmi_logger_ctx_tag);
   }
   if ( founds.empty() )
     return 0;

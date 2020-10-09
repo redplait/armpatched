@@ -136,6 +136,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_PsGetCurrentServerSiloGlobals(PBYTE);
     int find_ejob_siloglobals(PBYTE);
     int disasm_EtwpTraceMessageVa(PBYTE);
+    int disasm_EtwpTraceMessageVa2(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
