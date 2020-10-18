@@ -37,6 +37,10 @@ class ntoskrnl_hack: public arm64_hack
     {
       return (m_CmpCallbackListLock != NULL) && (m_CallbackListHead != NULL);
     }
+    inline int is_kse_ok() const
+    {
+      return (m_KseEngine != NULL) && (m_kse_lock != NULL);
+    }
     inline int is_wmi_ctx_ok() const
     {
       return (m_wmi_logger_ctx_size != 0) && (m_wmi_logger_ctx_loggername_offset != 0);
@@ -45,6 +49,7 @@ class ntoskrnl_hack: public arm64_hack
     // init methods
     void init_wmi();
     void init_wnf();
+    void init_kse();
     void init_emp();
     void init_etw();
     void init_silo();
@@ -56,6 +61,7 @@ class ntoskrnl_hack: public arm64_hack
     void dump_wmi(PBYTE mz) const;
     void dump_etw(PBYTE mz) const;
     void dump_emp(PBYTE mz) const;
+    void dump_kse(PBYTE mz) const;
     void dump_silo(PBYTE mz) const;
     void dump_pnp(PBYTE mz) const;
     void dump_dbg_data(PBYTE mz) const;
@@ -100,6 +106,7 @@ class ntoskrnl_hack: public arm64_hack
     int hack_etw_handles(PBYTE mz);
     int hack_tlg_handles(PBYTE mz);
     int hack_mcgen_contexts(PBYTE mz);
+    int disasm_KseUnregisterShim(PBYTE);
     int disasm_EtwpInitialize(PBYTE);
     void find_guid_addr(PBYTE mz, etw_descriptor *);
     int hack_EtwpSessionDemuxObjectType(PBYTE);
@@ -179,6 +186,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_ExPagedLookasideListHead;
     // undocumented invb trash
     PBYTE m_InbvDisplayFilter;
+    // kernel shims
+    PBYTE m_KseEngine;
+    PBYTE m_kse_lock;
     // bugcheck data
     PBYTE m_KeBugCheckCallbackLock;
     PBYTE m_KeBugCheckCallbackListHead;

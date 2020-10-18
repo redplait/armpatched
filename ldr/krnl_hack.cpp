@@ -43,6 +43,7 @@ void ntoskrnl_hack::zero_data()
   init_emp();
   init_wmi();
   init_wnf();
+  init_kse();
   init_bugcheck_data();
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
@@ -98,6 +99,8 @@ void ntoskrnl_hack::dump() const
   dump_tracepoints(mz);
   // bugcheck data
   dump_bugcheck_data(mz);
+  // kse
+  dump_kse(mz);
 
   if ( m_KeLoaderBlock != NULL )
     printf("KeLoaderBlock: %p\n", PVOID(m_KeLoaderBlock - mz));
@@ -244,6 +247,10 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("InbvInstallDisplayStringFilter");
   if ( exp != NULL )
     res += find_DisplayStringFilter(mz + exp->rva);
+  // kse
+  exp = m_ed->find("KseUnregisterShim");
+  if ( exp != NULL )
+    res += disasm_KseUnregisterShim(mz + exp->rva);
   // lookaside lists & locks
   exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )
