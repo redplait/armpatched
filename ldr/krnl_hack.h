@@ -41,6 +41,10 @@ class ntoskrnl_hack: public arm64_hack
     {
       return (m_KseEngine != NULL) && (m_kse_lock != NULL);
     }
+    inline int is_iopc_ok() const
+    {
+      return (m_IopUpdatePriorityCallbackRoutine != NULL) && (m_IopUpdatePriorityCallbackRoutineCount != NULL);
+    }
     inline int is_wmi_ctx_ok() const
     {
       return (m_wmi_logger_ctx_size != 0) && (m_wmi_logger_ctx_loggername_offset != 0);
@@ -145,6 +149,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_EtwpTraceMessageVa(PBYTE);
     int disasm_EtwpTraceMessageVa2(PBYTE);
     int find_DisplayStringFilter(PBYTE);
+    int disasm_IoRegisterPriorityCallback(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -189,6 +194,10 @@ class ntoskrnl_hack: public arm64_hack
     // kernel shims
     PBYTE m_KseEngine;
     PBYTE m_kse_lock;
+    // data from IoRegisterPriorityCallback
+    DWORD m_IopUpdatePriorityCallback_size;
+    PBYTE m_IopUpdatePriorityCallbackRoutine;
+    PBYTE m_IopUpdatePriorityCallbackRoutineCount;
     // bugcheck data
     PBYTE m_KeBugCheckCallbackLock;
     PBYTE m_KeBugCheckCallbackListHead;

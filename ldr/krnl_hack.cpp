@@ -251,6 +251,10 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("KseUnregisterShim");
   if ( exp != NULL )
     res += disasm_KseUnregisterShim(mz + exp->rva);
+  // IoRegisterPriorityCallback
+  exp = m_ed->find("IoRegisterPriorityCallback");
+  if ( exp != NULL )
+    res += disasm_IoRegisterPriorityCallback(mz + exp->rva);
   // lookaside lists & locks
   exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )
