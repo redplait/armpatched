@@ -173,6 +173,7 @@
     <ClCompile Include="krnl_ntfy.cpp" />
     <ClCompile Include="krnl_obtypes.cpp" />
     <ClCompile Include="krnl_pnp.cpp" />
+    <ClCompile Include="krnl_po.cpp" />
     <ClCompile Include="krnl_sign.cpp" />
     <ClCompile Include="krnl_silo.cpp" />
     <ClCompile Include="krnl_tp.cpp" />

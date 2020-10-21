@@ -20,6 +20,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("KeAcquireGuardedMutex", aux_KeAcquireGuardedMutex);
   init_aux("KfRaiseIrql", aux_KfRaiseIrql);
   init_aux("memset", aux_memset);
+  init_aux("memset", aux_memset);
   init_aux("RtlInitUnicodeString", aux_RtlInitUnicodeString);
   init_aux("MmUserProbeAddress", aux_MmUserProbeAddress);
   init_aux("MmSystemRangeStart", aux_MmSystemRangeStart);
@@ -44,6 +45,7 @@ void ntoskrnl_hack::zero_data()
   init_wmi();
   init_wnf();
   init_kse();
+  init_po();
   init_bugcheck_data();
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
@@ -91,6 +93,8 @@ void ntoskrnl_hack::dump() const
     printf("ExPagedLookasideLock: %p\n", PVOID(m_ExPagedLookasideLock - mz));
   if ( m_ExPagedLookasideListHead != NULL )
     printf("ExPagedLookasideListHead: %p\n", PVOID(m_ExPagedLookasideListHead - mz));
+  // po
+  dump_po(mz);
   // etw
   dump_etw(mz);
   // dump pnp data
@@ -247,6 +251,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("InbvInstallDisplayStringFilter");
   if ( exp != NULL )
     res += find_DisplayStringFilter(mz + exp->rva);
+  exp = m_ed->find("PoRegisterPowerSettingCallback");
+  if ( exp != NULL )
+    res += disasm_PoRegisterPowerSettingCallback(mz + exp->rva);
   // kse
   exp = m_ed->find("KseUnregisterShim");
   if ( exp != NULL )

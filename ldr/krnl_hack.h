@@ -49,6 +49,10 @@ class ntoskrnl_hack: public arm64_hack
     {
       return (m_wmi_logger_ctx_size != 0) && (m_wmi_logger_ctx_loggername_offset != 0);
     }
+    inline int is_po_cbs_ok() const
+    {
+      return (m_PopSettingLock != NULL) && (m_PopRegisteredPowerSettingCallbacks != NULL);
+    }
   protected:
     // init methods
     void init_wmi();
@@ -57,10 +61,12 @@ class ntoskrnl_hack: public arm64_hack
     void init_emp();
     void init_etw();
     void init_silo();
+    void init_po();
     void init_tracepoints();
     void init_dbg_data();
     void init_bugcheck_data();
     // dumpers
+    void dump_po(PBYTE mz) const;
     void dump_wnf(PBYTE mz) const;
     void dump_wmi(PBYTE mz) const;
     void dump_etw(PBYTE mz) const;
@@ -150,6 +156,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_EtwpTraceMessageVa2(PBYTE);
     int find_DisplayStringFilter(PBYTE);
     int disasm_IoRegisterPriorityCallback(PBYTE);
+    int disasm_PoRegisterPowerSettingCallback(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -172,6 +179,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_RtlInitUnicodeString;
     PBYTE aux_memset;
+    PBYTE aux_memcmp;
     PBYTE aux_ExEnumHandleTable;
     PBYTE aux_ExfUnblockPushLock;
     PBYTE aux_RtlImageNtHeader;
@@ -194,6 +202,10 @@ class ntoskrnl_hack: public arm64_hack
     // kernel shims
     PBYTE m_KseEngine;
     PBYTE m_kse_lock;
+    // PoRegisterPowerSettingCallback data
+    DWORD m_PoRegisterPowerSettingCallback_size;
+    PBYTE m_PopSettingLock;
+    PBYTE m_PopRegisteredPowerSettingCallbacks;
     // data from IoRegisterPriorityCallback
     DWORD m_IopUpdatePriorityCallback_size;
     PBYTE m_IopUpdatePriorityCallbackRoutine;
