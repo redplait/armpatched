@@ -40,6 +40,7 @@ void ntoskrnl_hack::zero_data()
   m_CrashdmpCallTable = NULL;
   m_InbvDisplayFilter = NULL;
   init_etw();
+  init_io();
   init_silo();
   init_emp();
   init_wmi();
@@ -93,6 +94,8 @@ void ntoskrnl_hack::dump() const
     printf("ExPagedLookasideLock: %p\n", PVOID(m_ExPagedLookasideLock - mz));
   if ( m_ExPagedLookasideListHead != NULL )
     printf("ExPagedLookasideListHead: %p\n", PVOID(m_ExPagedLookasideListHead - mz));
+  // io
+  dump_io(mz);
   // po
   dump_po(mz);
   // etw
@@ -262,6 +265,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("IoRegisterPriorityCallback");
   if ( exp != NULL )
     res += disasm_IoRegisterPriorityCallback(mz + exp->rva);
+  exp = m_ed->find("IoUnregisterContainerNotification");
+  if ( exp != NULL )
+    res += disasm_IoUnregisterContainerNotification(mz + exp->rva);
   // lookaside lists & locks
   exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )
