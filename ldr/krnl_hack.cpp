@@ -6,6 +6,7 @@
 void ntoskrnl_hack::zero_data()
 {
   // fill auxilary data
+  init_aux("ExAcquireResourceExclusiveLite", aux_ExAcquireResourceExclusiveLite);
   init_aux("KeAcquireSpinLockAtDpcLevel", aux_KeAcquireSpinLockAtDpcLevel);
   init_aux("ExAcquireSpinLockExclusiveAtDpcLevel", aux_ExAcquireSpinLockExclusiveAtDpcLevel);
   init_aux("KeAcquireSpinLockRaiseToDpc", aux_KeAcquireSpinLockRaiseToDpc);
@@ -261,13 +262,16 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("KseUnregisterShim");
   if ( exp != NULL )
     res += disasm_KseUnregisterShim(mz + exp->rva);
-  // IoRegisterPriorityCallback
+  // Io stuff
   exp = m_ed->find("IoRegisterPriorityCallback");
   if ( exp != NULL )
     res += disasm_IoRegisterPriorityCallback(mz + exp->rva);
   exp = m_ed->find("IoUnregisterContainerNotification");
   if ( exp != NULL )
     res += disasm_IoUnregisterContainerNotification(mz + exp->rva);
+  exp = m_ed->find("IoRegisterFileSystem");
+  if ( exp != NULL )
+    res += disasm_IoRegisterFileSystem(mz + exp->rva);
   // lookaside lists & locks
   exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )

@@ -164,11 +164,14 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_IoRegisterPriorityCallback(PBYTE);
     int disasm_PoRegisterPowerSettingCallback(PBYTE);
     int disasm_IoUnregisterContainerNotification(PBYTE);
+    int disasm_IoRegisterFileSystem(PBYTE);
+    int asgn_FileSystemQueueHead(DWORD state, PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
     PBYTE aux_MmHighestUserAddress;
     PBYTE aux_MmBadPointer;
+    PBYTE aux_ExAcquireResourceExclusiveLite;
     PBYTE aux_KeAcquireSpinLockAtDpcLevel;
     PBYTE aux_ExAcquireSpinLockExclusiveAtDpcLevel;
     PBYTE aux_KeAcquireSpinLockRaiseToDpc;
@@ -212,6 +215,12 @@ class ntoskrnl_hack: public arm64_hack
     // io data
     PBYTE m_IopSessionNotificationLock;
     PBYTE m_IopSessionNotificationQueueHead;
+    // IoRegisterFileSystem
+    PBYTE m_IopDatabaseResource;
+    PBYTE m_IopDiskFileSystemQueueHead;  // 8
+    PBYTE m_IopNetworkFileSystemQueueHead; // 0x14
+    PBYTE m_IopCdRomFileSystemQueueHead; // 3
+    PBYTE m_IopTapeFileSystemQueueHead;  // 0x20
     // PoRegisterPowerSettingCallback data
     DWORD m_PoRegisterPowerSettingCallback_size;
     PBYTE m_PopSettingLock;
