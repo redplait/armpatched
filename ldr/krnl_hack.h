@@ -166,6 +166,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_IoUnregisterContainerNotification(PBYTE);
     int disasm_IoRegisterFileSystem(PBYTE);
     int asgn_FileSystemQueueHead(DWORD state, PBYTE);
+    int disasm_IoRegisterFsRegistrationChangeMountAware(PBYTE);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -215,6 +216,7 @@ class ntoskrnl_hack: public arm64_hack
     // io data
     PBYTE m_IopSessionNotificationLock;
     PBYTE m_IopSessionNotificationQueueHead;
+    PBYTE m_IopFsNotifyChangeQueueHead;
     // IoRegisterFileSystem
     PBYTE m_IopDatabaseResource;
     PBYTE m_IopDiskFileSystemQueueHead;  // 8

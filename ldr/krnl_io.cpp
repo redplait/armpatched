@@ -10,6 +10,7 @@ void ntoskrnl_hack::init_io()
   m_IopDatabaseResource = NULL;
   m_IopDiskFileSystemQueueHead = m_IopNetworkFileSystemQueueHead =
   m_IopCdRomFileSystemQueueHead = m_IopTapeFileSystemQueueHead = NULL;
+  m_IopFsNotifyChangeQueueHead = NULL;
 }
 
 void ntoskrnl_hack::dump_io(PBYTE mz) const
@@ -34,6 +35,8 @@ void ntoskrnl_hack::dump_io(PBYTE mz) const
     printf("IopCdRomFileSystemQueueHead: %p\n", PVOID(m_IopCdRomFileSystemQueueHead - mz));
   if ( m_IopTapeFileSystemQueueHead != NULL )
     printf("IopTapeFileSystemQueueHead: %p\n", PVOID(m_IopTapeFileSystemQueueHead - mz));
+  if ( m_IopFsNotifyChangeQueueHead != NULL )
+    printf("IopFsNotifyChangeQueueHead: %p\n", PVOID(m_IopFsNotifyChangeQueueHead - mz));
 }
 
 int ntoskrnl_hack::asgn_FileSystemQueueHead(DWORD state, PBYTE val)
@@ -46,6 +49,31 @@ int ntoskrnl_hack::asgn_FileSystemQueueHead(DWORD state, PBYTE val)
     case 0x20: m_IopTapeFileSystemQueueHead = val; return 1;
   }
   return 0;
+}
+
+int ntoskrnl_hack::disasm_IoRegisterFsRegistrationChangeMountAware(PBYTE psp)
+{
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+     // call
+     PBYTE addr = NULL;
+     if ( is_bl_jimm(addr) )
+     {
+       if ( addr == aux_ExAcquireResourceExclusiveLite )
+         *state = 1;
+       return 0;
+     }
+     if ( *state && is_add() )
+     {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") )
+          return 0;
+        m_IopFsNotifyChangeQueueHead = what;
+        return 1;
+     }
+     return 0;
+   }, "disasm_IoRegisterFsRegistrationChangeMountAware");
+  return (m_IopFsNotifyChangeQueueHead != NULL);
 }
 
 int ntoskrnl_hack::disasm_IoRegisterFileSystem(PBYTE psp)
@@ -118,138 +146,75 @@ int ntoskrnl_hack::disasm_IoRegisterFileSystem(PBYTE psp)
 
 int ntoskrnl_hack::disasm_IoRegisterPriorityCallback(PBYTE psp)
 {
-  statefull_graph<PBYTE, int> cgraph;
-  std::list<std::pair<PBYTE, int> > addr_list;
-  auto curr = std::make_pair(psp, 0);
-  addr_list.push_back(curr);
-  int edge_gen = 0;
-  int edge_n = 0;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = iter->first;
-      int state = iter->second;
-      if ( m_verbose )
-        printf("disasm_IoRegisterPriorityCallback: %p, state %d, edge_gen %d, edge_n %d\n", psp, state, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      for ( ; ; )
-      {
-        if ( !disasm(state) || is_ret() )
-          break;
-        if ( check_jmps(cgraph, state) )
-          continue;
-        if ( is_adrp(used_regs) )
-          continue;
-        // mov reg, imm
-        if ( !state && is_mov_rimm() )
-        {
-          used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
-          continue;
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+     // mov reg, imm
+     if ( !*state && is_mov_rimm() )
+     {
+        used_regs->adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+        return 0;
+     }
+     // call
+     PBYTE addr = NULL;
+     if ( is_bl_jimm(addr) )
+     {
+       if ( addr == aux_ExAllocatePoolWithTag || addr == aux_ExAllocatePool2 )
+       {
+         m_IopUpdatePriorityCallback_size = (DWORD)used_regs->get(AD_REG_X1);
+         *state = 1;
+         return 0;
         }
-        // call
-        PBYTE addr = NULL;
-        if ( is_bl_jimm(addr) )
+     }
+     if ( *state && is_add() )
+     {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") )
+          return 0;
+        if ( m_IopUpdatePriorityCallbackRoutine == NULL )
         {
-          if ( addr == aux_ExAllocatePoolWithTag || addr == aux_ExAllocatePool2 )
-          {
-            m_IopUpdatePriorityCallback_size = (DWORD)used_regs.get(AD_REG_X1);
-            state = 1;
-            continue;
-          }
+          m_IopUpdatePriorityCallbackRoutine = what;
+          return 0;
         }
-        if ( state && is_add() )
+        if ( what != m_IopUpdatePriorityCallbackRoutine )
         {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, ".data") )
-            continue;
-          if ( m_IopUpdatePriorityCallbackRoutine == NULL )
-          {
-            m_IopUpdatePriorityCallbackRoutine = what;
-            continue;
-          }
-          if ( what != m_IopUpdatePriorityCallbackRoutine )
-          {
-            m_IopUpdatePriorityCallbackRoutineCount = what;
-            goto end;
-          }
+          m_IopUpdatePriorityCallbackRoutineCount = what;
+          return 1;
         }
-      }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;
-  }
-end:
+     }
+     return 0;
+   }, "disasm_IoRegisterPriorityCallback");
+
   return is_iopc_ok();
 }
 
 // state - 0 - wait for ExAcquirePushLockExclusiveEx
 int ntoskrnl_hack::disasm_IoUnregisterContainerNotification(PBYTE psp)
 {
-  statefull_graph<PBYTE, int> cgraph;
-  std::list<std::pair<PBYTE, int> > addr_list;
-  auto curr = std::make_pair(psp, 0);
-  addr_list.push_back(curr);
-  int edge_gen = 0;
-  int edge_n = 0;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = iter->first;
-      int state = iter->second;
-      if ( m_verbose )
-        printf("disasm_IoUnregisterContainerNotification: %p, state %d, edge_gen %d, edge_n %d\n", psp, state, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      int size = 0;
-      for ( ; ; )
-      {
-        if ( !disasm(state) || is_ret() )
-          break;
-        if ( check_jmps(cgraph, state) )
-          continue;
-        if ( is_adrp(used_regs) )
-          continue;
-        if ( is_add() )
-        {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, ".data") )
-            continue;
-          if ( state && what != m_IopSessionNotificationLock )
-          {
-            m_IopSessionNotificationQueueHead = what;
-            goto end;
-          }
-        }
-        PBYTE caddr = NULL;
-        if ( is_bl_jimm(caddr) )
-        {
-          if ( caddr == aux_ExAcquirePushLockExclusiveEx )
-          {
-            m_IopSessionNotificationLock = (PBYTE)used_regs.get(AD_REG_X0);
-            state = 1;
-            continue;
-          }
-        }
-      }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;
-  }
-end:
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+     if ( is_add() )
+     {
+       PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".data") )
+         return 0;
+       if ( *state && what != m_IopSessionNotificationLock )
+       {
+         m_IopSessionNotificationQueueHead = what;
+         return 1;
+       }
+     }
+     PBYTE caddr = NULL;
+     if ( is_bl_jimm(caddr) )
+     {
+       if ( caddr == aux_ExAcquirePushLockExclusiveEx )
+       {
+         m_IopSessionNotificationLock = (PBYTE)used_regs->get(AD_REG_X0);
+         *state = 1;
+         return 0;
+       }
+     }
+     return 0;
+   }, "disasm_IoUnregisterContainerNotification");
+
   return is_io_sess_cbs_ok();
 }

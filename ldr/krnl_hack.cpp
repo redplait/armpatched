@@ -272,6 +272,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("IoRegisterFileSystem");
   if ( exp != NULL )
     res += disasm_IoRegisterFileSystem(mz + exp->rva);
+  exp = m_ed->find("IoRegisterFsRegistrationChangeMountAware");
+  if ( exp != NULL )
+    res += disasm_IoRegisterFsRegistrationChangeMountAware(mz + exp->rva);
   // lookaside lists & locks
   exp = m_ed->find("ExInitializePagedLookasideList");
   if ( exp != NULL )

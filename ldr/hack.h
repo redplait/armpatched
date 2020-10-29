@@ -1,6 +1,7 @@
 #pragma once
 #include "pe_file.h"
 #include "../source/armadillo.h"
+#include "cf_graph.h"
 
 // register scratchpad class
 #ifdef _WIN64
@@ -461,6 +462,52 @@ class arm64_hack
    int find_tlg_by_guid(const PBYTE, PBYTE mz, PBYTE &out_res);
    int find_tlg_by_guid(const PBYTE, PBYTE mz, const char *section_name, PBYTE &out_res);
    int find_tlgs_by_guid(const PBYTE, PBYTE mz, std::list<PBYTE> &);
+   // template horror
+   template <typename F>
+   void traverse_simple_state_graph(PBYTE psp, F func, const char *func_name, int max_edges = 100)
+   {
+     statefull_graph<PBYTE, int> cgraph;
+     std::list<std::pair<PBYTE, int> > addr_list;
+     auto curr = std::make_pair(psp, 0);
+     addr_list.push_back(curr);
+     int edge_gen = 0;
+     int edge_n = 0;
+     while( edge_gen < max_edges )
+     {
+       for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
+       {
+          psp = iter->first;
+          int state = iter->second;
+          if ( m_verbose && func_name != NULL )
+            printf("%s: %p, state %d, edge_gen %d, edge_n %d\n", func_name, psp, state, edge_gen, edge_n);
+          if ( cgraph.in_ranges(psp) )
+            continue;
+          if ( !setup(psp) )
+            continue;
+          regs_pad used_regs;
+          for ( ; ; )
+          {
+            if ( !disasm(state) || is_ret() )
+              break;
+            if ( is_adrp(used_regs) )
+              continue;
+            if ( check_jmps(cgraph, state) )
+              continue;
+            // interface for F: -1 - break, 1 - exit
+            int res = func(&state, &used_regs);
+            if ( res < 0 )
+              break;
+            else if ( res )
+              return;
+          }
+          cgraph.add_range(psp, m_psp - psp);
+       }
+       // prepare for next edge generation
+       edge_gen++;
+       if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
+         break;
+     }
+   }
    // internal methods
    int find_etw_guid(const PBYTE, PBYTE mz, PBYTE &out_res);
    int resolve_etw(PBYTE aux_guid, PBYTE mz, PBYTE &out_res);
