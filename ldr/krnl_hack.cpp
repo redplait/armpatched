@@ -34,6 +34,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExfUnblockPushLock", aux_ExfUnblockPushLock);
   init_aux("RtlImageNtHeader", aux_RtlImageNtHeader);
   init_aux("PsInitialSystemProcess", aux_PsInitialSystemProcess);
+  init_aux("KeUnstackDetachProcess", aux_KeUnstackDetachProcess);
   aux_PsGetCurrentServerSiloGlobals = aux_ExAllocateCallBack = aux_ExCompareExchangeCallBack = aux_KxAcquireSpinLock =
   aux_dispatch_icall = aux_tp_stab = NULL;
   // zero output data
@@ -379,7 +380,13 @@ int ntoskrnl_hack::hack(int verbose)
   // silo data
   exp = m_ed->find("PsStartSiloMonitor");
   if ( exp != NULL )
-    res += hack_start_silo(mz + exp->rva);
+  {
+    PBYTE psp = mz + exp->rva;
+    int res_silo = hack_start_silo(psp);
+    if ( !res_silo )
+      res_silo = hack_start_silo_2004(psp);
+    res += res_silo;
+  }
   exp = m_ed->find("PsGetServerSiloServiceSessionId");
   if ( exp != NULL )
     res += hack_silo_global(mz + exp->rva);

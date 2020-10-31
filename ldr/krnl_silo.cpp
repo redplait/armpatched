@@ -158,6 +158,98 @@ int ntoskrnl_hack::hack_silo_global(PBYTE psp)
   return (m_PspHostSiloGlobals != NULL);
 }
 
+// try disasm presumable PspAcquirePushLockExclusive
+// candidate must call ExAcquirePushLockExclusiveEx
+int ntoskrnl_hack::try_hach_silo_lock(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  PBYTE lock = NULL;
+  for ( DWORD i = 0; i < 10; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_add() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( in_section(what, ".data") )
+         lock = what;
+       continue;
+    }
+    PBYTE addr = NULL;
+    if ( is_b_jimm(addr) && (addr == aux_ExAcquirePushLockExclusiveEx) )
+    {
+      m_PspSiloMonitorLock = lock;
+      break;
+    }
+  }
+  return (m_PspSiloMonitorLock != NULL);
+}
+
+int ntoskrnl_hack::hack_start_silo_2004(PBYTE psp)
+{
+  std::set<PBYTE> calls;
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+      if ( is_ldr() )
+      {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( what == aux_PsInitialSystemProcess )
+        {
+          *state = 1;
+          return 0;
+        }
+      }
+      if ( is_add() )
+      {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") )
+        {
+           used_regs->zero(get_reg(0));
+           return 0;
+        }
+        if ( *state == 2 )
+        {
+          if ( what != aux_PsInitialSystemProcess )
+          {
+             m_PspSiloMonitorList = what;
+             return 1;
+          }
+        }
+      }
+      PBYTE addr = NULL;
+      if ( is_bl_jimm(addr) )
+      {
+        if ( !*state )
+        {
+          try
+          {
+            calls.insert(addr);
+          } catch(std::bad_alloc)
+          { return 1; }
+          return 0;
+        }
+        if ( addr == aux_KeUnstackDetachProcess )
+        {
+           *state = 2;
+           return 0;
+        }
+      }
+      return 0;
+   }, "hack_start_silo_2004");
+  if ( m_PspSiloMonitorList == NULL )
+    return 0;
+  for ( auto citer: calls )
+  {
+    if ( try_hach_silo_lock(citer) )
+      return (m_PspSiloMonitorLock != NULL) && (m_PspSiloMonitorList != NULL);
+  }
+  return 0;
+}
+
 int ntoskrnl_hack::hack_start_silo(PBYTE psp)
 {
   traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int

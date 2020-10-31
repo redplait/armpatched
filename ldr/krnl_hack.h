@@ -144,6 +144,8 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_IoWMIDeviceObjectToProviderId(PBYTE, PBYTE &);
     int disasm_WmipDoFindRegEntryByDevice(PBYTE);
     int hack_start_silo(PBYTE);
+    int hack_start_silo_2004(PBYTE);
+    int try_hach_silo_lock(PBYTE);
     int hack_silo_global(PBYTE);
     int find_crash_tab(PBYTE mz);
     int disasm_crash_tab(PBYTE);
@@ -189,6 +191,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ExFreePoolWithTag;
     PBYTE aux_KfRaiseIrql;
     PBYTE aux_RtlInitUnicodeString;
+    PBYTE aux_KeUnstackDetachProcess;
     PBYTE aux_memset;
     PBYTE aux_memcmp;
     PBYTE aux_ExEnumHandleTable;
