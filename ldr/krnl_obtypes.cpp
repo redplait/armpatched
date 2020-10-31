@@ -375,3 +375,35 @@ int ntoskrnl_hack::hack_ob_types(PBYTE psp)
   }
   return (m_ObHeaderCookie != NULL) && (m_ObTypeIndexTable != NULL);
 }
+
+int ntoskrnl_hack::disasm_ExCreateCallback(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  for ( DWORD i = 0; i < 60; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_ldr() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, "ALMOSTRO") )
+         used_regs.zero(get_reg(0));
+       continue;
+    }
+    // bl
+    PBYTE caddr = NULL;
+    if (is_bl_jimm(caddr))
+    {
+       if ( caddr == aux_ObOpenObjectByName )
+       {
+         m_ExCallbackObjectType = (PBYTE)used_regs.get(AD_REG_X1);
+         break;
+       }
+    }
+  }
+  return (m_ExCallbackObjectType != NULL);
+}

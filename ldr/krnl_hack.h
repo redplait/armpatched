@@ -136,6 +136,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_SepInitializeCodeIntegrity(PBYTE, PBYTE where);
     int disasm_IoRegisterPlugPlayNotification(PBYTE);
     int hack_ObFindHandleForObject(PBYTE);
+    int disasm_ExCreateCallback(PBYTE);
     int hack_enum_tab(PBYTE);
     int hack_ObReferenceProcessHandleTable(PBYTE);
     int try_wmip_obj(PBYTE);
@@ -183,6 +184,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ObpReferenceObjectByHandleWithTag; // non-expored. can be found from ObReferenceObjectByHandle
     PBYTE aux_ObReferenceObjectByPointer;
     PBYTE aux_ObOpenObjectByPointer;
+    PBYTE aux_ObOpenObjectByName;
     PBYTE aux_ExAcquireFastMutexUnsafe;
     PBYTE aux_ExAcquireFastMutex;
     PBYTE aux_KeAcquireGuardedMutex;
@@ -284,6 +286,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_ObpDirectoryObjectType;
     PBYTE m_ExProfileObjectType;
     PBYTE m_EtwpRegistrationObjectType;
+    PBYTE m_ExCallbackObjectType;
     // object tables data
     DWORD eproc_ObjectTable_off;
     DWORD ObjectTable_pushlock_off;

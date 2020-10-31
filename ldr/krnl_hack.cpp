@@ -13,6 +13,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ExAcquirePushLockExclusiveEx", aux_ExAcquirePushLockExclusiveEx);
   init_aux("ObReferenceObjectByPointer", aux_ObReferenceObjectByPointer);
   init_aux("ObReferenceObjectByHandle", aux_ObReferenceObjectByHandle);
+  init_aux("ObOpenObjectByName", aux_ObOpenObjectByName);
   init_aux("ObOpenObjectByPointer", aux_ObOpenObjectByPointer);
   init_aux("ObCreateObjectTypeEx", aux_ObCreateObjectTypeEx);
   init_aux("EtwRegister", aux_EtwRegister);
@@ -63,7 +64,7 @@ void ntoskrnl_hack::zero_data()
   m_proc_pid_off = m_proc_peb_off = m_proc_job_off = m_proc_protection_off = m_proc_debport_off = m_proc_flags3_off = m_proc_secport_off = m_proc_wow64_off = m_proc_win32proc_off = m_proc_DxgProcess_off = 0;
   m_KeLoaderBlock = m_KiServiceLimit = m_KiServiceTable = m_SeCiCallbacks = NULL;
   m_SeCiCallbacks_size = 0;
-  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = NULL;
+  m_ObHeaderCookie = m_ObTypeIndexTable = m_ObpSymbolicLinkObjectType = m_AlpcPortObjectType = m_DbgkDebugObjectType = m_ExProfileObjectType = m_ExCallbackObjectType = NULL;
   init_dbg_data();
   m_PsWin32CallBack = NULL;
   m_PspLoadImageNotifyRoutine = m_PspLoadImageNotifyRoutineCount = NULL;
@@ -119,6 +120,7 @@ void ntoskrnl_hack::dump() const
     printf("KiServiceTable: %p\n", PVOID(m_KiServiceTable - mz));
   if ( m_SeCiCallbacks != NULL )
     printf("SeCiCallbacks: %p size %X\n", PVOID(m_SeCiCallbacks - mz), m_SeCiCallbacks_size);
+  // obtypes
   if ( m_ObHeaderCookie != NULL )
     printf("ObHeaderCookie: %p\n", PVOID(m_ObHeaderCookie - mz));
   if ( m_ObTypeIndexTable != NULL )
@@ -137,6 +139,8 @@ void ntoskrnl_hack::dump() const
     printf("ObpDirectoryObjectType: %p\n", PVOID(m_ObpDirectoryObjectType - mz));
   if ( m_ExProfileObjectType != NULL )
     printf("ExProfileObjectType: %p\n", PVOID(m_ExProfileObjectType - mz));
+  if ( m_ExCallbackObjectType != NULL )
+    printf("ExCallbackObjectType: %p\n", PVOID(m_ExCallbackObjectType - mz));
   if ( m_EtwpRegistrationObjectType != NULL )
     printf("EtwpRegistrationObjectType: %p\n", PVOID(m_EtwpRegistrationObjectType - mz));
   if ( m_AlpcPortObjectType != NULL )
@@ -450,6 +454,9 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("NtRequestWaitReplyPort");
   if ( exp != NULL )
     res += hack_obref_type(mz + exp->rva, m_AlpcPortObjectType, "ALMOSTRO");
+  exp = m_ed->find("ExCreateCallback");
+  if ( exp != NULL )
+    res += disasm_ExCreateCallback(mz + exp->rva);
   // thread offsets
   exp = m_ed->find("PsGetCurrentThreadId");
   if ( exp != NULL )
