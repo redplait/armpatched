@@ -25,12 +25,15 @@ class ntdll_hack: public arm64_hack
     int hack_wnf_root(PBYTE);
     int hack_func_tab(PBYTE);
     int hack_func_tree(PBYTE);
+    int find_ptr_map(PBYTE);
+    int find_props(PBYTE);
     // aux data
     PBYTE aux_RtlAcquireSRWLockExclusive;
     PBYTE aux_RtlAllocateHeap;
     PBYTE aux_RtlEnterCriticalSection;
     PBYTE aux_RtlRunOnceExecuteOnce;
     PBYTE aux_LdrpMrdataLock; // not exported
+    PBYTE aux_bsearch;
     // output data
     PBYTE m_LdrpVectorHandlerList;
     PBYTE m_LdrpDllDirectoryLock;
@@ -46,4 +49,11 @@ class ntdll_hack: public arm64_hack
     PBYTE m_RtlpDynamicFunctionTable;
     PBYTE m_RtlpDynamicFunctionTableTree;
     DWORD m_func_tab_tree_item_size;
+    // from RtlCompareExchangePointerMapping
+    PBYTE m_RtlpPtrTreeLock;
+    PBYTE m_RtlpPtrTree;
+    // from RtlCompareExchangePropertyStore
+    PBYTE m_RtlpPropStoreLock;
+    PBYTE m_RtlpPropStoreEntriesActiveCount;
+    PBYTE m_RtlpPropStoreEntries;
 };

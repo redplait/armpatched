@@ -9,6 +9,7 @@ void ntdll_hack::zero_data()
   init_aux("RtlAllocateHeap", aux_RtlAllocateHeap);
   init_aux("RtlEnterCriticalSection", aux_RtlEnterCriticalSection);
   init_aux("RtlRunOnceExecuteOnce", aux_RtlRunOnceExecuteOnce);
+  init_aux("bsearch", aux_bsearch);
   aux_LdrpMrdataLock = NULL;
   // zero output data
   m_LdrpVectorHandlerList = NULL;
@@ -21,6 +22,8 @@ void ntdll_hack::zero_data()
   wnf_block_size = 0;
   m_RtlpDynamicFunctionTableLock = m_RtlpDynamicFunctionTable = m_RtlpDynamicFunctionTableTree = NULL;
   m_func_tab_tree_item_size = 0;
+  m_RtlpPtrTreeLock = m_RtlpPtrTree = NULL;
+  m_RtlpPropStoreLock = m_RtlpPropStoreEntriesActiveCount = m_RtlpPropStoreEntries = NULL;
 }
 
 void ntdll_hack::dump() const
@@ -50,6 +53,16 @@ void ntdll_hack::dump() const
     printf("LdrpShutdownInProgress: %p\n", PVOID(m_LdrpShutdownInProgress - mz));
   if ( wnf_block != NULL )
     printf("wnf_block: %p size %X\n", PVOID(wnf_block - mz), wnf_block_size);
+  if ( m_RtlpPtrTreeLock != NULL )
+    printf("RtlpPtrTreeLock: %p\n", PVOID(m_RtlpPtrTreeLock - mz));
+  if ( m_RtlpPtrTree != NULL )
+    printf("RtlpPtrTree: %p\n", PVOID(m_RtlpPtrTree - mz));
+  if ( m_RtlpPropStoreLock != NULL )
+    printf("RtlpPropStoreLock: %p\n", PVOID(m_RtlpPropStoreLock - mz));
+  if ( m_RtlpPropStoreEntriesActiveCount != NULL )
+    printf("RtlpPropStoreEntriesActiveCount: %p\n", PVOID(m_RtlpPropStoreEntriesActiveCount - mz));
+  if ( m_RtlpPropStoreEntries != NULL )
+    printf("RtlpPropStoreEntries: %p\n", PVOID(m_RtlpPropStoreEntries - mz));
 }
 
 int ntdll_hack::hack(int verbose)
@@ -90,6 +103,14 @@ int ntdll_hack::hack(int verbose)
   exp = m_ed->find("RtlDllShutdownInProgress");
   if ( exp != NULL )
     res += find_shut(mz + exp->rva);
+
+  exp = m_ed->find("RtlCompareExchangePointerMapping");
+  if ( exp != NULL )
+    res += find_ptr_map(mz + exp->rva);
+
+  exp = m_ed->find("RtlCompareExchangePropertyStore");
+  if ( exp != NULL )
+    res += find_props(mz + exp->rva);
 
   // try find unnamed wnf root - via RtlSubscribeWnfStateChangeNotification -> RtlpSubscribeWnfStateChangeNotificationInternal -> RtlpInitializeWnf
   exp = m_ed->find("RtlSubscribeWnfStateChangeNotification");
@@ -141,70 +162,36 @@ int ntdll_hack::find_wnf_root(PBYTE psp)
 
 int ntdll_hack::hack_wnf_root(PBYTE psp)
 {
-  statefull_graph<PBYTE, int> cgraph;
-  std::list<std::pair<PBYTE, int> > addr_list;
-  auto curr = std::make_pair(psp, 0);
-  addr_list.push_back(curr);
-  int edge_n = 0;
-  int edge_gen = 0;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = iter->first;
-      int state = iter->second;
-      if ( m_verbose )
-        printf("hack_wnf_root: %p, state %d, edge_gen %d, edge_n %d\n", psp, state, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      edge_n++;
-      for ( ; ; )
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+      // mov reg, imm
+      if ( is_mov_rimm() )
       {
-        if ( !disasm(state) || is_ret() )
-          break;
-        if ( check_jmps(cgraph, state) )
-          continue;
-        // adrp/adr pair
-        if ( is_adrp(used_regs) )
-          continue;
-        // mov reg, imm
-        if ( is_mov_rimm() )
+        used_regs->adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+        return 0;
+      }
+      PBYTE caddr = NULL;
+      if ( is_bl_jimm(caddr) )
+      {
+        if ( caddr == aux_RtlAllocateHeap )
         {
-          used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
-          continue;
+           *state = 1;
+           wnf_block_size = (DWORD)used_regs->get(AD_REG_X2);
         }
-        PBYTE caddr = NULL;
-        if ( is_bl_jimm(caddr) )
+        return 0;
+      }
+      // str
+      if ( *state && is_str() )
+      {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( in_section(what, ".data") )          
         {
-          if ( caddr == aux_RtlAllocateHeap )
-          {
-            state = 1;
-            wnf_block_size = (DWORD)used_regs.get(AD_REG_X2);
-          }
-          continue;
-        }
-        // str
-        if ( state && is_str() )
-        {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( in_section(what, ".data") )          
-          {
-            wnf_block = what;
-            goto end;
-          }
+          wnf_block = what;
+          return 1;
         }
       }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;    
-  }
-end:
+      return 0;
+   }, "hack_wnf_root");
   return (wnf_block != NULL);
 }
 
@@ -423,66 +410,31 @@ int ntdll_hack::hack_dll_dir(PBYTE psp)
 // state 0 - wait for RtlAcquireSRWLockExclusive to find LdrpDllDirectoryLock
 int ntdll_hack::hack_add_dll_dirs(PBYTE psp)
 {
-  statefull_graph<PBYTE, int> cgraph;
-  std::list<std::pair<PBYTE, int> > addr_list;
-  auto curr = std::make_pair(psp, 0);
-  addr_list.push_back(curr);
-  int edge_n = 0;
-  int edge_gen = 0;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = iter->first;
-      int state = iter->second;
-      if ( m_verbose )
-        printf("hack_add_dll_dirs: %p, state %d, edge_gen %d, edge_n %d\n", psp, state, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      edge_n++;
-      for ( ; ; )
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+      if ( is_add() )
       {
-        if ( !disasm(state) || is_ret() )
-          break;
-        if ( check_jmps(cgraph, state) )
-          continue;
-        // adrp/adr pair
-        if ( is_adrp(used_regs) )
-          continue;
-        if ( is_add() )
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") )
+           used_regs->zero(get_reg(0));
+        if ( 1 == *state )
         {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, ".data") )
-            used_regs.zero(get_reg(0));
-          if ( 1 == state )
-          {
-            m_LdrpUserDllDirectories = what;
-            goto end;
-          }
-          continue;
+           m_LdrpUserDllDirectories = what;
+           return 1;
         }
-        PBYTE caddr = NULL;
-        if ( is_bl_jimm(caddr) )
-        {
-           if ( !state && caddr == aux_RtlAcquireSRWLockExclusive )
-           {
-             m_LdrpDllDirectoryLock = (PBYTE)used_regs.get(AD_REG_X0);
-             state = 1;
-             continue;
-           }
-        }
+        return 0;
       }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;    
-  }
-end:
+      PBYTE caddr = NULL;
+      if ( is_bl_jimm(caddr) )
+      {
+         if ( !*state && caddr == aux_RtlAcquireSRWLockExclusive )
+         {
+            m_LdrpDllDirectoryLock = (PBYTE)used_regs->get(AD_REG_X0);
+            *state = 1;
+         }
+      }
+      return 0;
+   }, "hack_add_dll_dirs");
   return (m_LdrpUserDllDirectories != NULL);
 }
 
@@ -490,67 +442,108 @@ end:
 //       1 - wait for RtlAllocateHeap
 int ntdll_hack::hack_veh(PBYTE psp)
 {
-  statefull_graph<PBYTE, int> cgraph;
-  std::list<std::pair<PBYTE, int> > addr_list;
-  auto curr = std::make_pair(psp, 0);
-  addr_list.push_back(curr);
-  int edge_n = 0;
-  int edge_gen = 0;
-  while( edge_gen < 100 )
-  {
-    for ( auto iter = addr_list.cbegin(); iter != addr_list.cend(); ++iter )
-    {
-      psp = iter->first;
-      int state = iter->second;
-      if ( m_verbose )
-        printf("hack_veh: %p, state %d, edge_gen %d, edge_n %d\n", psp, state, edge_gen, edge_n);
-      if ( cgraph.in_ranges(psp) )
-        continue;
-      if ( !setup(psp) )
-        continue;
-      regs_pad used_regs;
-      edge_n++;
-      for ( ; ; )
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+      if ( is_add() )
       {
-        if ( !disasm(state) || is_ret() )
-          break;
-        if ( check_jmps(cgraph, state) )
-          continue;
-        // adrp/adr pair
-        if ( is_adrp(used_regs) )
-          continue;
-        if ( is_add() )
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") && !in_section(what, ".mrdata") )
+           used_regs->zero(get_reg(0));
+        if ( 2 == *state )
         {
-          PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          if ( !in_section(what, ".data") && !in_section(what, ".mrdata") )
-            used_regs.zero(get_reg(0));
-          if ( 2 == state )
-          {
-            m_LdrpVectorHandlerList = what;
-            goto end;
-          }
-          continue;
+           m_LdrpVectorHandlerList = what;
+           return 1;
         }
-        PBYTE caddr = NULL;
-        if ( is_bl_jimm(caddr) )
-        {
-           if ( !state && caddr == aux_RtlAcquireSRWLockExclusive )
-           {
-             aux_LdrpMrdataLock = (PBYTE)used_regs.get(AD_REG_X0);
-             state = 1;
-             continue;
-           }
-           if ( caddr == aux_RtlAllocateHeap )
-             state = 2;
-        }
+        return 0;
       }
-      cgraph.add_range(psp, m_psp - psp);
-    }
-    // prepare for next edge generation
-    edge_gen++;
-    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
-      break;    
-  }
-end:
+      PBYTE caddr = NULL;
+      if ( is_bl_jimm(caddr) )
+      {
+         if ( !*state && caddr == aux_RtlAcquireSRWLockExclusive )
+         {
+           aux_LdrpMrdataLock = (PBYTE)used_regs->get(AD_REG_X0);
+           *state = 1;
+           return 0;
+         }
+         if ( caddr == aux_RtlAllocateHeap )
+           *state = 2;
+     }
+     return 0;
+   }, "hack_veh");
   return (m_LdrpVectorHandlerList != NULL);
+}
+
+int ntdll_hack::find_ptr_map(PBYTE psp)
+{
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+      if ( is_add() )
+      {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") )
+           used_regs->zero(get_reg(0));
+         if ( *state )
+         {
+           m_RtlpPtrTree = what;
+           return 1;
+         }
+         return 0;
+      }
+      PBYTE caddr = NULL;
+      if ( is_bl_jimm(caddr) )
+      {
+         if ( caddr == aux_RtlAcquireSRWLockExclusive )
+         {
+           *state = 1;
+           m_RtlpPtrTreeLock = (PBYTE)used_regs->get(AD_REG_X0);
+         }
+      }
+      return 0;
+   }, "find_ptr_map");
+   return (m_RtlpPtrTreeLock != NULL) && (m_RtlpPtrTree != NULL);
+}
+
+int ntdll_hack::find_props(PBYTE psp)
+{
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+      // mov reg, imm
+      if ( is_mov_rr(used_regs) )
+        return 0;
+      if ( is_add() )
+      {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") )
+           used_regs->zero(get_reg(0));
+         return 0;
+      }
+      PBYTE caddr = NULL;
+      if ( is_bl_jimm(caddr) )
+      {
+         if ( caddr == aux_RtlAcquireSRWLockExclusive )
+         {
+           *state = 1;
+           m_RtlpPropStoreLock = (PBYTE)used_regs->get(AD_REG_X0);
+         }
+         if ( caddr == aux_bsearch )
+           return 1;
+         return 0;
+      }
+      // ldr
+      if ( is_ldr() )
+      {
+         PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+         if ( !in_section(what, ".data") )
+           return 0;
+         // check size - count is 32bit
+         if ( 32 == get_reg_size(0) )
+           m_RtlpPropStoreEntriesActiveCount = what;
+         else
+           m_RtlpPropStoreEntries = what;
+         if ( (m_RtlpPropStoreEntries != NULL) && (m_RtlpPropStoreEntriesActiveCount != NULL) )
+           return 1;
+      }
+      return 0;
+   }, "find_props");
+  return (m_RtlpPropStoreLock != NULL) && (m_RtlpPropStoreEntriesActiveCount != NULL) && (m_RtlpPropStoreEntries != NULL);
 }

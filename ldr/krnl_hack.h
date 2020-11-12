@@ -213,6 +213,8 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_ExNPagedLookasideListHead;
     PBYTE m_ExPagedLookasideLock;
     PBYTE m_ExPagedLookasideListHead;
+    // verifier data
+    PBYTE m_ViDdiInitialized;
     // undocumented invb trash
     PBYTE m_InbvDisplayFilter;
     // kernel shims

@@ -364,6 +364,10 @@ class arm64_hack
    {
      return m_dis.operands[idx].op_reg.rn;
    }
+   inline size_t get_reg_size(int idx) const
+   {
+     return m_dis.operands[idx].op_reg.sz;
+   }
    void collect_calls(PBYTE psp, std::set<PBYTE> &, const char *s_name);
    int find_first_jmp(PBYTE addr, PBYTE &out);
    int find_first_bl(PBYTE addr, PBYTE &out);
@@ -431,6 +435,13 @@ class arm64_hack
      if ( !is_mov_rr() )
        return 0;
      used_regs.ldar(get_reg(0), get_reg(1));
+     return 1;
+   }
+   inline int is_mov_rr(regs_pad *used_regs) const
+   {
+     if ( !is_mov_rr() )
+       return 0;
+     used_regs->ldar(get_reg(0), get_reg(1));
      return 1;
    }
    inline int in_section(PBYTE addr, const char *sname) const
