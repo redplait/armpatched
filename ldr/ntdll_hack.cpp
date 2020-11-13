@@ -25,6 +25,7 @@ void ntdll_hack::zero_data()
   m_RtlpPtrTreeLock = m_RtlpPtrTree = NULL;
   m_RtlpPropStoreLock = m_RtlpPropStoreEntriesActiveCount = m_RtlpPropStoreEntries = NULL;
   m_LdrpIsSecureProcess = NULL;
+  m_LdrpManifestProberRoutine = m_LdrpReleaseActCtxW = m_LdrpCreateActCtxLanguageW = NULL;
 }
 
 void ntdll_hack::dump() const
@@ -66,6 +67,12 @@ void ntdll_hack::dump() const
     printf("RtlpPropStoreEntries: %p\n", PVOID(m_RtlpPropStoreEntries - mz));
   if ( m_LdrpIsSecureProcess != NULL )
     printf("LdrpIsSecureProcess: %p\n", PVOID(m_LdrpIsSecureProcess - mz));
+  if ( m_LdrpManifestProberRoutine != NULL )
+    printf("LdrpManifestProberRoutine: %p\n", PVOID(m_LdrpManifestProberRoutine - mz));
+  if ( m_LdrpReleaseActCtxW != NULL )
+    printf("LdrpReleaseActCtxW: %p\n", PVOID(m_LdrpReleaseActCtxW - mz));
+  if ( m_LdrpCreateActCtxLanguageW != NULL )
+    printf("LdrpCreateActCtxLanguageW: %p\n", PVOID(m_LdrpCreateActCtxLanguageW - mz));
 }
 
 int ntdll_hack::hack(int verbose)
@@ -119,6 +126,10 @@ int ntdll_hack::hack(int verbose)
   if ( exp != NULL )
     res += disasm_LdrQueryImageFileExecutionOptions(mz + exp->rva);
 
+  exp = m_ed->find("LdrSetDllManifestProber");
+  if ( exp != NULL )
+    res += disasm_LdrSetDllManifestProber(mz + exp->rva);
+
   // try find unnamed wnf root - via RtlSubscribeWnfStateChangeNotification -> RtlpSubscribeWnfStateChangeNotificationInternal -> RtlpInitializeWnf
   exp = m_ed->find("RtlSubscribeWnfStateChangeNotification");
   if ( exp != NULL )
@@ -133,12 +144,42 @@ int ntdll_hack::hack(int verbose)
   return res;
 }
 
+int ntdll_hack::disasm_LdrSetDllManifestProber(PBYTE psp)
+{
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  int res = 0;
+  for ( DWORD i = 0; i < 40; i++ )
+  {
+    if ( !disasm() || is_ret() )
+      return 0;
+    if ( is_adrp(used_regs) )
+      continue;
+    if ( is_str() )
+    {
+       PBYTE what = (PBYTE)used_regs.add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+       if ( !in_section(what, ".data") )
+         continue;
+       switch(get_reg(0))
+       {
+         case AD_REG_X0: m_LdrpManifestProberRoutine = what; res++; 
+          break;
+         case AD_REG_X1: m_LdrpCreateActCtxLanguageW = what; res++;
+          break;
+         case AD_REG_X2: m_LdrpReleaseActCtxW = what; res++;
+          break;
+       }
+    }
+  }
+  return res;
+}
+
 int ntdll_hack::disasm_LdrQueryImageFileExecutionOptions(PBYTE psp)
 {
   if ( !setup(psp) )
     return 0;
   regs_pad used_regs;
-  PBYTE once_call = NULL;
   for ( DWORD i = 0; i < 40; i++ )
   {
     if ( !disasm() || is_ret() )
