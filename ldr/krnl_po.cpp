@@ -45,7 +45,6 @@ int ntoskrnl_hack::disasm_PoRegisterPowerSettingCallback(PBYTE psp)
       if ( !setup(psp) )
         continue;
       regs_pad used_regs;
-      int size = 0;
       for ( ; ; )
       {
         if ( !disasm(state) || is_ret() )

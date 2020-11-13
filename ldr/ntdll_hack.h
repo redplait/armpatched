@@ -27,6 +27,7 @@ class ntdll_hack: public arm64_hack
     int hack_func_tree(PBYTE);
     int find_ptr_map(PBYTE);
     int find_props(PBYTE);
+    int disasm_LdrQueryImageFileExecutionOptions(PBYTE);
     // aux data
     PBYTE aux_RtlAcquireSRWLockExclusive;
     PBYTE aux_RtlAllocateHeap;
@@ -56,4 +57,6 @@ class ntdll_hack: public arm64_hack
     PBYTE m_RtlpPropStoreLock;
     PBYTE m_RtlpPropStoreEntriesActiveCount;
     PBYTE m_RtlpPropStoreEntries;
+    // from LdrQueryImageFileExecutionOptions
+    PBYTE m_LdrpIsSecureProcess;
 };
