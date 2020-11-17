@@ -50,6 +50,7 @@ void ntoskrnl_hack::zero_data()
   init_wnf();
   init_kse();
   init_po();
+  init_vrf();
   init_bugcheck_data();
   m_MiGetPteAddress = m_pte_base_addr = NULL;
   eproc_ObjectTable_off = ObjectTable_pushlock_off = eproc_ProcessLock_off = 0;
@@ -111,6 +112,7 @@ void ntoskrnl_hack::dump() const
   dump_bugcheck_data(mz);
   // kse
   dump_kse(mz);
+  dump_vrf(mz);
 
   if ( m_KeLoaderBlock != NULL )
     printf("KeLoaderBlock: %p\n", PVOID(m_KeLoaderBlock - mz));
@@ -511,6 +513,14 @@ int ntoskrnl_hack::hack(int verbose)
   if ( exp != NULL )
     res += hack_x0_ldr(mz + exp->rva, m_proc_flags3_off);
 
+  // verifier
+  exp = m_ed->find("VfIsVerificationEnabled");
+  if ( exp != NULL )
+    res += disasm_ldr_data(mz + exp->rva, m_ViDdiInitialized);
+  exp = m_ed->find("VfInsertContext");
+  if ( exp != NULL )
+    res += disasm_ldr_data(mz + exp->rva, m_ViVerifierEnabled);
+  
   // hypervisor
   exp = m_ed->find("HvlQueryActiveProcessors");
   if ( exp != NULL )

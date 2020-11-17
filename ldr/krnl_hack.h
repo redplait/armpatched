@@ -68,6 +68,7 @@ class ntoskrnl_hack: public arm64_hack
     void init_silo();
     void init_po();
     void init_tracepoints();
+    void init_vrf();
     void init_dbg_data();
     void init_bugcheck_data();
     // dumpers
@@ -80,6 +81,7 @@ class ntoskrnl_hack: public arm64_hack
     void dump_kse(PBYTE mz) const;
     void dump_silo(PBYTE mz) const;
     void dump_pnp(PBYTE mz) const;
+    void dump_vrf(PBYTE mz) const;
     void dump_dbg_data(PBYTE mz) const;
     void dump_tracepoints(PBYTE mz) const;
     void dump_bugcheck_data(PBYTE mz) const;
@@ -96,7 +98,6 @@ class ntoskrnl_hack: public arm64_hack
     int find_trace_sdt(PBYTE mz);
     int find_stab_types(PBYTE mz);
     int hack_emp(PBYTE mz);
-    int find_emp_list(PBYTE mz);
     int hack_ex_cbs_aux(PBYTE psp);
     int find_KxAcquireSpinLock(PBYTE psp);
     int hack_bugcheck(PBYTE psp);
@@ -170,6 +171,7 @@ class ntoskrnl_hack: public arm64_hack
     int disasm_IoRegisterFileSystem(PBYTE);
     int asgn_FileSystemQueueHead(DWORD state, PBYTE);
     int disasm_IoRegisterFsRegistrationChangeMountAware(PBYTE);
+    int disasm_ldr_data(PBYTE, PBYTE &res);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -215,6 +217,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_ExPagedLookasideListHead;
     // verifier data
     PBYTE m_ViDdiInitialized;
+    PBYTE m_ViVerifierEnabled;
     // undocumented invb trash
     PBYTE m_InbvDisplayFilter;
     // kernel shims

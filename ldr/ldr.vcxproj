@@ -178,6 +178,7 @@
     <ClCompile Include="krnl_sign.cpp" />
     <ClCompile Include="krnl_silo.cpp" />
     <ClCompile Include="krnl_tp.cpp" />
+    <ClCompile Include="krnl_vrf.cpp" />
     <ClCompile Include="krnl_wmi.cpp" />
     <ClCompile Include="krnl_wnf.cpp" />
     <ClCompile Include="ldr.cpp" />
