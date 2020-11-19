@@ -16,6 +16,7 @@ void ntoskrnl_hack::zero_data()
   init_aux("ObOpenObjectByName", aux_ObOpenObjectByName);
   init_aux("ObOpenObjectByPointer", aux_ObOpenObjectByPointer);
   init_aux("ObCreateObjectTypeEx", aux_ObCreateObjectTypeEx);
+  init_aux("ObfReferenceObject", aux_ObfReferenceObject);
   init_aux("EtwRegister", aux_EtwRegister);
   init_aux("ExAcquireFastMutexUnsafe", aux_ExAcquireFastMutexUnsafe);
   init_aux("ExAcquireFastMutex", aux_ExAcquireFastMutex);
@@ -382,6 +383,13 @@ int ntoskrnl_hack::hack(int verbose)
   exp = m_ed->find("KeRegisterBugCheckReasonCallback");
   if ( exp != NULL )
     res += hack_bugcheck_reason(mz + exp->rva);
+  // shutdown ntfy
+  exp = m_ed->find("IoRegisterShutdownNotification");
+  if ( exp != NULL )
+    res += disasm_qhead(mz + exp->rva, m_IopNotifyShutdownQueueHead);
+  exp = m_ed->find("IoRegisterLastChanceShutdownNotification");
+  if ( exp != NULL )
+    res += disasm_qhead(mz + exp->rva, m_IopNotifyLastChanceShutdownQueueHead);
 
   // silo data
   exp = m_ed->find("PsStartSiloMonitor");

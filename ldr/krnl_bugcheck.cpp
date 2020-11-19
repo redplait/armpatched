@@ -5,6 +5,7 @@ void ntoskrnl_hack::init_bugcheck_data()
 {
   m_KeBugCheckCallbackLock = m_KeBugCheckCallbackListHead = NULL;
   m_KeBugCheckReasonCallbackListHead = m_KeBugCheckAddRemovePagesCallbackListHead = NULL;
+  m_IopNotifyLastChanceShutdownQueueHead = m_IopNotifyShutdownQueueHead = NULL;
 }
 
 void ntoskrnl_hack::dump_bugcheck_data(PBYTE mz) const
@@ -17,6 +18,10 @@ void ntoskrnl_hack::dump_bugcheck_data(PBYTE mz) const
     printf("KeBugCheckReasonCallbackListHead: %p\n", PVOID(m_KeBugCheckReasonCallbackListHead - mz));
   if ( m_KeBugCheckAddRemovePagesCallbackListHead != NULL )
     printf("KeBugCheckAddRemovePagesCallbackListHead: %p\n", PVOID(m_KeBugCheckAddRemovePagesCallbackListHead - mz));
+  if ( m_IopNotifyLastChanceShutdownQueueHead != NULL )
+    printf("IopNotifyLastChanceShutdownQueueHead: %p\n", PVOID(m_IopNotifyLastChanceShutdownQueueHead - mz));
+  if ( m_IopNotifyShutdownQueueHead != NULL )
+    printf("IopNotifyShutdownQueueHead: %p\n", PVOID(m_IopNotifyShutdownQueueHead - mz));
 }
 
 int ntoskrnl_hack::find_KxAcquireSpinLock(PBYTE psp)
@@ -125,4 +130,33 @@ int ntoskrnl_hack::hack_bugcheck(PBYTE psp)
     }
   }
   return (m_KeBugCheckCallbackLock != NULL) && (m_KeBugCheckCallbackListHead != NULL);
+}
+
+// common function to find xxQueueHead - first data loaded after ObfReferenceObject
+int ntoskrnl_hack::disasm_qhead(PBYTE psp, PBYTE &out_res)
+{
+  traverse_simple_state_graph(psp, [&](int *state, regs_pad *used_regs) -> int
+   {
+     // call
+     PBYTE addr = NULL;
+     if ( is_bl_jimm(addr) )
+     {
+       if ( addr == aux_ObfReferenceObject )
+       {
+         *state = 1;
+         return 0;
+       }
+       return 0;
+     }
+     if ( *state && is_add() )
+     {
+        PBYTE what = (PBYTE)used_regs->add(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+        if ( !in_section(what, ".data") )
+          return 0;
+        out_res = what;
+        return 1;
+     }
+     return 0;
+   }, "disasm_qhead");
+  return (out_res != NULL);
 }

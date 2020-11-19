@@ -172,6 +172,7 @@ class ntoskrnl_hack: public arm64_hack
     int asgn_FileSystemQueueHead(DWORD state, PBYTE);
     int disasm_IoRegisterFsRegistrationChangeMountAware(PBYTE);
     int disasm_ldr_data(PBYTE, PBYTE &res);
+    int disasm_qhead(PBYTE, PBYTE &res);
     // auxilary data
     PBYTE aux_MmUserProbeAddress;
     PBYTE aux_MmSystemRangeStart;
@@ -187,6 +188,7 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE aux_ObReferenceObjectByPointer;
     PBYTE aux_ObOpenObjectByPointer;
     PBYTE aux_ObOpenObjectByName;
+    PBYTE aux_ObfReferenceObject;
     PBYTE aux_ExAcquireFastMutexUnsafe;
     PBYTE aux_ExAcquireFastMutex;
     PBYTE aux_KeAcquireGuardedMutex;
@@ -246,6 +248,9 @@ class ntoskrnl_hack: public arm64_hack
     PBYTE m_KeBugCheckCallbackListHead;
     PBYTE m_KeBugCheckReasonCallbackListHead;
     PBYTE m_KeBugCheckAddRemovePagesCallbackListHead;
+    // shutdown ntfy
+    PBYTE m_IopNotifyLastChanceShutdownQueueHead;
+    PBYTE m_IopNotifyShutdownQueueHead;
     // tracepoints data
     PBYTE m_KiDynamicTraceEnabled;
     PBYTE m_KiTpStateLock;
