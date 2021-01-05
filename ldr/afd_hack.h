@@ -24,8 +24,11 @@ class afd_hack: public iat_mod
     }
   protected:
     void zero_data();
+    int find_wsk(PBYTE mz);
     // output data
     DWORD m_wsk_size;
     PBYTE m_AfdWskClientSpinLock;
     PBYTE m_AfdWskClientListHead;
+    // tlg
+    PBYTE afd_tlg;
 };

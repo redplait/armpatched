@@ -7,6 +7,7 @@ void afd_hack::zero_data()
 {
   m_wsk_size = 0;
   m_AfdWskClientSpinLock = m_AfdWskClientListHead = NULL;
+  afd_tlg = NULL;
 }
 
 void afd_hack::dump() const
@@ -18,12 +19,24 @@ void afd_hack::dump() const
     printf("AfdWskClientListHead: %p\n", PVOID(m_AfdWskClientListHead - mz));
   if ( m_wsk_size )
     printf("wsk item size: %X\n", m_wsk_size);
+  if ( afd_tlg != NULL )
+    printf("tlg at %p\n", PVOID(afd_tlg - mz));
 }
+
+// find tlg data
+static const BYTE s_afd[16] = { 0x1D, 0x22, 0x3A, 0xAA, 0x6F, 0x9A, 0xF9, 0x4C, 0x90, 0x4E, 0x89, 0x71, 0x00, 0xCE, 0x89, 0x15};
 
 int afd_hack::hack(int verbose)
 {
   m_verbose = verbose;
   PBYTE mz = m_pe->base_addr();
+  int res = find_wsk(mz);
+  res += find_tlg_by_guid((const PBYTE)s_afd, mz, afd_tlg);
+  return res;
+}
+
+int afd_hack::find_wsk(PBYTE mz)
+{
   // try search tag in .text section
   const one_section *s = m_pe->find_section_by_name(".text");
   if ( NULL == s )
@@ -96,8 +109,13 @@ int afd_hack::hack(int verbose)
              is_iat_func(what, "ExAllocatePool2")
            )
         {
-          *state = 2;
-          m_wsk_size = used_regs->get(AD_REG_X1);
+          // check that we loaded right tag for this allocation
+          if ( *state == 1 )
+          {
+            *state = 2;
+            m_wsk_size = used_regs->get(AD_REG_X1);
+          } else
+           *state = 0;
           return 0;
         }
         // if state 2 - check for KeAcquireInStackQueuedSpinLock
