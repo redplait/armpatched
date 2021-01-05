@@ -264,7 +264,7 @@ int wmain(int argc, wchar_t **argv)
          }
        }
      }
-     if ( f.map_pe(verb_mode) && ed != NULL )
+     if ( f.map_pe(verb_mode) )
      {
        inmem_import_holder ih;
        module_import *mimp = ih.add(argv[i], &f);
@@ -276,67 +276,77 @@ int wmain(int argc, wchar_t **argv)
        }
        // apply relocs
        f.apply_relocs();
-       // quick and dirty test
-       const char *exp_name = f.get_exp_name();
-       int krnl = 1;
-       if ( find_wpp )
+       if ( ed != NULL )
        {
-         krnl = 0;
-         process_wpp<iat_mod>(&f, ed, mimp, verb_mode);
-         ed = NULL; // will be killed inside ~arm64_hack
-       } else if ( rpc_mode )
-       {
-         krnl = 0;
-         rpc_hack mod(&f, ed, mimp);
-         ed = NULL; // will be killed inside ~arm64_hack
-         mod.hack(verb_mode);
-         mod.dump();
-       } else if ( exp_name != NULL )
-       {
-         printf("%s\n", exp_name);
-         if ( !_stricmp(exp_name, "ndis.sys") )
+         // quick and dirty test based on module name from exports
+         const char *exp_name = f.get_exp_name();
+         int krnl = 1;
+         if ( find_wpp )
          {
            krnl = 0;
-           if ( mimp != NULL )
+           process_wpp<iat_mod>(&f, ed, mimp, verb_mode);
+           ed = NULL; // will be killed inside ~arm64_hack
+         } else if ( rpc_mode )
+         {
+           krnl = 0;
+           rpc_hack mod(&f, ed, mimp);
+           ed = NULL; // will be killed inside ~arm64_hack
+           mod.hack(verb_mode);
+           mod.dump();
+         } else if ( exp_name != NULL )
+         {
+           printf("%s\n", exp_name);
+           if ( !_stricmp(exp_name, "ndis.sys") )
            {
-             ndis_hack ndis(&f, ed, mimp);
-             ed = NULL; // will be killed inside ~arm64_hack
-             ndis.hack(verb_mode);
-             ndis.dump();
-           }
-         } else if ( !_stricmp(exp_name, "skci.dll") )
-         {
-           krnl = 0;
-           if ( mimp != NULL )
+             krnl = 0;
+             if ( mimp != NULL )
+             {
+               ndis_hack ndis(&f, ed, mimp);
+               ed = NULL; // will be killed inside ~arm64_hack
+               ndis.hack(verb_mode);
+               ndis.dump();
+             }
+           } else if ( !_stricmp(exp_name, "skci.dll") )
            {
-             skci_hack skci(&f, ed, mimp);
+             krnl = 0;
+             if ( mimp != NULL )
+             {
+               skci_hack skci(&f, ed, mimp);
+               ed = NULL; // will be killed inside ~arm64_hack
+               skci.hack(verb_mode);
+               skci.dump();
+             }
+           } else if ( !_stricmp(exp_name, "ntdll.dll") )
+           {
+             krnl = 0;
+             hack_dump<ntdll_hack>(&f, ed, verb_mode);
              ed = NULL; // will be killed inside ~arm64_hack
-             skci.hack(verb_mode);
-             skci.dump();
+           } else if ( !_stricmp(exp_name, "rpcrt4.dll") )
+           {
+             krnl = 0;
+             hack_dump<rpcrt4_hack>(&f, ed, verb_mode);
+             ed = NULL; // will be killed inside ~arm64_hack
+           } else if ( !_stricmp(exp_name, "combase.dll") )
+           {
+             krnl = 0;
+             process_iat_mod<combase_hack>(&f, ed, mimp, verb_mode);
+             ed = NULL; // will be killed inside ~arm64_hack
            }
-         } else if ( !_stricmp(exp_name, "ntdll.dll") )
-         {
-           krnl = 0;
-           hack_dump<ntdll_hack>(&f, ed, verb_mode);
-           ed = NULL; // will be killed inside ~arm64_hack
-         } else if ( !_stricmp(exp_name, "rpcrt4.dll") )
-         {
-           krnl = 0;
-           hack_dump<rpcrt4_hack>(&f, ed, verb_mode);
-           ed = NULL; // will be killed inside ~arm64_hack
-         } else if ( !_stricmp(exp_name, "combase.dll") )
-         {
-           krnl = 0;
-           process_iat_mod<combase_hack>(&f, ed, mimp, verb_mode);
-           ed = NULL; // will be killed inside ~arm64_hack
          }
-       }
-       if ( krnl )
-       {
-         ntoskrnl_hack nt(&f, ed);
-         ed = NULL; // will be killed inside ~arm64_hack
-         nt.hack(verb_mode);
-         nt.dump();
+         if ( krnl )
+         {
+           ntoskrnl_hack nt(&f, ed);
+           ed = NULL; // will be killed inside ~arm64_hack
+           nt.hack(verb_mode);
+           nt.dump();
+         }
+       } else {
+          // try to get module name from file name
+          wchar_t *wname = ::PathFindFileNameW(argv[i]);
+          if ( wname != NULL )
+          {
+            printf("mod name: %S\n", wname);
+          }
        }
      }
      if ( ed != NULL )
