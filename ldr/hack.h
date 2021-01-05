@@ -402,6 +402,13 @@ class arm64_hack
      used_regs.ldar(get_reg(0), get_reg(1));
      return 1;
    }
+   inline int is_ldar(regs_pad *used_regs) const
+   {
+     if ( !is_ldar() )
+       return 0;
+     used_regs->ldar(get_reg(0), get_reg(1));
+     return 1;
+   }
    int is_adrp() const;
    inline int is_adrp(regs_pad &used_regs) const
    {

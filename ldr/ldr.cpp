@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "pe_file.h"
+#include "afd_hack.h"
 #include "skci_hack.h"
 #include "krnl_hack.h"
 #include "ndis_hack.h"
@@ -346,6 +347,12 @@ int wmain(int argc, wchar_t **argv)
           if ( wname != NULL )
           {
             printf("mod name: %S\n", wname);
+            if ( !_wcsicmp(wname, L"afd.sys") )
+            {
+              afd_hack afd(&f, ed, mimp);
+              afd.hack(verb_mode);
+              afd.dump();
+            }
           }
        }
      }

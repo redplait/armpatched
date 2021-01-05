@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="afd_hack.cpp" />
     <ClCompile Include="bm_search.cpp" />
     <ClCompile Include="combase_hack.cpp" />
     <ClCompile Include="dict.c" />
