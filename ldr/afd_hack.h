@@ -22,13 +22,25 @@ class afd_hack: public iat_mod
              (m_wsk_size != 0)
       ;
     }
+    inline int is_endpoints_ok() const
+    {
+       return (m_AfdEndpointListHead != NULL) &&
+              (m_AfdGlobalData != NULL)
+       ;
+    }
   protected:
     void zero_data();
+    void reset_wsk();
+    void reset_endp();
     int find_wsk(PBYTE mz);
-    // output data
+    int find_endpoints(PBYTE mz);
+    // output data for wsk clients
     DWORD m_wsk_size;
     PBYTE m_AfdWskClientSpinLock;
     PBYTE m_AfdWskClientListHead;
+    // from AfdCommonAddAddressHandler
+    PBYTE m_AfdEndpointListHead;
+    PBYTE m_AfdGlobalData;
     // tlg
     PBYTE afd_tlg;
 };
