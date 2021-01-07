@@ -228,7 +228,8 @@ class arm64_hack
 {
   public:
    arm64_hack(arm64_pe_file *pe, exports_dict *ed);
-   virtual ~arm64_hack();   
+   virtual ~arm64_hack();
+   int inside_pdata(PBYTE);
   protected:
    void init_aux(const char *, PBYTE &aux);
    void fill_lc();
@@ -425,6 +426,8 @@ class arm64_hack
    int is_ldrb() const;
    int is_ldrsb() const;
    int is_str() const;
+   int is_strb() const;
+   int is_strh() const;
    inline int is_cmp_rimm() const
    {
      return (m_dis.instr_id == AD_INSTR_CMP && m_dis.num_operands == 2 && m_dis.operands[0].type == AD_OP_REG && m_dis.operands[1].type == AD_OP_IMM);
@@ -511,6 +514,12 @@ class arm64_hack
               continue;
             if ( check_jmps(cgraph, state) )
               continue;
+            PBYTE b_addr = NULL;
+            if ( is_b_jimm(b_addr) )
+            {
+              cgraph.add(b_addr, state);
+              break;
+            }
             // interface for F: -1 - break, 1 - exit
             int res = func(&state, &used_regs);
             if ( res < 0 )

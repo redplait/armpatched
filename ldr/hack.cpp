@@ -191,6 +191,26 @@ int arm64_hack::is_ldr_off() const
   ;
 }
 
+int arm64_hack::is_strb() const
+{
+  return (m_dis.instr_id == AD_INSTR_STRB) && 
+         (m_dis.num_operands == 3) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_REG) &&
+         (m_dis.operands[2].type == AD_OP_IMM)
+  ;
+}
+
+int arm64_hack::is_strh() const
+{
+  return (m_dis.instr_id == AD_INSTR_STRH) && 
+         (m_dis.num_operands == 3) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_REG) &&
+         (m_dis.operands[2].type == AD_OP_IMM)
+  ;
+}
+
 int arm64_hack::is_str() const
 {
   return (m_dis.instr_id == AD_INSTR_STR) && 
@@ -338,6 +358,19 @@ void arm64_hack::adjust_pdata()
     else
       break;
   }
+}
+
+int arm64_hack::inside_pdata(PBYTE addr)
+{
+  if ( !has_pdata() )
+    return NULL;
+  PBYTE mz = m_pe->base_addr();
+  pdata_item item { (DWORD)(addr - mz), 0 };
+  const pdata_item *first = (const pdata_item *)(mz + m_pdata_rva);
+  const pdata_item *last = (const pdata_item *)(mz + m_pdata_rva + m_pdata_size);
+  return std::binary_search(first, last, item, [](const pdata_item &l, const pdata_item &r) -> 
+      bool { return l.off < r.off; }
+  );
 }
 
 PBYTE arm64_hack::find_pdata(PBYTE where)

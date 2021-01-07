@@ -8,6 +8,7 @@
 #include "ntdll_hack.h"
 #include "rpc_hack.h"
 #include "rpcrt4_hack.h"
+#include "deriv.h"
 #include "../source/armadillo.h"
 
 void usage(const wchar_t *progname)
@@ -72,6 +73,8 @@ void process_wpp(arm64_pe_file *f, exports_dict *ed, module_import *iat, int ver
   }
 }
 
+typedef std::pair<std::wstring, DWORD> Der;
+
 int wmain(int argc, wchar_t **argv)
 {
    int dump_exp = 0;
@@ -82,6 +85,7 @@ int wmain(int argc, wchar_t **argv)
    int verb_mode = 0;
    int rpc_mode = 0;
    int find_wpp = 0;
+   std::list<Der> derives;
    std::pair<TDirGet, const char *> dir_get[] = { 
      std::make_pair(&arm64_pe_file::get_export, "export"),
      std::make_pair(&arm64_pe_file::get_import, "import"),
@@ -102,6 +106,27 @@ int wmain(int argc, wchar_t **argv)
      usage(argv[0]);
    for ( int i = 1; i < argc; i++ )
    {
+     if ( !wcscmp(argv[i], L"-der") )
+     {
+       i++;
+       if ( i >= argc )
+       {
+         usage(argv[0]);
+         return 0;
+       }
+       Der d;
+       d.first = argv[i];
+       i++;
+       if ( i >= argc )
+       {
+         usage(argv[0]);
+         return 0;
+       }
+       wchar_t *end;
+       d.second = wcstol(argv[i], &end, 16);
+       derives.push_back(d);
+       continue;
+     }
      if ( !wcscmp(argv[i], L"-de") )
      {
        dump_exp = 1;
@@ -358,6 +383,31 @@ int wmain(int argc, wchar_t **argv)
      }
      if ( ed != NULL )
        delete ed;
+   }
+   for ( auto c: derives )
+   {
+     arm64_pe_file f(c.first.c_str());
+     if ( f.read(dump_sects) )
+       continue;
+     exports_dict *ed = f.get_export_dict();
+     if ( f.map_pe(verb_mode) )
+     {
+       inmem_import_holder ih;
+       module_import *mimp = ih.add(c.first.c_str(), &f);
+       deriv_hack der(&f, ed, mimp);
+       std::list<found_xref> xrefs;
+       if ( der.find_xrefs(c.second, xrefs) )
+       {
+         PBYTE mz = f.base_addr();
+         for ( auto x: xrefs )
+         {
+           if ( x.exported != NULL )
+             printf("found at %p - %s\n", x.pfunc - mz, x.exported);
+           else
+             printf("found at %p\n", x.pfunc - mz);
+         }
+       }
+     }
    }
    return 0;
 }
