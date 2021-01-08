@@ -19,6 +19,7 @@ class iat_mod: public arm64_hack
    protected:
     int is_inside_IAT(PBYTE) const;
     int is_iat_func(PBYTE, const char *) const;
+    const char *get_iat_func(PBYTE) const;
     DWORD get_iat_by_name(const char *) const;
     // wpp methods
     int find_wpps(PBYTE mz, std::set<PBYTE> &);

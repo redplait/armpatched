@@ -14,6 +14,21 @@ int iat_mod::is_inside_IAT(PBYTE psp) const
   return 0;
 }
 
+const char *iat_mod::get_iat_func(PBYTE psp) const
+{
+  if ( NULL == m_iat )
+    return NULL;
+  ptrdiff_t off = psp - m_pe->base_addr();
+  if ( (off >= m_iat->iat_rva) &&
+       (off < (m_iat->iat_rva + m_iat->iat_size))
+     )
+  {
+    size_t index = (off - m_iat->iat_rva) / 8;
+    return m_iat->iat[index].name;
+  }
+  return NULL;
+}
+
 int iat_mod::is_iat_func(PBYTE psp, const char *name) const
 {
   if ( NULL == m_iat )
