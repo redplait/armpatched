@@ -49,6 +49,7 @@ struct path_item
   std::string name; // for call_imp/call_exp
 
   void dump() const;
+  int is_load_store() const;
 };
 
 class path_edge
@@ -60,6 +61,12 @@ class path_edge
    {
      return list.size() < s.list.size();
    }
+   int is_trivial() const
+   {
+     return std::all_of(list.cbegin(), list.cend(), [](const path_item &item){ return item.is_load_store(); });
+   }
+   int is_imp1_only(std::string &) const;
+   int contains_imp(std::string &) const;
 };
 
 class deriv_hack: public iat_mod

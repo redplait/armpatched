@@ -417,6 +417,8 @@ int wmain(int argc, wchar_t **argv)
              for ( auto edge: edges.list )
                edge.dump();
              edges.last.dump();
+             if ( x.exported == NULL && edges.is_trivial() )
+               printf("TRIVIAL\n");
            }
          }
        }

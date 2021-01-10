@@ -3,6 +3,50 @@
 #include "bm_search.h"
 #include "deriv.h"
 
+int path_edge::contains_imp(std::string &name) const
+{
+  for ( auto &c: list )
+  {
+    if ( c.type != call_imp )
+      continue;
+    if ( c.name == name )
+      return 1;
+  }
+  return 0;
+}
+
+int path_edge::is_imp1_only(std::string &name) const
+{
+  int res = 0;
+  for ( auto &c: list )
+  {
+    if ( c.is_load_store() )
+      continue;
+    if ( c.type != call_imp )
+      return 0;
+    if ( ++res > 2 )
+      return 0;
+    name = c.name;
+  }
+  return (res == 1);
+}
+
+int path_item::is_load_store() const
+{
+  switch(type)
+  {
+    case load:
+    case store:
+    case ldrb:
+    case ldrh:
+    case strb:
+    case strh:
+      if ( name.empty() )
+        return 1;
+  }
+  return 0;
+}
+
 void path_item::dump() const
 {
   switch(type)
@@ -120,6 +164,16 @@ int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, 
     return 1;
   }
   PBYTE mz = m_pe->base_addr();
+  // check if this symbol is exported
+  const char *exp_func = get_exported(mz, what);
+  if ( exp_func != NULL )
+  {
+    path_item tmp;
+    tmp.type = t;
+    tmp.name = exp_func;
+    edge.list.push_back(tmp);
+    return 0;
+  }
   const one_section *other = m_pe->find_section_v(what - mz);
   if ( other == NULL )
     return 0;
@@ -293,8 +347,11 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           path_item tmp;
           tmp.type = ldr_off;
           tmp.value = *(PDWORD)m_dis.operands[1].op_imm.bits;
-          tmp.value_count = 0;
-          iter->second.list.push_back(tmp);
+          if ( tmp.value ) // skip zero constants
+          {
+            tmp.value_count = 0;
+            iter->second.list.push_back(tmp);
+          }
           continue;
         }
       }
