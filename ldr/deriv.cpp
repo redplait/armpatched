@@ -3,6 +3,11 @@
 #include "bm_search.h"
 #include "deriv.h"
 
+int path_edge::has_const_count(int below) const
+{
+  return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return (item.type == ldr_off) && item.value_count && (item.value_count < below); });
+}
+
 int path_edge::contains_imp(std::string &name) const
 {
   for ( auto &c: list )

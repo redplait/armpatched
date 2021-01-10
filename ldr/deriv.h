@@ -67,6 +67,7 @@ class path_edge
    }
    int is_imp1_only(std::string &) const;
    int contains_imp(std::string &) const;
+   int has_const_count(int below) const;
 };
 
 class deriv_hack: public iat_mod

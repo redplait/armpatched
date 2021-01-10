@@ -396,6 +396,7 @@ int wmain(int argc, wchar_t **argv)
        module_import *mimp = ih.add(c.first.c_str(), &f);
        deriv_hack der(&f, ed, mimp);
        std::list<found_xref> xrefs;
+       int can_be_found = 0;
        if ( der.find_xrefs(c.second, xrefs) )
        {
          PBYTE mz = f.base_addr();
@@ -417,10 +418,18 @@ int wmain(int argc, wchar_t **argv)
              for ( auto edge: edges.list )
                edge.dump();
              edges.last.dump();
-             if ( x.exported == NULL && edges.is_trivial() )
-               printf("TRIVIAL\n");
+             if ( x.exported != NULL )
+               can_be_found++;
+             else {
+               if ( edges.is_trivial() )
+                 printf("TRIVIAL\n");
+               else if ( edges.has_const_count(3) )
+                 can_be_found++;
+             }
            }
          }
+         if ( can_be_found )
+           printf("CANBEFOUND\n");
        }
      }
    }
