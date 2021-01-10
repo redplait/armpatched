@@ -98,9 +98,12 @@ const char *deriv_hack::get_exported(PBYTE mz, PBYTE addr) const
 
 void deriv_hack::check_exported(PBYTE mz, found_xref &item) const
 {
+  DWORD rva = item.pfunc - mz;
+  const one_section *s = m_pe->find_section_rva(rva);
+  if ( s != NULL )
+    item.section_name = s->name;
   if ( m_ed == NULL )
     return;
-  DWORD rva = item.pfunc - mz;
   const export_item *ei = m_ed->find_exact(rva);
   if ( ei == NULL )
     return;

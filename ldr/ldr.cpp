@@ -404,7 +404,12 @@ int wmain(int argc, wchar_t **argv)
            if ( x.exported != NULL )
              printf("found at %p - %s\n", x.pfunc - mz, x.exported);
            else
-             printf("found at %p\n", x.pfunc - mz);
+           {
+             if ( x.section_name.empty() )
+               printf("found at %p\n", x.pfunc - mz);
+             else
+               printf("found at %p in section %s\n", x.pfunc - mz, x.section_name.c_str());
+           }
            // try autobuild path edges
            path_edge edges;
            if ( der.make_path(c.second, x.pfunc, edges) )

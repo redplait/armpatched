@@ -6,6 +6,7 @@ struct found_xref
 {
   PBYTE pfunc;
   const char *exported; // in not exported - will be NULL
+  std::string section_name; // in which section this function located
 };
 
 class funcs_holder
