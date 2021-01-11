@@ -9,14 +9,13 @@ struct found_xref
   std::string section_name; // in which section this function located
 };
 
-class funcs_holder
+class funcs_holder_cmn
 {
   public:
-    funcs_holder(arm64_hack *pe)
-     : m_pe(pe)
+    funcs_holder_cmn(arm64_hack *pe)
+      : m_pe(pe)
     { }
-    void add(PBYTE);
-    void add_processed(PBYTE);
+    // not thread-safe methods
     inline int empty() const
     {
       return m_current.empty();
@@ -26,6 +25,30 @@ class funcs_holder
     std::set<PBYTE> m_current;
     std::set<PBYTE> m_processed;
     arm64_hack *m_pe;
+};
+
+class funcs_holder: public funcs_holder_cmn
+{
+  public:
+    funcs_holder(arm64_hack *pe)
+     : funcs_holder_cmn(pe)
+    { }
+    void add(PBYTE);
+    void add_processed(PBYTE);
+};
+
+// thread-safe version
+class funcs_holder_ts: public funcs_holder_cmn
+{
+  public:
+    funcs_holder_ts(arm64_hack *pe)
+     : funcs_holder_cmn(pe)
+    { }
+    // thread-safe methods
+    void add(PBYTE);
+    void add_processed(PBYTE);
+  protected:
+    std::mutex m_mutex;
 };
 
 typedef enum
@@ -83,7 +106,8 @@ class deriv_hack: public iat_mod
   protected:
     void check_exported(PBYTE mz, found_xref &) const;
     const char *get_exported(PBYTE mz, PBYTE) const;
-    int disasm_one_func(PBYTE addr, PBYTE what, funcs_holder &fh);
+    template <typename FH>
+    int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
     int store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge);
     void calc_const_count(PBYTE func, path_edge &);
 };

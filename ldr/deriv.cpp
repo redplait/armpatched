@@ -109,6 +109,23 @@ void path_item::dump() const
   }
 }
 
+void funcs_holder_ts::add_processed(PBYTE addr)
+{
+  const std::lock_guard<std::mutex> lock(m_mutex);
+  m_processed.insert(addr);
+}
+
+void funcs_holder_ts::add(PBYTE addr)
+{
+  if ( m_pe->inside_pdata(addr) )
+    return;
+  const std::lock_guard<std::mutex> lock(m_mutex);
+  auto already = m_processed.find(addr);
+  if ( already != m_processed.end() )
+    return;
+  m_current.insert(addr);
+}
+
 void funcs_holder::add_processed(PBYTE addr)
 {
   m_processed.insert(addr);
@@ -124,7 +141,7 @@ void funcs_holder::add(PBYTE addr)
   m_current.insert(addr);
 }
 
-int funcs_holder::exchange(std::set<PBYTE> &outer)
+int funcs_holder_cmn::exchange(std::set<PBYTE> &outer)
 {
   if ( empty() )
     return 0;
@@ -399,7 +416,8 @@ void deriv_hack::calc_const_count(PBYTE func, path_edge &out_res)
 }
 
 // process one function (starting with psp) to find xref to what, add all newly discovered functions to fh
-int deriv_hack::disasm_one_func(PBYTE psp, PBYTE pattern, funcs_holder &fh)
+template <typename FH>
+int deriv_hack::disasm_one_func(PBYTE psp, PBYTE pattern, FH &fh)
 {
   cf_graph<PBYTE> cgraph;
   std::list<PBYTE> addr_list;
