@@ -141,12 +141,29 @@ void funcs_holder::add(PBYTE addr)
   m_current.insert(addr);
 }
 
-int funcs_holder_cmn::exchange(std::set<PBYTE> &outer)
+int funcs_holder::exchange(std::set<PBYTE> &outer)
 {
   if ( empty() )
     return 0;
   outer.clear();
   outer = m_current;
+  m_current.clear();
+  return 1;
+}
+
+int funcs_holder_ts::exchange(std::set<PBYTE> &outer)
+{
+  if ( empty() )
+    return 0;
+  outer.clear();
+  // bcs current set was filled in unpredictable times from several threads - it can contain already processed functions
+  for ( auto c: m_current )
+  {
+    const auto p = m_processed.find(c);
+    if ( p != m_processed.cend() )
+      continue;
+    outer.insert(c);
+  }
   m_current.clear();
   return 1;
 }
@@ -541,6 +558,116 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
         res++;
       }
       f.add_processed(c);
+    }
+  }
+  return res;
+}
+
+int deriv_pool::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
+{
+  deriv_hack *d = get_first();
+  if ( !d->has_pdata() )
+    return 0;
+  const PBYTE mz = d->base_addr();
+  funcs_holder_ts f(d);
+  int res = 0;
+  DWORD pdata_rva = 0,
+        pdata_size = 0;
+  d->get_pdata(pdata_rva, pdata_size);
+  // process pdata first
+  const pdata_item *first = (const pdata_item *)(mz + pdata_rva);
+  const pdata_item *last = (const pdata_item *)(mz + pdata_rva + pdata_size);
+  int tcsize = m_ders.size();
+  std::vector<std::future<xref_res> > futures(tcsize);
+  DWORD i = 0;
+  for ( ; first < last; first++ )
+  {
+    if ( i >= tcsize )
+    {
+      // harvest results
+      for ( DWORD j = 0; j < tcsize; j++ )
+      {
+        xref_res tres = futures[j].get();
+        if ( tres.res )
+        {
+          res++;
+          out_res.push_back(tres.xref);
+        }
+      }
+      i = 0;
+    }
+    // put new task
+    PBYTE addr = mz + first->off;
+    std::packaged_task<xref_res()> job([&, i, addr] {
+       xref_res task_res = { 0 };
+       task_res.res = m_ders[i]->disasm_one_func(addr, mz + rva, f);
+       if (task_res.res)
+       {
+         task_res.xref.pfunc = addr;
+         m_ders[i]->check_exported(mz, task_res.xref);
+       }
+       return task_res;
+      }
+    );
+    futures[i++] = std::move(m_tpool.add(job));
+  }
+  // collect remaining results
+  for ( DWORD j = 0; j < i; j++ )
+  {
+     xref_res tres = futures[j].get();
+     if ( tres.res )
+     {
+       res++;
+       out_res.push_back(tres.xref);
+     }
+  }
+
+  if ( f.empty() )
+    return res;
+  std::set<PBYTE> current_set;
+  while( f.exchange(current_set) )
+  {
+    i = 0;
+    for ( auto c : current_set )
+    {
+      if ( i >= tcsize )
+      {
+        // harvest results
+        for ( DWORD j = 0; j < tcsize; j++ )
+        {
+          xref_res tres = futures[j].get();
+          if ( tres.res )
+          {
+            res++;
+            out_res.push_back(tres.xref);
+          }
+        }
+        i = 0;
+      }
+      // put new task
+      std::packaged_task<xref_res()> job([&, i, c] {
+         xref_res task_res = { 0 };
+         task_res.res = m_ders[i]->disasm_one_func(c, mz + rva, f);
+         if (task_res.res)
+         {
+           task_res.xref.pfunc = c;
+           m_ders[i]->check_exported(mz, task_res.xref);
+         }
+         return task_res;
+        }
+      );
+      futures[i++] = std::move(m_tpool.add(job));
+      f.add_processed(c);
+    }
+    // collect remaining results
+    for ( DWORD j = 0; j < i; j++ )
+    {
+       xref_res tres = futures[j].get();
+       if ( tres.res )
+       {
+         res++;
+         out_res.push_back(tres.xref);
+       }
     }
   }
   return res;

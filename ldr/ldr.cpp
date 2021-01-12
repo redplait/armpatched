@@ -22,6 +22,7 @@ void usage(const wchar_t *progname)
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
   printf(" -rpc - find rpc interfaces\n");
+  printf(" -t threads number\n");
   printf(" -v - verbose output\n");
   printf(" -wpp - try to find WPP_GLOBAL_Controls\n");
   exit(6);
@@ -75,6 +76,42 @@ void process_wpp(arm64_pe_file *f, exports_dict *ed, module_import *iat, int ver
 
 typedef std::pair<std::wstring, DWORD> Der;
 
+int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xrefs)
+{
+  int can_be_found = 0;
+  for ( auto &x: xrefs )
+  {
+     if ( x.exported != NULL )
+        printf("found at %p - %s\n", x.pfunc - mz, x.exported);
+     else
+     {
+        if ( x.section_name.empty() )
+          printf("found at %p\n", x.pfunc - mz);
+        else
+          printf("found at %p in section %s\n", x.pfunc - mz, x.section_name.c_str());
+     }
+     // try autobuild path edges
+     path_edge edges;
+     if ( der->make_path(rva, x.pfunc, edges) )
+     {
+        for ( auto edge: edges.list )
+          edge.dump();
+        edges.last.dump();
+        if ( x.exported != NULL )
+          can_be_found++;
+        else {
+          if ( edges.is_trivial() )
+             printf("TRIVIAL\n");
+          else if ( edges.has_const_count(3) )
+             can_be_found++;
+        }
+     }
+  }
+  if ( can_be_found )
+    printf("CANBEFOUND\n");
+  return can_be_found;
+}
+
 int wmain(int argc, wchar_t **argv)
 {
    int dump_exp = 0;
@@ -85,6 +122,7 @@ int wmain(int argc, wchar_t **argv)
    int verb_mode = 0;
    int rpc_mode = 0;
    int find_wpp = 0;
+   int threads_count = 0;
    std::list<Der> derives;
    std::pair<TDirGet, const char *> dir_get[] = { 
      std::make_pair(&arm64_pe_file::get_export, "export"),
@@ -106,6 +144,23 @@ int wmain(int argc, wchar_t **argv)
      usage(argv[0]);
    for ( int i = 1; i < argc; i++ )
    {
+     if ( !wcscmp(argv[i], L"-t") )
+     {
+       i++;
+       if ( i >= argc )
+       {
+         usage(argv[0]);
+         return 0;
+       }
+       threads_count = _wtoi(argv[i]);
+       if ( threads_count )
+       {
+         int proc_count = std::thread::hardware_concurrency();
+         if ( proc_count < threads_count )
+           threads_count = proc_count;
+       }
+       continue;
+     }
      if ( !wcscmp(argv[i], L"-der") )
      {
        i++;
@@ -394,42 +449,16 @@ int wmain(int argc, wchar_t **argv)
      {
        inmem_import_holder ih;
        module_import *mimp = ih.add(c.first.c_str(), &f);
-       deriv_hack der(&f, ed, mimp);
        std::list<found_xref> xrefs;
-       int can_be_found = 0;
-       if ( der.find_xrefs(c.second, xrefs) )
+       if ( threads_count )
        {
-         PBYTE mz = f.base_addr();
-         for ( auto x: xrefs )
-         {
-           if ( x.exported != NULL )
-             printf("found at %p - %s\n", x.pfunc - mz, x.exported);
-           else
-           {
-             if ( x.section_name.empty() )
-               printf("found at %p\n", x.pfunc - mz);
-             else
-               printf("found at %p in section %s\n", x.pfunc - mz, x.section_name.c_str());
-           }
-           // try autobuild path edges
-           path_edge edges;
-           if ( der.make_path(c.second, x.pfunc, edges) )
-           {
-             for ( auto edge: edges.list )
-               edge.dump();
-             edges.last.dump();
-             if ( x.exported != NULL )
-               can_be_found++;
-             else {
-               if ( edges.is_trivial() )
-                 printf("TRIVIAL\n");
-               else if ( edges.has_const_count(3) )
-                 can_be_found++;
-             }
-           }
-         }
-         if ( can_be_found )
-           printf("CANBEFOUND\n");
+         deriv_pool der_pool(&f, ed, mimp, threads_count);
+         if ( der_pool.find_xrefs(c.second, xrefs) )
+           derive_edges(c.second, f.base_addr(), der_pool.get_first(), xrefs);
+       } else {
+         deriv_hack der(&f, ed, mimp);
+         if ( der.find_xrefs(c.second, xrefs) )
+           derive_edges(c.second, f.base_addr(), &der, xrefs);
        }
      }
    }

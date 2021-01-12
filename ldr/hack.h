@@ -230,6 +230,10 @@ class arm64_hack
    arm64_hack(arm64_pe_file *pe, exports_dict *ed);
    virtual ~arm64_hack();
    int inside_pdata(PBYTE);
+   inline int has_pdata() const
+   {
+     return (m_pdata_rva != 0) && (m_pdata_size != 0);
+   }
   protected:
    void init_aux(const char *, PBYTE &aux);
    void fill_lc();
@@ -470,10 +474,6 @@ class arm64_hack
        return 0;
      return (s->flags & IMAGE_SCN_CNT_CODE) ||
             (s->flags & IMAGE_SCN_MEM_EXECUTE);
-   }
-   inline int has_pdata() const
-   {
-     return (m_pdata_rva != 0) && (m_pdata_size != 0);
    }
    void adjust_pdata();
    PBYTE find_pdata(PBYTE);

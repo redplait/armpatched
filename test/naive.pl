@@ -1,6 +1,6 @@
 #!perl -w
 # script to measure how many symbols can be found with current auto builded state machine
-# 10 Jan 2020 (C) RedPlait
+# 10 Jan 2021 (C) RedPlait
 use strict;
 use warnings;
 

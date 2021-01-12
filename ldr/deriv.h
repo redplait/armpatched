@@ -1,6 +1,7 @@
 #pragma once
 
 #include "iat_mod.h"
+#include "tpool.h"
 
 struct found_xref
 {
@@ -20,7 +21,6 @@ class funcs_holder_cmn
     {
       return m_current.empty();
     }
-    int exchange(std::set<PBYTE> &);
   protected:
     std::set<PBYTE> m_current;
     std::set<PBYTE> m_processed;
@@ -35,6 +35,7 @@ class funcs_holder: public funcs_holder_cmn
     { }
     void add(PBYTE);
     void add_processed(PBYTE);
+    int exchange(std::set<PBYTE> &);
 };
 
 // thread-safe version
@@ -47,6 +48,7 @@ class funcs_holder_ts: public funcs_holder_cmn
     // thread-safe methods
     void add(PBYTE);
     void add_processed(PBYTE);
+    int exchange(std::set<PBYTE> &);
   protected:
     std::mutex m_mutex;
 };
@@ -103,11 +105,61 @@ class deriv_hack: public iat_mod
     }
     int find_xrefs(DWORD rva, std::list<found_xref> &);
     int make_path(DWORD rva, PBYTE func, path_edge &);
-  protected:
+    void reset_export()
+    {
+      m_ed = NULL;
+    }
+    inline PBYTE base_addr()
+    {
+      return m_pe->base_addr();
+    }
+    inline void get_pdata(DWORD &rva, DWORD &size)
+    {
+      rva = m_pdata_rva;
+      size = m_pdata_size;
+    }
     void check_exported(PBYTE mz, found_xref &) const;
-    const char *get_exported(PBYTE mz, PBYTE) const;
     template <typename FH>
     int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
+  protected:
+    const char *get_exported(PBYTE mz, PBYTE) const;
     int store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge);
     void calc_const_count(PBYTE func, path_edge &);
+};
+
+// multi-threaded version of deriv_hack - find own deriv_hack for every thread
+class deriv_pool
+{
+  public:
+   struct xref_res
+   {
+     int res;
+     found_xref xref;
+   };
+
+   deriv_pool(arm64_pe_file *pe, exports_dict *ed, module_import *iat, int thread_num)
+     : m_tpool(thread_num),
+       m_ders(thread_num, NULL)
+   {
+     for ( DWORD i = 0; i < thread_num; i++ )
+       m_ders[i] = new deriv_hack(pe, ed, iat);
+   }
+   ~deriv_pool()
+   {
+     int n = 0;
+     for ( auto iter = m_ders.begin(); iter != m_ders.end(); ++iter, ++n )
+     {
+       if ( n )
+         (*iter)->reset_export();
+       delete *iter;
+     }
+   }
+   inline deriv_hack *get_first()
+   {
+     return m_ders[0];
+   }
+   int find_xrefs(DWORD rva, std::list<found_xref> &);
+  protected:
+    thread_pool<xref_res> m_tpool;
+    std::vector<deriv_hack *> m_ders;
 };
