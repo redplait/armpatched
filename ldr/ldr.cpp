@@ -99,34 +99,40 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
         edges.last.dump();
         if ( x.exported != NULL )
         {
-          if ( edges.reduce() )
+          if (edges.reduce())
           {
             printf("REDUCED:\n");
             // dump again
-            for ( auto edge: edges.list )
+            for (auto edge : edges.list)
               edge.dump();
             edges.last.dump();
-            DWORD rva_found = 0;
-            if ( der->apply(x, edges, rva_found) )
-            {
-              printf("apply return %X, must_be %X\n", rva_found, rva);
-              if ( rva == rva_found )
-                can_be_found++;
-            }
+          }
+          DWORD rva_found = 0;
+          if ( der->apply(x, edges, rva_found) )
+          {
+            printf("apply return %X, must_be %X\n", rva_found, rva);
+            if ( rva == rva_found )
+              can_be_found++;
           }
         } else {
           if ( edges.is_trivial() )
              printf("TRIVIAL\n");
           else if ( edges.has_const_count(3) )
           {
-            can_be_found++;
-            if ( edges.reduce() )
+            if (edges.reduce())
             {
               printf("REDUCED:\n");
               // dump again
-              for ( auto edge: edges.list )
+              for (auto edge : edges.list)
                 edge.dump();
               edges.last.dump();
+            }
+            DWORD rva_found = 0;
+            if (der->apply(x, edges, rva_found))
+            {
+              printf("apply return %X, must_be %X\n", rva_found, rva);
+              if (rva == rva_found)
+                can_be_found++;
             }
           }
         }

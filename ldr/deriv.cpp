@@ -3,6 +3,27 @@
 #include "bm_search.h"
 #include "deriv.h"
 
+const path_item *path_edge::get_best_const() const
+{
+  const path_item *res = NULL;
+  for ( const auto &c: list )
+  {
+    if ( c.type != ldr_off )
+      continue;
+    if ( !c.value_count )
+      continue;
+    if ( res == NULL )
+    {
+      res = &c;
+      continue;
+    }
+    if ( res->value_count < c.value_count )
+      continue;
+    res = &c;
+  }
+  return res;
+}
+
 int path_edge::reduce()
 {
   if ( !can_reduce() )
@@ -318,6 +339,49 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
       return 0;
     }
     return try_apply(s, m_pe->base_addr() + exp->rva, path, found);
+  } else {
+    const one_section *cs = m_pe->find_section_by_name(xref.section_name.c_str());
+    if ( cs == NULL )
+    {
+      printf("cannot find functions section %s\n", xref.section_name.c_str());
+      return 0;
+    }
+    const path_item *imm = path.get_best_const();
+    if ( imm == NULL )
+    {
+      printf("cannot get_best_const\n");
+      return 0;
+    }
+    PBYTE start = m_pe->base_addr() + cs->va;
+    PBYTE end = start + cs->size;
+    bm_search srch((const PBYTE)&imm->value, sizeof(imm->value));
+    PBYTE curr = start;
+    std::list<PBYTE> founds;
+    while ( curr < end )
+    {
+      const PBYTE fres = srch.search(curr, end - curr);
+      if ( NULL == fres )
+        break;
+      try
+      {
+        founds.push_back(fres);
+      } catch(std::bad_alloc)
+      { return 0; }
+      curr = fres + sizeof(imm->value);
+    }
+    if ( founds.empty() )
+    {
+      printf("cannot find constant %X in section %s\n", imm->value, xref.section_name.c_str());
+      return 0;
+    }
+    for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
+    {
+      PBYTE func = find_pdata(*citer);
+      if ( NULL == func )
+        continue;
+      if ( try_apply(s, func, path, found) )
+        return 1;
+    }
   }
   return 0;
 }

@@ -96,6 +96,7 @@ class path_edge
    int has_const_count(int below) const;
    int can_reduce() const;
    int reduce();
+   const path_item *get_best_const() const;
 };
 
 class deriv_hack: public iat_mod
