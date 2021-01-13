@@ -274,17 +274,248 @@ int deriv_hack::resolve_section(DWORD rva, std::string &out_name) const
   return 1;
 }
 
+struct path_state
+{
+  std::list<path_item>::const_iterator iter;
+  const path_item *s;
+  int n;
+  int last;
+
+  bool operator<(const path_state& s) const
+  {
+    return n < s.n;
+  }
+  int next(path_edge &path)
+  {
+    if ( last )
+      return 1;
+    if ( ++iter == path.list.cend() )
+    {
+      s = &path.last;
+      last = 1;
+    }
+    else
+      s = &(*iter);
+    n++;
+    return 0;
+  }
+};
+
+int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
+{
+  const one_section *s = m_pe->find_section_by_name(path.symbol_section.c_str());
+  if ( s == NULL )
+  {
+    printf("cannot find section %s\n", path.symbol_section.c_str());
+    return 0;
+  }
+  if ( xref.exported != NULL )
+  {
+    const export_item *exp = m_ed->find(xref.exported);
+    if ( exp == NULL )
+    {
+      printf("cannot find exported function %s\n", xref.exported);
+      return 0;
+    }
+    return try_apply(s, m_pe->base_addr() + exp->rva, path, found);
+  }
+  return 0;
+}
+
+int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWORD &found)
+{
+  PBYTE mz = m_pe->base_addr();
+  statefull_graph<PBYTE, path_state> cgraph;
+  std::list<std::pair<PBYTE, path_state> > addr_list;
+  auto citer = path.list.cbegin();
+  path_state state { citer, &(*citer), 0, 0 };
+  auto curr = std::make_pair(psp, state);
+  addr_list.push_back(curr);
+  int edge_gen = 0;
+  int edge_n = 0;
+  int res = 0;
+  m_verbose = 1;
+  while( edge_gen < 100 )
+  {
+    for ( auto iter = addr_list.begin(); iter != addr_list.end(); ++iter )
+    {
+      psp = iter->first;
+      if ( cgraph.in_ranges(psp) )
+        continue;
+      if ( !setup(psp) )
+        continue;      
+      edge_n++;
+      regs_pad used_regs;
+      while( 1 )
+      {
+        if ( !disasm() || is_ret() )
+          break;
+        if ( check_jmps(cgraph, iter->second) )
+          continue;
+        PBYTE b_addr = NULL;
+        if ( is_b_jimm(b_addr) )
+        {
+          cgraph.add(b_addr, iter->second);
+          break;
+        }
+        // check for bl
+        PBYTE caddr = NULL;
+        if ( is_bl_jimm(caddr) && iter->second.s->type == call_exp )
+        {
+          const char *exp_func = get_exported(mz, caddr);
+          if ( exp_func == NULL )
+            continue;
+          if ( !strcmp(exp_func, iter->second.s->name.c_str()) )
+            iter->second.next(path);
+          continue;
+        }
+        if ( is_br_reg() )
+        {
+          PBYTE what = (PBYTE)used_regs.get(get_reg(0));
+          if ( what != NULL && in_executable_section(what) )
+             cgraph.add(what, iter->second);
+          break;
+        }
+        if ( is_adrp(used_regs) )
+          continue;
+        // ldar
+        if ( is_ldar(used_regs) )
+          continue;
+        // bl reg - usually call [IAT]
+        if ( is_bl_reg() && iter->second.s->type == call_imp )
+        {
+          PBYTE what = (PBYTE)used_regs.get(get_reg(0));
+          const char *name = get_iat_func(what);
+          if ( name == NULL )
+            continue;
+          if ( !strcmp(name, iter->second.s->name.c_str()) )
+            iter->second.next(path);
+          continue;
+        }
+        // and now different variants of xref
+        if ( is_add() )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type != load )
+            continue;
+          const one_section *their = m_pe->find_section_v(what - mz);
+          if ( their == NULL || their != s )
+            continue;
+          if ( iter->second.next(path) )
+          {
+            found = what - mz;
+            return 1;
+          }
+          continue;
+        }
+        if ( is_ldr() && iter->second.s->type == load )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          const one_section *their = m_pe->find_section_v(what - mz);
+          if ( their == NULL || their != s )
+            continue;
+          if ( iter->second.next(path) )
+          {
+            found = what - mz;
+            return 1;
+          }
+          continue;
+        }
+        if ( is_ldrb() && iter->second.s->type == ldrb )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          const one_section *their = m_pe->find_section_v(what - mz);
+          if ( their == NULL || their != s )
+            continue;
+          if ( iter->second.next(path) )
+          {
+            found = what - mz;
+            return 1;
+          }
+          continue;
+        }
+        if ( is_ldrh() && iter->second.s->type == ldrh )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          const one_section *their = m_pe->find_section_v(what - mz);
+          if ( their == NULL || their != s )
+            continue;
+          if ( iter->second.next(path) )
+          {
+            found = what - mz;
+            return 1;
+          }
+          continue;
+        }
+        if ( is_str() && iter->second.s->type == store )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          const one_section *their = m_pe->find_section_v(what - mz);
+          if ( their == NULL || their != s )
+            continue;
+          if ( iter->second.next(path) )
+          {
+            found = what - mz;
+            return 1;
+          }
+          continue;
+        }
+        if ( is_strb() && iter->second.s->type == strb )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          const one_section *their = m_pe->find_section_v(what - mz);
+          if ( their == NULL || their != s )
+            continue;
+          if ( iter->second.next(path) )
+          {
+            found = what - mz;
+            return 1;
+          }
+          continue;
+        }
+        if ( is_strh() && iter->second.s->type == strh )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          const one_section *their = m_pe->find_section_v(what - mz);
+          if ( their == NULL || their != s )
+            continue;
+          if ( iter->second.next(path) )
+          {
+            found = what - mz;
+            return 1;
+          }
+          continue;
+        }
+        // loading of constants
+        if ( is_ldr_off() && iter->second.s->type == ldr_off )
+        {
+          if ( iter->second.s->value != *(PDWORD)m_dis.operands[1].op_imm.bits )
+            break;
+          iter->second.next(path);
+          continue;
+        }
+      }
+      cgraph.add_range(psp, m_psp - psp);
+    }
+    // prepare for next edge generation
+    edge_gen++;
+    if ( !cgraph.delete_ranges(&cgraph.ranges, &addr_list) )
+      break;    
+  }
+  return 0;
+}
+
 int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
 {
   PBYTE mz = m_pe->base_addr();
   const one_section *s = m_pe->find_section_v(rva);
   if ( s == NULL )
     return 0;
-  out_res.symbol_section = s->name;
   PBYTE pattern = mz + rva;
   statefull_graph<PBYTE, path_edge> cgraph;
   std::list<std::pair<PBYTE, path_edge> > addr_list;
   path_edge tmp;
+  tmp.symbol_section = s->name;
   auto curr = std::make_pair(psp, tmp);
   addr_list.push_back(curr);
   int edge_gen = 0;

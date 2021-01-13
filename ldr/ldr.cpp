@@ -99,7 +99,6 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
         edges.last.dump();
         if ( x.exported != NULL )
         {
-          can_be_found++;
           if ( edges.reduce() )
           {
             printf("REDUCED:\n");
@@ -107,6 +106,13 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
             for ( auto edge: edges.list )
               edge.dump();
             edges.last.dump();
+            DWORD rva_found = 0;
+            if ( der->apply(x, edges, rva_found) )
+            {
+              printf("apply return %X, must_be %X\n", rva_found, rva);
+              if ( rva == rva_found )
+                can_be_found++;
+            }
           }
         } else {
           if ( edges.is_trivial() )
