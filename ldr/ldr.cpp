@@ -98,12 +98,31 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
           edge.dump();
         edges.last.dump();
         if ( x.exported != NULL )
+        {
           can_be_found++;
-        else {
+          if ( edges.reduce() )
+          {
+            printf("REDUCED:\n");
+            // dump again
+            for ( auto edge: edges.list )
+              edge.dump();
+            edges.last.dump();
+          }
+        } else {
           if ( edges.is_trivial() )
              printf("TRIVIAL\n");
           else if ( edges.has_const_count(3) )
-             can_be_found++;
+          {
+            can_be_found++;
+            if ( edges.reduce() )
+            {
+              printf("REDUCED:\n");
+              // dump again
+              for ( auto edge: edges.list )
+                edge.dump();
+              edges.last.dump();
+            }
+          }
         }
      }
   }

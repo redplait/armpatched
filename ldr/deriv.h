@@ -80,6 +80,7 @@ struct path_item
 class path_edge
 {
   public:
+   std::string symbol_section;
    std::list<path_item> list;
    path_item last;
    bool operator<(const path_edge& s) const
@@ -93,6 +94,8 @@ class path_edge
    int is_imp1_only(std::string &) const;
    int contains_imp(std::string &) const;
    int has_const_count(int below) const;
+   int can_reduce() const;
+   int reduce();
 };
 
 class deriv_hack: public iat_mod
@@ -103,6 +106,7 @@ class deriv_hack: public iat_mod
     {
 //      zero_data();
     }
+    int resolve_section(DWORD rva, std::string &) const;
     int find_xrefs(DWORD rva, std::list<found_xref> &);
     int make_path(DWORD rva, PBYTE func, path_edge &);
     void reset_export()

@@ -6,6 +6,7 @@ use warnings;
 
 my $prg = "D:/src/armpatched/Release/ldr.exe ";
 my @sections;
+my $tcount = 8;
 
 # fill @sections from $prg -ds
 sub read_sections
@@ -40,8 +41,13 @@ sub check_addr
 {
   my $arg = shift;
   my $rva = shift;
-  my($fh, $str);
-  my $cmd = sprintf("-der %s %X", $arg, $rva);
+  my($fh, $str, $cmd);
+  if ( $tcount )
+  {
+    $cmd = sprintf("-t %d -der %s %X", $tcount, $arg, $rva);
+  } else {
+    $cmd = sprintf("-der %s %X", $arg, $rva);
+  }
   open($fh, $prg . $cmd . "|") or die("cannot run $prg $cmd, error $!\n");
   while($str = <$fh>)
   {
@@ -105,7 +111,7 @@ sub read_pdmp
 # main
 if ( $#ARGV != 1 )
 {
-  printf("Usage: .exe .pdmp\n");
+  printf("Usage: .exe .pdmp (argv size %d)\n", $#ARGV);
   exit(6);
 }
 

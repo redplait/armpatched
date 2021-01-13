@@ -3,6 +3,46 @@
 #include "bm_search.h"
 #include "deriv.h"
 
+int path_edge::reduce()
+{
+  if ( !can_reduce() )
+    return 0;
+  std::list<path_item> new_list;
+  int state = 0;
+  int res = 0;
+  for ( auto rc = list.crbegin(); rc != list.crend(); ++rc )
+  {
+    if ( rc->is_load_store() )
+    {
+      if ( state )
+      {
+        res++;
+        continue;
+      }
+    }
+    else
+      state = 1;
+    new_list.push_front(*rc);
+  }
+  list = std::move(new_list);
+  return res;
+}
+
+int path_edge::can_reduce() const
+{
+  int state = 0;
+  for ( auto rc = list.crbegin(); rc != list.crend(); ++rc )
+  {
+    if ( rc->is_load_store() )
+    {
+      if ( state )
+        return 1;
+    } else
+      state = 1;
+  }
+  return 0;
+}
+
 int path_edge::has_const_count(int below) const
 {
   return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return (item.type == ldr_off) && item.value_count && (item.value_count < below); });
@@ -10,7 +50,7 @@ int path_edge::has_const_count(int below) const
 
 int path_edge::contains_imp(std::string &name) const
 {
-  for ( auto &c: list )
+  for ( const auto &c: list )
   {
     if ( c.type != call_imp )
       continue;
@@ -23,7 +63,7 @@ int path_edge::contains_imp(std::string &name) const
 int path_edge::is_imp1_only(std::string &name) const
 {
   int res = 0;
-  for ( auto &c: list )
+  for ( const auto &c: list )
   {
     if ( c.is_load_store() )
       continue;
@@ -157,7 +197,7 @@ int funcs_holder_ts::exchange(std::set<PBYTE> &outer)
     return 0;
   outer.clear();
   // bcs current set was filled in unpredictable times from several threads - it can contain already processed functions
-  for ( auto c: m_current )
+  for ( const auto &c: m_current )
   {
     const auto p = m_processed.find(c);
     if ( p != m_processed.cend() )
@@ -224,12 +264,23 @@ int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, 
   return 0;
 }
 
+int deriv_hack::resolve_section(DWORD rva, std::string &out_name) const
+{
+  PBYTE mz = m_pe->base_addr();
+  const one_section *s = m_pe->find_section_v(rva);
+  if ( s == NULL )
+    return 0;
+  out_name = s->name;
+  return 1;
+}
+
 int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
 {
   PBYTE mz = m_pe->base_addr();
   const one_section *s = m_pe->find_section_v(rva);
   if ( s == NULL )
     return 0;
+  out_res.symbol_section = s->name;
   PBYTE pattern = mz + rva;
   statefull_graph<PBYTE, path_edge> cgraph;
   std::list<std::pair<PBYTE, path_edge> > addr_list;
