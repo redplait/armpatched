@@ -334,7 +334,9 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
   int edge_gen = 0;
   int edge_n = 0;
   int res = 0;
+#ifdef _DEBUG
   m_verbose = 1;
+#endif
   while( edge_gen < 100 )
   {
     for ( auto iter = addr_list.begin(); iter != addr_list.end(); ++iter )
@@ -367,6 +369,8 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
             continue;
           if ( !strcmp(exp_func, iter->second.s->name.c_str()) )
             iter->second.next(path);
+          else
+            break;
           continue;
         }
         if ( is_br_reg() )
@@ -390,6 +394,8 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
             continue;
           if ( !strcmp(name, iter->second.s->name.c_str()) )
             iter->second.next(path);
+          else
+            break;
           continue;
         }
         // and now different variants of xref
