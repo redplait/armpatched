@@ -598,6 +598,7 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
 int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
 {
   PBYTE mz = m_pe->base_addr();
+  PBYTE psp_copy = psp;
   const one_section *s = m_pe->find_section_v(rva);
   if ( s == NULL )
     return 0;
@@ -775,7 +776,7 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
   }
 end:
   if ( res )
-    calc_const_count(psp, out_res);
+    calc_const_count(psp_copy, out_res);
   return res;
 }
 
