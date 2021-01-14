@@ -3,6 +3,8 @@
 #include "bm_search.h"
 #include "deriv.h"
 
+extern int gSE;
+
 int deriv_tests::add_module(const wchar_t *fname)
 {
   arm64_pe_file *f = new arm64_pe_file(fname);
@@ -441,6 +443,11 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         PBYTE b_addr = NULL;
         if ( is_b_jimm(b_addr) )
         {
+          if ( gSE )
+          {
+            if ( NULL != get_exported(mz, b_addr) )
+              break;
+          }
           cgraph.add(b_addr, iter->second);
           break;
         }
@@ -632,6 +639,11 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
         PBYTE b_addr = NULL;
         if ( is_b_jimm(b_addr) )
         {
+          if ( gSE )
+          {
+            if ( NULL != get_exported(mz, b_addr) )
+              break;
+          }
           cgraph.add(b_addr, iter->second);
           break;
         }
@@ -835,6 +847,11 @@ int deriv_hack::disasm_one_func(PBYTE psp, PBYTE pattern, FH &fh)
         PBYTE b_addr = NULL;
         if ( is_b_jimm(b_addr) )
         {
+          if ( gSE )
+          {
+            if ( NULL != get_exported(m_pe->base_addr(), b_addr) )
+              break;
+          }
           cgraph.add(b_addr);
           break;
         }

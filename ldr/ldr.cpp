@@ -11,6 +11,9 @@
 #include "deriv.h"
 #include "../source/armadillo.h"
 
+// some global options
+int gSE = 0;
+
 void usage(const wchar_t *progname)
 {
   printf("%S: [options] arm64_pe file(s)\n", progname);
@@ -22,6 +25,7 @@ void usage(const wchar_t *progname)
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
   printf(" -rpc - find rpc interfaces\n");
+  printf(" -se - skip exported branches\n");
   printf(" -t threads number\n");
   printf(" -T test file\n");
   printf(" -v - verbose output\n");
@@ -253,6 +257,11 @@ int wmain(int argc, wchar_t **argv)
        wchar_t *end;
        d.second = wcstol(argv[i], &end, 16);
        derives.push_back(d);
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-se") )
+     {
+       gSE = 1;
        continue;
      }
      if ( !wcscmp(argv[i], L"-de") )
