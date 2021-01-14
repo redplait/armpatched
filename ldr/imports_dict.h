@@ -66,6 +66,13 @@ class inmem_import_holder: public import_holder_intf
 {
   public:
    inmem_import_holder();
+   inmem_import_holder(inmem_import_holder &&outer)
+   {
+     m_modules = outer.m_modules;
+     outer.m_modules = NULL;
+     m_names = outer.m_modules;
+     outer.m_names = NULL;
+   }
   ~inmem_import_holder();
    module_import *add(const wchar_t *, arm64_pe_file *);
   protected:

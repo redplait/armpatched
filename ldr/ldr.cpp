@@ -23,6 +23,7 @@ void usage(const wchar_t *progname)
   printf(" -d  - dump all\n");
   printf(" -rpc - find rpc interfaces\n");
   printf(" -t threads number\n");
+  printf(" -T test file\n");
   printf(" -v - verbose output\n");
   printf(" -wpp - try to find WPP_GLOBAL_Controls\n");
   exit(6);
@@ -74,11 +75,19 @@ void process_wpp(arm64_pe_file *f, exports_dict *ed, module_import *iat, int ver
   }
 }
 
+std::list<std::wstring> gTests;
+
 typedef std::pair<std::wstring, DWORD> Der;
 
 int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xrefs)
 {
   int can_be_found = 0;
+  deriv_tests tests;
+  if ( !gTests.empty() )
+  {
+    for ( const auto &c: gTests )
+      tests.add_module(c.c_str());
+  }
   for ( auto &x: xrefs )
   {
      if ( x.exported != NULL )
@@ -107,12 +116,23 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
               edge.dump();
             edges.last.dump();
           }
-          DWORD rva_found = 0;
-          if ( der->apply(x, edges, rva_found) )
+          if ( tests.mods.empty() )
           {
-            printf("apply return %X, must_be %X\n", rva_found, rva);
-            if ( rva == rva_found )
-              can_be_found++;
+            DWORD rva_found = 0;
+            if ( der->apply(x, edges, rva_found) )
+            {
+              printf("apply return %X, must_be %X\n", rva_found, rva);
+              if ( rva == rva_found )
+                can_be_found++;
+            }
+          } else {
+            DWORD idx = 0;
+            for ( auto miter = tests.mods.begin(); miter != tests.mods.end(); miter++, idx++ )
+            {
+              DWORD rva_found = 0;
+              if ( miter->der->apply(x, edges, rva_found) )
+                printf("Test[%d]: %X\n", idx, rva_found);
+            }
           }
         } else {
           if ( edges.is_trivial() )
@@ -127,12 +147,23 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
                 edge.dump();
               edges.last.dump();
             }
-            DWORD rva_found = 0;
-            if (der->apply(x, edges, rva_found))
+            if ( tests.mods.empty() )
             {
-              printf("apply return %X, must_be %X\n", rva_found, rva);
-              if (rva == rva_found)
-                can_be_found++;
+              DWORD rva_found = 0;
+              if (der->apply(x, edges, rva_found))
+              {
+                printf("apply return %X, must_be %X\n", rva_found, rva);
+                if (rva == rva_found)
+                  can_be_found++;
+              }
+            } else {
+              DWORD idx = 0;
+              for ( auto miter = tests.mods.begin(); miter != tests.mods.end(); miter++, idx++ )
+              {
+                DWORD rva_found = 0;
+                if ( miter->der->apply(x, edges, rva_found) )
+                  printf("Test[%d]: %X\n", idx, rva_found);
+              }
             }
           }
         }
@@ -175,6 +206,17 @@ int wmain(int argc, wchar_t **argv)
      usage(argv[0]);
    for ( int i = 1; i < argc; i++ )
    {
+     if ( !wcscmp(argv[i], L"-T") )
+     {
+       i++;
+       if ( i >= argc )
+       {
+         usage(argv[0]);
+         return 0;
+       }
+       gTests.push_back(argv[i]);
+       continue;
+     }
      if ( !wcscmp(argv[i], L"-t") )
      {
        i++;

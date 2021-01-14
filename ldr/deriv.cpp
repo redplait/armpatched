@@ -3,6 +3,26 @@
 #include "bm_search.h"
 #include "deriv.h"
 
+int deriv_tests::add_module(const wchar_t *fname)
+{
+  arm64_pe_file *f = new arm64_pe_file(fname);
+  if ( f->read(0) )
+  {
+    delete f;
+    return 0;
+  }
+  if ( !f->map_pe(0) )
+  {
+    delete f;
+    return 0;
+  }
+  inmem_import_holder ih;
+  module_import *mimp = ih.add(fname, f);
+  deriv_test obj{ f, std::move(ih), new deriv_hack(f, f->get_export_dict(), mimp) };
+  mods.push_back(std::move(obj));
+  return 1;
+}
+
 const path_item *path_edge::get_best_const() const
 {
   const path_item *res = NULL;

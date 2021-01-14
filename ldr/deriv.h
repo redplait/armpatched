@@ -134,6 +134,45 @@ class deriv_hack: public iat_mod
     int try_apply(const one_section *s, PBYTE psp, path_edge &, DWORD &found);
 };
 
+// set of test files
+class deriv_tests
+{
+  public:
+   struct deriv_test
+   {
+     arm64_pe_file *pe;
+     inmem_import_holder i_h;
+     deriv_hack *der;
+     deriv_test(deriv_test &&outer)
+       : i_h(std::move(outer.i_h))
+     {
+       pe = outer.pe;
+       outer.pe = NULL;
+       der = outer.der;
+       outer.der = NULL;
+     }
+     deriv_test()
+     {
+       pe = NULL;
+       der = NULL;
+     }
+     deriv_test(arm64_pe_file *f, inmem_import_holder &&ih, deriv_hack *d)
+      : pe(f),
+        i_h(std::move(ih)),
+        der(d)
+     { }
+     ~deriv_test()
+     {
+       if ( pe != NULL )
+         delete pe;
+       if ( der != NULL )
+         delete der;
+     }
+   };
+   std::list<deriv_test> mods;
+   int add_module(const wchar_t *);
+};
+
 // multi-threaded version of deriv_hack - find own deriv_hack for every thread
 class deriv_pool
 {
