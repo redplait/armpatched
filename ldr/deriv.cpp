@@ -495,9 +495,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           if ( iter->second.s->type != load )
             continue;
-          const one_section *their = m_pe->find_section_v(what - mz);
-          if ( their == NULL || their != s )
-            continue;
+          if ( !iter->second.s->name.empty() )
+          {
+            const char *exp_name = get_exported(mz, what);
+            if ( NULL == exp_name )
+              continue;
+            if ( strcmp(iter->second.s->name.c_str(), exp_name) )
+              break;
+          } else {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL || their != s )
+              continue;
+          }
           if ( iter->second.next(path) )
           {
             found = what - mz;
@@ -508,9 +517,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldr() && iter->second.s->type == load )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          const one_section *their = m_pe->find_section_v(what - mz);
-          if ( their == NULL || their != s )
-            continue;
+          if ( !iter->second.s->name.empty() )
+          {
+            const char *exp_name = get_exported(mz, what);
+            if ( NULL == exp_name )
+              continue;
+            if ( strcmp(iter->second.s->name.c_str(), exp_name) )
+              break;
+          } else {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL || their != s )
+              continue;
+          }
           if ( iter->second.next(path) )
           {
             found = what - mz;
@@ -521,9 +539,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldrb() && iter->second.s->type == ldrb )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          const one_section *their = m_pe->find_section_v(what - mz);
-          if ( their == NULL || their != s )
-            continue;
+          if ( !iter->second.s->name.empty() )
+          {
+            const char *exp_name = get_exported(mz, what);
+            if ( NULL == exp_name )
+              continue;
+            if ( strcmp(iter->second.s->name.c_str(), exp_name) )
+              break;
+          } else {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL || their != s )
+              continue;
+          }
           if ( iter->second.next(path) )
           {
             found = what - mz;
@@ -534,9 +561,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldrh() && iter->second.s->type == ldrh )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          const one_section *their = m_pe->find_section_v(what - mz);
-          if ( their == NULL || their != s )
-            continue;
+          if ( !iter->second.s->name.empty() )
+          {
+            const char *exp_name = get_exported(mz, what);
+            if ( NULL == exp_name )
+              continue;
+            if ( strcmp(iter->second.s->name.c_str(), exp_name) )
+              break;
+          } else {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL || their != s )
+              continue;
+          }
           if ( iter->second.next(path) )
           {
             found = what - mz;
@@ -547,9 +583,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_str() && iter->second.s->type == store )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          const one_section *their = m_pe->find_section_v(what - mz);
-          if ( their == NULL || their != s )
-            continue;
+          if ( !iter->second.s->name.empty() )
+          {
+            const char *exp_name = get_exported(mz, what);
+            if ( NULL == exp_name )
+              continue;
+            if ( strcmp(iter->second.s->name.c_str(), exp_name) )
+              break;
+          } else {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL || their != s )
+              continue;
+          }
           if ( iter->second.next(path) )
           {
             found = what - mz;
@@ -560,9 +605,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_strb() && iter->second.s->type == strb )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          const one_section *their = m_pe->find_section_v(what - mz);
-          if ( their == NULL || their != s )
-            continue;
+          if ( !iter->second.s->name.empty() )
+          {
+            const char *exp_name = get_exported(mz, what);
+            if ( NULL == exp_name )
+              continue;
+            if ( strcmp(iter->second.s->name.c_str(), exp_name) )
+              break;
+          } else {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL || their != s )
+              continue;
+          }
           if ( iter->second.next(path) )
           {
             found = what - mz;
@@ -573,9 +627,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_strh() && iter->second.s->type == strh )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
-          const one_section *their = m_pe->find_section_v(what - mz);
-          if ( their == NULL || their != s )
-            continue;
+          if ( !iter->second.s->name.empty() )
+          {
+            const char *exp_name = get_exported(mz, what);
+            if ( NULL == exp_name )
+              continue;
+            if ( strcmp(iter->second.s->name.c_str(), exp_name) )
+              break;
+          } else {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL || their != s )
+              continue;
+          }
           if ( iter->second.next(path) )
           {
             found = what - mz;
