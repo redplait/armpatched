@@ -68,6 +68,7 @@ typedef enum
 
 struct path_item
 {
+  DWORD rva;
   path_item_type type;
   DWORD value; // for ldr_off
   DWORD value_count; // count of value in this section

@@ -137,6 +137,7 @@ int path_item::is_load_store() const
 
 void path_item::dump() const
 {
+  printf(" RVA %X", rva);
   switch(type)
   {
     case load: 
@@ -280,17 +281,19 @@ void deriv_hack::check_exported(PBYTE mz, found_xref &item) const
 
 int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge)
 {
+  PBYTE mz = m_pe->base_addr();
   if ( pattern == what )
   {
     edge.last.type = t;
+    edge.last.rva = m_psp - mz;
     return 1;
   }
-  PBYTE mz = m_pe->base_addr();
   // check if this symbol is exported
   const char *exp_func = get_exported(mz, what);
   if ( exp_func != NULL )
   {
     path_item tmp;
+    tmp.rva = m_psp - mz;
     tmp.type = t;
     tmp.name = exp_func;
     edge.list.push_back(tmp);
@@ -303,6 +306,7 @@ int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, 
     return 0;
   path_item tmp;
   tmp.type = t;
+  tmp.rva = m_psp - mz;
   edge.list.push_back(tmp);
   return 0;
 }
@@ -718,6 +722,7 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           if ( exp_func != NULL )
           {
             path_item tmp;
+            tmp.rva = m_psp - mz;
             tmp.name = exp_func;
             tmp.type = call_exp;
             iter->second.list.push_back(tmp);
@@ -744,6 +749,7 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           if ( name != NULL )
           {
             path_item tmp;
+            tmp.rva = m_psp - mz;
             tmp.name = name;
             tmp.type = call_imp;
             iter->second.list.push_back(tmp);
@@ -832,6 +838,7 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
         if ( is_ldr_off() )
         {
           path_item tmp;
+          tmp.rva = m_psp - mz;
           tmp.type = ldr_off;
           tmp.value = *(PDWORD)m_dis.operands[1].op_imm.bits;
           if ( tmp.value ) // skip zero constants
