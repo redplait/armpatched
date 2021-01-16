@@ -13,11 +13,13 @@
 
 // some global options
 int gSE = 0;
+int gCMax = 3;
 
 void usage(const wchar_t *progname)
 {
   printf("%S: [options] arm64_pe file(s)\n", progname);
   printf("Options:\n");
+  printf(" -c max const count\n");
   printf(" -dlc - dump load_config\n");
   printf(" -de - dump exports\n");
   printf(" -di - dump imports\n");
@@ -141,7 +143,7 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
         } else {
           if ( edges.is_trivial() )
              printf("TRIVIAL\n");
-          else if ( edges.has_const_count(3) )
+          else if ( edges.has_const_count(gCMax) )
           {
             if (edges.reduce())
             {
@@ -236,6 +238,19 @@ int wmain(int argc, wchar_t **argv)
          if ( proc_count < threads_count )
            threads_count = proc_count;
        }
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-c") )
+     {
+       i++;
+       if ( i >= argc )
+       {
+         usage(argv[0]);
+         return 0;
+       }
+       gCMax = _wtoi(argv[i]);
+       if ( !gCMax )
+         gCMax = 3;
        continue;
      }
      if ( !wcscmp(argv[i], L"-der") )
