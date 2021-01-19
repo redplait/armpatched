@@ -193,7 +193,7 @@ void path_item::dump() const
         printf(" call_exp %s\n", name.c_str());
        break;
     case call_icall:
-        printf("call_icall\n");
+        printf(" call_icall\n");
        break;
     default:
         printf(" unknown type %d\n", type);
@@ -268,6 +268,33 @@ const char *deriv_hack::get_exported(PBYTE mz, PBYTE addr) const
   if ( ei == NULL )
     return NULL;
   return ei->name;
+}
+
+#include <pshpack1.h>
+struct fids_item
+{
+  DWORD rva;
+  BYTE hz;
+};
+#include <poppack.h>
+
+int deriv_hack::find_in_fids_table(PBYTE mz, PBYTE func) const
+{
+  if ( !gUseLC )
+    return 0;
+  DWORD lc_size = 0;
+  Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64 lc = (Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64)m_pe->read_load_config(lc_size);
+  if ( lc == NULL || !lc_size )
+    return 0;
+  if ( !lc->GuardCFFunctionTable || !lc->GuardCFFunctionCount )
+    return 0;
+  fids_item *fi = (fids_item *)(mz + (lc->GuardCFFunctionTable - m_pe->image_base()));
+  for ( ULONGLONG i = 0; i < lc->GuardCFFunctionCount; i++, fi++ )
+  {
+    if ( fi->rva == func - mz )
+      return 1;
+  }
+  return 0;
 }
 
 void deriv_hack::check_exported(PBYTE mz, found_xref &item) const
@@ -433,8 +460,9 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
   PBYTE mz = m_pe->base_addr();
   statefull_graph<PBYTE, path_state> cgraph;
   std::list<std::pair<PBYTE, path_state> > addr_list;
+  int is_empty = path.list.empty();
   auto citer = path.list.cbegin();
-  path_state state { citer, &(*citer), 0, 0 };
+  path_state state { citer, is_empty ? &path.last : &(*citer), 0, is_empty ? 1 : 0 };
   auto curr = std::make_pair(psp, state);
   addr_list.push_back(curr);
   int edge_gen = 0;
@@ -497,16 +525,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldar(used_regs) )
           continue;
         // bl reg - usually call [IAT]
-        if ( is_bl_reg() && iter->second.s->type == call_imp )
+        if ( is_bl_reg() )
         {
           PBYTE what = (PBYTE)used_regs.get(get_reg(0));
-          const char *name = get_iat_func(what);
-          if ( name == NULL )
-            continue;
-          if ( !strcmp(name, iter->second.s->name.c_str()) )
-            iter->second.next(path);
-          else
-            break;
+          if ( iter->second.s->type == call_imp )
+          {
+            const char *name = get_iat_func(what);
+            if ( name == NULL )
+              continue;
+            if ( !strcmp(name, iter->second.s->name.c_str()) )
+              iter->second.next(path);
+            else
+              break;
+          } else if ( iter->second.s->type == call_icall )
+          {
+            if ( what == m_GuardCFCheckFunctionPointer )
+              iter->second.next(path);
+          }
           continue;
         }
         // and now different variants of xref
@@ -778,6 +813,12 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
             tmp.name = name;
             tmp.type = call_imp;
             iter->second.list.push_back(tmp);
+          } else if ( gUseLC && what == m_GuardCFCheckFunctionPointer )
+          {
+            path_item tmp;
+            tmp.rva = m_psp - mz;
+            tmp.type = call_icall;
+            iter->second.list.push_back(tmp);
           }
           continue;
         }
@@ -1022,6 +1063,7 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
     if ( disasm_one_func(mz + first->off, mz + rva, f) )
     {
       found_xref tmp { mz + first->off, 0 };
+      tmp.in_fids_table = find_in_fids_table(mz, mz + first->off);
       check_exported(mz, tmp);
       out_res.push_back(tmp);
       res++;
@@ -1038,6 +1080,7 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
       if ( disasm_one_func(c, mz + rva, f) )
       {
         found_xref tmp { c, 0 };
+        tmp.in_fids_table = find_in_fids_table(mz, c);
         check_exported(mz, tmp);
         out_res.push_back(tmp);
         res++;
@@ -1089,6 +1132,7 @@ int deriv_pool::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
        if (task_res.res)
        {
          task_res.xref.pfunc = addr;
+         task_res.xref.in_fids_table = m_ders[i]->find_in_fids_table(mz, addr);
          m_ders[i]->check_exported(mz, task_res.xref);
        }
        return task_res;
@@ -1136,6 +1180,7 @@ int deriv_pool::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
          if (task_res.res)
          {
            task_res.xref.pfunc = c;
+           task_res.xref.in_fids_table = m_ders[i]->find_in_fids_table(mz, c);
            m_ders[i]->check_exported(mz, task_res.xref);
          }
          return task_res;

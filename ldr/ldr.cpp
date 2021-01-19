@@ -103,9 +103,17 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
      else
      {
         if ( x.section_name.empty() )
-          printf("found at %p\n", PVOID(x.pfunc - mz));
-        else
-          printf("found at %p in section %s\n", PVOID(x.pfunc - mz), x.section_name.c_str());
+        {
+          if ( x.in_fids_table )
+            printf("found at %p FIDS\n", PVOID(x.pfunc - mz));
+          else
+            printf("found at %p\n", PVOID(x.pfunc - mz));
+        } else {
+          if ( x.in_fids_table )
+            printf("found at %p in section %s FIDS\n", PVOID(x.pfunc - mz), x.section_name.c_str());
+          else
+            printf("found at %p in section %s\n", PVOID(x.pfunc - mz), x.section_name.c_str());
+        }
      }
      // try autobuild path edges
      path_edge edges;

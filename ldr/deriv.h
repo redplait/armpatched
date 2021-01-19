@@ -8,6 +8,7 @@ struct found_xref
   PBYTE pfunc;
   const char *exported; // in not exported - will be NULL
   std::string section_name; // in which section this function located
+  int in_fids_table;    // found function presents in load_config.GuardCFFunctionTable
 };
 
 class funcs_holder_cmn
@@ -127,6 +128,7 @@ class deriv_hack: public iat_mod
       size = m_pdata_size;
     }
     void check_exported(PBYTE mz, found_xref &) const;
+    int find_in_fids_table(PBYTE mz, PBYTE func) const;
     template <typename FH>
     int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
     int apply(found_xref &xref, path_edge &, DWORD &found);
