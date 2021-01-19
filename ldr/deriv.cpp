@@ -4,6 +4,7 @@
 #include "deriv.h"
 
 extern int gSE;
+extern int gUseLC;
 
 int deriv_tests::add_module(const wchar_t *fname)
 {
@@ -140,6 +141,9 @@ void path_item::dump() const
   printf(" RVA %X", rva);
   switch(type)
   {
+    case ldr_cookie:
+        printf(" load_cookie\n");
+      break;
     case load: 
        if ( name.empty() )
          printf(" load\n");
@@ -187,6 +191,9 @@ void path_item::dump() const
        break;
     case call_exp:
         printf(" call_exp %s\n", name.c_str());
+       break;
+    case call_icall:
+        printf("call_icall\n");
        break;
     default:
         printf(" unknown type %d\n", type);
@@ -296,6 +303,15 @@ int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, 
     tmp.rva = m_psp - mz;
     tmp.type = t;
     tmp.name = exp_func;
+    edge.list.push_back(tmp);
+    return 0;
+  }
+  // check for security_cookie
+  if ( gUseLC && what == m_cookie )
+  {
+    path_item tmp;
+    tmp.type = ldr_cookie;
+    tmp.rva = m_psp - mz;
     edge.list.push_back(tmp);
     return 0;
   }
@@ -518,9 +534,18 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           }
           continue;
         }
-        if ( is_ldr() && iter->second.s->type == load )
+        if ( is_ldr() && iter->second.s->type == ldr_cookie)
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( what == m_cookie )
+            iter->second.next(path);
+          continue;
+        }
+        if ( is_ldr() )
+        {
+          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type != load )
+            continue;
           if ( !iter->second.s->name.empty() )
           {
             const char *exp_name = get_exported(mz, what);

@@ -64,6 +64,8 @@ typedef enum
   ldr_off,  // some constant
   call_imp, // [IAT] call
   call_exp, // call of some exported function
+  ldr_cookie, // load security_cookie
+  call_icall, // call load_config.GuardCFCheckFunctionPointer
 } path_item_type;
 
 struct path_item

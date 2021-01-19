@@ -12,8 +12,9 @@
 #include "../source/armadillo.h"
 
 // some global options
-int gSE = 0;
+int gSE = 0;    // skip exported branches
 int gCMax = 3;
+int gUseLC = 0; // use data from load_config
 
 void usage(const wchar_t *progname)
 {
@@ -26,6 +27,7 @@ void usage(const wchar_t *progname)
   printf(" -dr - dump relocs\n");
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
+  printf(" -lc - use load_config\n");
   printf(" -rpc - find rpc interfaces\n");
   printf(" -se - skip exported branches\n");
   printf(" -t threads number\n");
@@ -277,6 +279,11 @@ int wmain(int argc, wchar_t **argv)
      if ( !wcscmp(argv[i], L"-se") )
      {
        gSE = 1;
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-lc") )
+     {
+       gUseLC = 1;
        continue;
      }
      if ( !wcscmp(argv[i], L"-de") )
