@@ -79,6 +79,7 @@ struct path_item
 
   void dump() const;
   int is_load_store() const;
+  bool operator==(const path_item&) const;
 };
 
 class path_edge
@@ -90,6 +91,15 @@ class path_edge
    bool operator<(const path_edge& s) const
    {
      return list.size() < s.list.size();
+   }
+   bool operator==(const path_edge &other) const
+   {
+     if ( !(last == other.last) )
+       return false;
+     if ( list.size() != other.list.size() )
+       return false;
+     // compare lists
+     return std::equal(list.cbegin(), list.cend(), other.list.cbegin());
    }
    int is_trivial() const
    {

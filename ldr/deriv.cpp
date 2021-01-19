@@ -136,6 +136,34 @@ int path_item::is_load_store() const
   return 0;
 }
 
+bool path_item::operator==(const path_item &other) const
+{
+  if ( type != other.type )
+    return false;
+  switch(type)
+  {
+    case ldr_cookie:
+    case call_icall:
+      return true;
+
+    case ldr_off:
+      return value == other.value;
+
+    case load:
+    case store:
+    case ldrb:
+    case ldrh:
+    case strb:
+    case strh:
+      return name == other.name;
+
+    case call_imp:
+    case call_exp:
+      return name == other.name;
+  }
+  return false;
+}
+
 void path_item::dump() const
 {
   printf(" RVA %X", rva);
@@ -284,7 +312,7 @@ int deriv_hack::find_in_fids_table(PBYTE mz, PBYTE func) const
     return 0;
   DWORD lc_size = 0;
   Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64 lc = (Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64)m_pe->read_load_config(lc_size);
-  if ( lc == NULL || !lc_size )
+  if ( lc == NULL || !lc_size || lc_size < offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardFlags) )
     return 0;
   if ( !lc->GuardCFFunctionTable || !lc->GuardCFFunctionCount )
     return 0;
