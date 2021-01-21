@@ -6,43 +6,42 @@ int iat_mod::is_inside_IAT(PBYTE psp) const
 {
   if ( NULL == m_iat )
     return 0;
-  ptrdiff_t off = psp - m_pe->base_addr();
-  if ( (off >= m_iat->iat_rva) &&
-       (off < (m_iat->iat_rva + m_iat->iat_size))
-     )
-    return 1;
-  return 0;
+  return is_inside_import(psp - m_pe->base_addr(), m_iat);
+}
+
+int iat_mod::is_inside_DIAT(PBYTE psp) const
+{
+  if ( NULL == m_diat )
+    return 0;
+  return is_inside_import(psp - m_pe->base_addr(), m_diat);
 }
 
 const char *iat_mod::get_iat_func(PBYTE psp) const
 {
   if ( NULL == m_iat )
     return NULL;
-  ptrdiff_t off = psp - m_pe->base_addr();
-  if ( (off >= m_iat->iat_rva) &&
-       (off < (m_iat->iat_rva + m_iat->iat_size))
-     )
-  {
-    size_t index = (off - m_iat->iat_rva) / 8;
-    return m_iat->iat[index].name;
-  }
-  return NULL;
+  return get_iat_name(psp - m_pe->base_addr(), m_iat);
+}
+
+const char *iat_mod::get_diat_func(PBYTE psp) const
+{
+  if ( NULL == m_diat )
+    return NULL;
+  return get_iat_name(psp - m_pe->base_addr(), m_diat);
 }
 
 int iat_mod::is_iat_func(PBYTE psp, const char *name) const
 {
   if ( NULL == m_iat )
     return 0;
-  ptrdiff_t off = psp - m_pe->base_addr();
-  if ( (off >= m_iat->iat_rva) &&
-       (off < (m_iat->iat_rva + m_iat->iat_size))
-     )
-  {
-    size_t index = (off - m_iat->iat_rva) / 8;
-    if ( m_iat->iat[index].name != NULL && !strcmp(m_iat->iat[index].name, name) )
-      return 1;
-  }
-  return 0;
+  return is_iat_func(m_iat, psp - m_pe->base_addr(), name);
+}
+
+int iat_mod::is_diat_func(PBYTE psp, const char *name) const
+{
+  if ( NULL == m_diat )
+    return 0;
+  return is_iat_func(m_diat, psp - m_pe->base_addr(), name);
 }
 
 DWORD iat_mod::get_iat_by_name(const char *name) const
@@ -55,6 +54,21 @@ DWORD iat_mod::get_iat_by_name(const char *name) const
     if ( m_iat->iat[index].name == NULL )
       continue;
     if ( !strcmp(m_iat->iat[index].name, name) )
+      return addr;
+  }
+  return 0;
+}
+
+DWORD iat_mod::get_diat_by_name(const char *name) const
+{
+  if ( NULL == m_diat )
+    return NULL;
+  DWORD addr = m_diat->iat_rva;
+  for ( DWORD index = 0; index < m_diat->iat_count; index++, addr += 8 )
+  {
+    if ( m_diat->iat[index].name == NULL )
+      continue;
+    if ( !strcmp(m_diat->iat[index].name, name) )
       return addr;
   }
   return 0;
