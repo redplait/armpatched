@@ -64,6 +64,7 @@ typedef enum
   strh,
   ldr_off,  // some constant
   call_imp, // [IAT] call
+  call_dimp, // [delayed IAT] call
   call_exp, // call of some exported function
   ldr_cookie, // load security_cookie
   call_icall, // call load_config.GuardCFCheckFunctionPointer
@@ -107,6 +108,8 @@ class path_edge
    }
    int is_imp1_only(std::string &) const;
    int contains_imp(std::string &) const;
+   int is_dimp1_only(std::string &) const;
+   int contains_dimp(std::string &) const;
    int has_const_count(int below) const;
    int can_reduce() const;
    int reduce();

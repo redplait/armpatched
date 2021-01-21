@@ -106,6 +106,18 @@ int path_edge::contains_imp(std::string &name) const
   return 0;
 }
 
+int path_edge::contains_dimp(std::string &name) const
+{
+  for ( const auto &c: list )
+  {
+    if ( c.type != call_dimp )
+      continue;
+    if ( c.name == name )
+      return 1;
+  }
+  return 0;
+}
+
 int path_edge::is_imp1_only(std::string &name) const
 {
   int res = 0;
@@ -115,7 +127,23 @@ int path_edge::is_imp1_only(std::string &name) const
       continue;
     if ( c.type != call_imp )
       return 0;
-    if ( ++res > 2 )
+    if ( ++res > 1 )
+      return 0;
+    name = c.name;
+  }
+  return (res == 1);
+}
+
+int path_edge::is_dimp1_only(std::string &name) const
+{
+  int res = 0;
+  for ( const auto &c: list )
+  {
+    if ( c.is_load_store() )
+      continue;
+    if ( c.type != call_dimp )
+      return 0;
+    if ( ++res > 1 )
       return 0;
     name = c.name;
   }
@@ -159,6 +187,7 @@ bool path_item::operator==(const path_item &other) const
     case strh:
       return name == other.name;
 
+    case call_dimp:
     case call_imp:
     case call_exp:
       return name == other.name;
@@ -218,6 +247,9 @@ void path_item::dump() const
        break;
     case call_imp:
         printf(" call_imp %s\n", name.c_str());
+       break;
+    case call_dimp:
+        printf(" call_dimp %s\n", name.c_str());
        break;
     case call_exp:
         printf(" call_exp %s\n", name.c_str());
@@ -567,6 +599,15 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               iter->second.next(path);
             else
               break;
+          } else if ( iter->second.s->type == call_dimp )
+          {
+            const char *name = get_diat_func(what);
+            if ( name == NULL )
+              continue;
+            if ( !strcmp(name, iter->second.s->name.c_str()) )
+              iter->second.next(path);
+            else
+              break;
           } else if ( iter->second.s->type == call_icall )
           {
             if ( what == m_GuardCFCheckFunctionPointer )
@@ -843,11 +884,23 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
             tmp.name = name;
             tmp.type = call_imp;
             iter->second.list.push_back(tmp);
+            continue;
           } else if ( gUseLC && what == m_GuardCFCheckFunctionPointer )
           {
             path_item tmp;
             tmp.rva = m_psp - mz;
             tmp.type = call_icall;
+            iter->second.list.push_back(tmp);
+            continue;
+          }
+          // check delayed import
+          name = get_diat_func(what);
+          if ( name != NULL )
+          {
+            path_item tmp;
+            tmp.rva = m_psp - mz;
+            tmp.name = name;
+            tmp.type = call_dimp;
             iter->second.list.push_back(tmp);
           }
           continue;
