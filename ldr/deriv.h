@@ -116,8 +116,8 @@ class path_edge
 class deriv_hack: public iat_mod
 {
   public:
-    deriv_hack(arm64_pe_file *pe, exports_dict *ed, module_import *iat)
-     : iat_mod(pe, ed, iat)
+    deriv_hack(arm64_pe_file *pe, exports_dict *ed, module_import *iat, module_import *diat)
+     : iat_mod(pe, ed, iat, diat)
     {
 //      zero_data();
     }
@@ -157,9 +157,11 @@ class deriv_tests
    {
      arm64_pe_file *pe;
      inmem_import_holder i_h;
+     inmem_import_holder di_h; // delayed import holder
      deriv_hack *der;
      deriv_test(deriv_test &&outer)
-       : i_h(std::move(outer.i_h))
+       : i_h(std::move(outer.i_h)),
+         di_h(std::move(outer.di_h))
      {
        pe = outer.pe;
        outer.pe = NULL;
@@ -171,9 +173,10 @@ class deriv_tests
        pe = NULL;
        der = NULL;
      }
-     deriv_test(arm64_pe_file *f, inmem_import_holder &&ih, deriv_hack *d)
+     deriv_test(arm64_pe_file *f, inmem_import_holder &&ih, inmem_import_holder &&dih, deriv_hack *d)
       : pe(f),
         i_h(std::move(ih)),
+        di_h(std::move(dih)),
         der(d)
      { }
      ~deriv_test()
@@ -198,12 +201,12 @@ class deriv_pool
      found_xref xref;
    };
 
-   deriv_pool(arm64_pe_file *pe, exports_dict *ed, module_import *iat, int thread_num)
+   deriv_pool(arm64_pe_file *pe, exports_dict *ed, module_import *iat, module_import *diat, int thread_num)
      : m_tpool(thread_num),
        m_ders(thread_num, NULL)
    {
      for ( DWORD i = 0; i < thread_num; i++ )
-       m_ders[i] = new deriv_hack(pe, ed, iat);
+       m_ders[i] = new deriv_hack(pe, ed, iat, diat);
    }
    ~deriv_pool()
    {

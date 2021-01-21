@@ -590,15 +590,17 @@ int wmain(int argc, wchar_t **argv)
      if ( f.map_pe(verb_mode) )
      {
        inmem_import_holder ih;
+       inmem_import_holder dih;
        module_import *mimp = ih.add(c.first.c_str(), &f);
+       module_import *dimp = dih.add_delayed(c.first.c_str(), &f);
        std::list<found_xref> xrefs;
        if ( threads_count )
        {
-         deriv_pool der_pool(&f, ed, mimp, threads_count);
+         deriv_pool der_pool(&f, ed, mimp, dimp, threads_count);
          if ( der_pool.find_xrefs(c.second, xrefs) )
            derive_edges(c.second, f.base_addr(), der_pool.get_first(), xrefs);
        } else {
-         deriv_hack der(&f, ed, mimp);
+         deriv_hack der(&f, ed, mimp, dimp);
          if ( der.find_xrefs(c.second, xrefs) )
            derive_edges(c.second, f.base_addr(), &der, xrefs);
        }
