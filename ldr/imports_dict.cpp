@@ -109,6 +109,32 @@ DWORD inmem_import_holder::calc_iat_size(PBYTE ptr)
   return 1 + size;
 }
 
+void inmem_import_holder::fill_delayed(PBYTE mz, PDELAYEDIMPORT_DIRECTORY_ENTRY pdde, DWORD size, module_import *mi)
+{
+  for ( PDELAYEDIMPORT_DIRECTORY_ENTRY de = pdde;
+        ((PBYTE)de < ((PBYTE)pdde + size)) && de->szName && de->pIAT && de->pINT;
+        ++de
+      )
+  {
+    size_t offset = (de->grAttrs & 1) ? 0 : (size_t)mz;
+    DWORD rva = (DWORD)(de->pIAT - offset);
+    DWORD index = rva - mi->iat_rva;
+    index /= 8;
+    const char *mod_name = (const char *)mz + de->szName - offset;
+    // fill current iat
+    PBYTE ptr = (PBYTE)((PBYTE)mz + de->pINT - offset);
+    for ( ; *(PDWORD)ptr; ptr += 8, index++ )
+    {
+      mi->iat[index].modname = mod_name;
+      if ( *(unsigned __int64 *)ptr & IMAGE_ORDINAL_FLAG64 )
+        mi->iat[index].ordinal = *(PDWORD)ptr & 0xffffffff;
+      else {
+        mi->iat[index].name = (const char *)((PBYTE)mz + 2 + *(PDWORD)ptr - offset);
+      }
+    }
+  }
+}
+
 void inmem_import_holder::fill_import(PBYTE mz, pIMPORT_DIRECTORY_ENTRY pdde, DWORD size, module_import *mi)
 {
   for ( pIMPORT_DIRECTORY_ENTRY de = pdde;
@@ -134,6 +160,49 @@ void inmem_import_holder::fill_import(PBYTE mz, pIMPORT_DIRECTORY_ENTRY pdde, DW
       }
     }
   }
+}
+
+DWORD inmem_import_holder::get_delayed_size(PBYTE mz, PDELAYEDIMPORT_DIRECTORY_ENTRY pdde, DWORD size, DWORD *min_addr)
+{
+  *min_addr = NULL;
+  DWORD iat_size = 0;
+  DWORD max_addr = 0;
+  PDELAYEDIMPORT_DIRECTORY_ENTRY de;
+  PDELAYEDIMPORT_DIRECTORY_ENTRY max = NULL;
+  for ( de = pdde;
+        ((PBYTE)de < ((PBYTE)pdde + size)) && de->szName && de->pIAT && de->pINT;
+        ++de
+      )
+  {
+    size_t offset = (de->grAttrs & 1) ? 0 : (size_t)mz;
+    DWORD rva = (DWORD)(de->pIAT - offset);
+    if ( !*min_addr )
+    {
+      *min_addr = rva;
+      max_addr = rva;
+      max = de;
+    }
+    else  
+    {
+      if ( rva < *min_addr )
+       *min_addr = rva;
+      if ( rva > max_addr )
+      {
+        max_addr = rva;
+        max = de;
+      }
+    }
+  }
+  // so we now have min_iat & max_iat and also max - last iat descriptor
+  iat_size = max_addr - *min_addr;
+  iat_size /= 8;
+  if ( max != NULL )
+  {
+    size_t offset = (max->grAttrs & 1) ? 0 : (size_t)mz;
+    DWORD rva = (DWORD)(max->pIAT - offset);
+    iat_size += calc_iat_size((PBYTE)mz + rva);
+  }
+  return iat_size;
 }
 
 DWORD inmem_import_holder::get_import_size(PBYTE mz, pIMPORT_DIRECTORY_ENTRY imp, DWORD size, DWORD *min_addr)
@@ -175,6 +244,46 @@ DWORD inmem_import_holder::get_import_size(PBYTE mz, pIMPORT_DIRECTORY_ENTRY imp
     iat_size += calc_iat_size((PBYTE)mz + rva);
   }
   return iat_size;
+}
+
+module_import *inmem_import_holder::add_delayed(const wchar_t *modname, arm64_pe_file *pe)
+{
+  if ( NULL == pe )
+    return NULL;
+  PBYTE mz = pe->base_addr();
+  // check if we have delayed import
+  DWORD delayed_rva = 0;
+  DWORD delayed_size = 0;
+  if ( !pe->get_delayed_import(delayed_rva, delayed_size) )
+    return NULL;
+  DWORD diat_min = 0;
+  DWORD total_size = get_delayed_size(mz, (PDELAYEDIMPORT_DIRECTORY_ENTRY)((PBYTE)mz + delayed_rva), delayed_size, &diat_min);
+  if ( !total_size )
+    return NULL;
+  // alloc module_import for return
+  module_import *mi = NULL;
+  try
+  {
+    mi = new module_import();
+  } catch(std::bad_alloc)
+  { }
+  if ( mi == NULL )
+    return NULL;
+  // and fill it
+  mi->iat_rva = diat_min;
+  mi->iat_count = total_size;
+  mi->iat_size = total_size * 8;
+  mi->iat = (struct import_item *)calloc(mi->iat_count, sizeof(struct import_item));
+  if ( mi->iat == NULL )
+  {
+    fprintf(stderr, "Cannot alloc %d bytes for delayed imports\n", mi->iat_count * sizeof(struct import_item));
+    delete mi;
+    return NULL;
+  }
+  fill_delayed(mz, (PDELAYEDIMPORT_DIRECTORY_ENTRY)((PBYTE)mz + delayed_rva), delayed_size, mi);
+  // insert this new module_import object into dictionary
+  dict_alloc_insert(m_modules, modname, mi);
+  return mi;  
 }
 
 module_import *inmem_import_holder::add(const wchar_t *modname, arm64_pe_file *pe)

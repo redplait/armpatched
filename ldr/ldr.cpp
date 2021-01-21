@@ -24,6 +24,7 @@ void usage(const wchar_t *progname)
   printf(" -dlc - dump load_config\n");
   printf(" -de - dump exports\n");
   printf(" -di - dump imports\n");
+  printf(" -ddi - dump delayed imports\n");
   printf(" -dr - dump relocs\n");
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
@@ -87,10 +88,18 @@ std::list<std::wstring> gTests;
 
 typedef std::pair<std::wstring, DWORD> Der;
 
+void dump_edge(const path_edge &edges)
+{
+  for ( const auto &edge: edges.list )
+    edge.dump();
+  edges.last.dump();
+}
+
 int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xrefs)
 {
   int can_be_found = 0;
   deriv_tests tests;
+  std::list<path_edge> fids_list;
   if ( !gTests.empty() )
   {
     for ( const auto &c: gTests )
@@ -119,18 +128,14 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
      path_edge edges;
      if ( der->make_path(rva, x.pfunc, edges) )
      {
-        for ( auto edge: edges.list )
-          edge.dump();
-        edges.last.dump();
+        dump_edge(edges);
         if ( x.exported != NULL )
         {
           if (edges.reduce())
           {
             printf("REDUCED:\n");
             // dump again
-            for (auto edge : edges.list)
-              edge.dump();
-            edges.last.dump();
+            dump_edge(edges);
           }
           if ( tests.mods.empty() )
           {
@@ -152,16 +157,17 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
           }
         } else {
           if ( edges.is_trivial() )
+          {
              printf("TRIVIAL\n");
-          else if ( edges.has_const_count(gCMax) )
+             continue;
+          }
+          if ( edges.has_const_count(gCMax) )
           {
             if (edges.reduce())
             {
               printf("REDUCED:\n");
               // dump again
-              for (auto edge : edges.list)
-                edge.dump();
-              edges.last.dump();
+              dump_edge(edges);
             }
             if ( tests.mods.empty() )
             {
@@ -181,6 +187,17 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
                   printf("Test[%d]: %X\n", idx, rva_found);
               }
             }
+          } else if ( x.in_fids_table )
+          {
+            if ( edges.is_trivial() )
+              continue;
+            if (edges.reduce())
+            {
+              printf("REDUCED_FIDS:\n");
+              // dump again
+              dump_edge(edges);
+            }
+            fids_list.push_back(edges);
           }
         }
      }
@@ -194,6 +211,7 @@ int wmain(int argc, wchar_t **argv)
 {
    int dump_exp = 0;
    int dump_imp = 0;
+   int dump_dimp = 0;
    int dump_sects = 0;
    int dump_relocs = 0;
    int dump_lc = 0;
@@ -302,6 +320,11 @@ int wmain(int argc, wchar_t **argv)
      if ( !wcscmp(argv[i], L"-di") )
      {
        dump_imp = 1;
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-ddi") )
+     {
+       dump_dimp = 1;
        continue;
      }
      if ( !wcscmp(argv[i], L"-dr") )
@@ -460,12 +483,19 @@ int wmain(int argc, wchar_t **argv)
      if ( f.map_pe(verb_mode) )
      {
        inmem_import_holder ih;
+       inmem_import_holder dih;
        module_import *mimp = ih.add(argv[i], &f);
+       module_import *dimp = dih.add_delayed(argv[i], &f);
        // check if we need to dump imports
        if ( dump_imp )
        {
          if ( mimp != NULL )
            dump_import(mimp);
+       }
+       if ( dump_dimp )
+       {
+         if ( dimp != NULL )
+           dump_import(dimp);
        }
        // apply relocs
        f.apply_relocs();

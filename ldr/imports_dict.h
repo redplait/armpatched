@@ -75,8 +75,11 @@ class inmem_import_holder: public import_holder_intf
    }
   ~inmem_import_holder();
    module_import *add(const wchar_t *, arm64_pe_file *);
+   module_import *add_delayed(const wchar_t *, arm64_pe_file *);
   protected:
    void fill_import(PBYTE mz, pIMPORT_DIRECTORY_ENTRY, DWORD size, module_import *);
+   void fill_delayed(PBYTE mz, PDELAYEDIMPORT_DIRECTORY_ENTRY, DWORD size, module_import *);
    DWORD get_import_size(PBYTE mz, pIMPORT_DIRECTORY_ENTRY, DWORD size, DWORD *min_addr);
+   DWORD get_delayed_size(PBYTE mz, PDELAYEDIMPORT_DIRECTORY_ENTRY, DWORD size, DWORD *min_addr);
    DWORD calc_iat_size(PBYTE);
 };
