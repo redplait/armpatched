@@ -68,14 +68,19 @@ typedef enum
   call_exp, // call of some exported function
   ldr_cookie, // load security_cookie
   call_icall, // call load_config.GuardCFCheckFunctionPointer
+  ldr_rdata,  // load constant from .rdata section
 } path_item_type;
 
 struct path_item
 {
   DWORD rva;
   path_item_type type;
-  DWORD value; // for ldr_off
-  DWORD value_count; // count of value in this section
+  union
+  {
+    DWORD value;  // for ldr_off
+    BYTE  rconst[8]; // for ldr_rdata
+  };
+  DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata
   std::string name; // for call_imp/call_exp
 
   void dump() const;
@@ -149,6 +154,7 @@ class deriv_hack: public iat_mod
     const char *get_exported(PBYTE mz, PBYTE) const;
     int store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge);
     void calc_const_count(PBYTE func, path_edge &);
+    void calc_rdata_count(path_edge &);
     int try_apply(const one_section *s, PBYTE psp, path_edge &, DWORD &found);
 };
 

@@ -15,6 +15,7 @@
 int gSE = 0;    // skip exported branches
 int gCMax = 3;
 int gUseLC = 0; // use data from load_config
+int gUseRData = 0; // use constants loading from .rdata section
 
 void usage(const wchar_t *progname)
 {
@@ -29,6 +30,7 @@ void usage(const wchar_t *progname)
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
   printf(" -lc - use load_config\n");
+  printf(" -rd - use constants loading from .rdata section\n");
   printf(" -rpc - find rpc interfaces\n");
   printf(" -se - skip exported branches\n");
   printf(" -t threads number\n");
@@ -300,6 +302,11 @@ int wmain(int argc, wchar_t **argv)
        wchar_t *end;
        d.second = wcstol(argv[i], &end, 16);
        derives.push_back(d);
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-rd") )
+     {
+       gUseRData = 1;
        continue;
      }
      if ( !wcscmp(argv[i], L"-se") )

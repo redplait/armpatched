@@ -5,6 +5,7 @@
 
 extern int gSE;
 extern int gUseLC;
+extern int gUseRData;
 
 int deriv_tests::add_module(const wchar_t *fname)
 {
@@ -187,6 +188,9 @@ bool path_item::operator==(const path_item &other) const
     case strh:
       return name == other.name;
 
+    case ldr_rdata:
+      return !memcmp(rconst, other.rconst, sizeof(rconst));
+
     case call_dimp:
     case call_imp:
     case call_exp:
@@ -238,6 +242,15 @@ void path_item::dump() const
          printf(" strh\n");
        else
          printf(" strh exorted %s\n", name.c_str());
+       break;
+    case ldr_rdata:
+         printf(" rdata");
+         for ( size_t i = 0; i < _countof(rconst); i++ )
+           printf(" %2.2X", rconst[i]);
+         if ( value_count )
+           printf(" count %d\n", value_count);
+         else
+           printf("\n");
        break;
     case ldr_off:
          if ( value_count )
@@ -520,6 +533,7 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
 int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWORD &found)
 {
   PBYTE mz = m_pe->base_addr();
+  const one_section *r = m_pe->find_section_by_name(".rdata");
   statefull_graph<PBYTE, path_state> cgraph;
   std::list<std::pair<PBYTE, path_state> > addr_list;
   int is_empty = path.list.empty();
@@ -619,6 +633,17 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_add() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          // check constant in .rdata
+          if ( r != NULL && (iter->second.s->type == ldr_rdata) )
+          {
+            ptrdiff_t rva = what - mz;
+            if ( rva < r->va || 
+                 rva + sizeof(iter->second.s->rconst) > (r->va + r->size) )
+              continue;
+            if ( !memcmp(iter->second.s->rconst, what, sizeof(iter->second.s->rconst)) )
+              iter->second.next(path);
+            continue;
+          }
           if ( iter->second.s->type != load )
             continue;
           if ( !iter->second.s->name.empty() )
@@ -807,6 +832,7 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
   const one_section *s = m_pe->find_section_v(rva);
   if ( s == NULL )
     return 0;
+  const one_section *r = m_pe->find_section_by_name(".rdata");
   PBYTE pattern = mz + rva;
   statefull_graph<PBYTE, path_edge> cgraph;
   std::list<std::pair<PBYTE, path_edge> > addr_list;
@@ -909,6 +935,22 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
         if ( is_add() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          // check const in .rdata
+          if ( r != NULL && gUseRData && !is_inside_IAT(what) )
+          {
+            ptrdiff_t rva = what - mz;
+            path_item tmp;
+            if ( rva >= r->va &&
+                 rva + sizeof(tmp.rconst) <= (r->va + r->size) )
+            {
+              tmp.rva = m_psp - mz;
+              tmp.type = ldr_rdata;
+              tmp.value_count = 0;
+              memcpy(tmp.rconst, what, sizeof(tmp.rconst));
+              iter->second.list.push_back(tmp);
+              continue;
+            }
+          }
           res = store_op(load, s, pattern, what, iter->second);
           if ( res )
           {
@@ -1007,8 +1049,36 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
   }
 end:
   if ( res )
+  {
     calc_const_count(psp_copy, out_res);
+    calc_rdata_count(out_res);
+  }
   return res;
+}
+
+void deriv_hack::calc_rdata_count(path_edge &out_res)
+{
+  PBYTE mz = m_pe->base_addr();
+  const one_section *r = m_pe->find_section_by_name(".rdata");
+  if ( r == NULL )
+    return;
+  for ( auto& item: out_res.list )
+  {
+    if ( item.type != ldr_rdata )
+       continue;
+    PBYTE start = mz + r->va;
+    PBYTE end = start + r->size;
+    bm_search srch((const PBYTE)item.rconst, sizeof(item.rconst));
+    PBYTE curr = start;
+    while ( curr < end )
+    {
+      const PBYTE fres = srch.search(curr, end - curr);
+      if ( NULL == fres )
+        break;
+      item.value_count++;
+      curr = fres + sizeof(item.rconst);
+    }
+  }
 }
 
 void deriv_hack::calc_const_count(PBYTE func, path_edge &out_res)
