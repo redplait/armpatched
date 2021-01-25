@@ -243,31 +243,31 @@ void path_item::dump() const
        if ( name.empty() )
          printf(" store\n");
        else
-         printf(" store exorted %s\n", name.c_str());
+         printf(" store exported %s\n", name.c_str());
        break;
     case ldrb:
        if ( name.empty() )
          printf(" ldrb\n");
        else
-         printf(" ldrb exorted %s\n", name.c_str());
+         printf(" ldrb exported %s\n", name.c_str());
        break;
     case ldrh:
        if ( name.empty() )
          printf(" ldrh\n");
        else
-         printf(" ldrh exorted %s\n", name.c_str());
+         printf(" ldrh exported %s\n", name.c_str());
        break;
     case strb:
        if ( name.empty() )
          printf(" strb\n");
        else
-         printf(" strb exorted %s\n", name.c_str());
+         printf(" strb exported %s\n", name.c_str());
        break;
     case strh:
        if ( name.empty() )
          printf(" strh\n");
        else
-         printf(" strh exorted %s\n", name.c_str());
+         printf(" strh exported %s\n", name.c_str());
        break;
     case ldr_rdata:
          printf(" rdata");
