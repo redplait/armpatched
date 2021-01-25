@@ -189,6 +189,32 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
                   printf("Test[%d]: %X\n", idx, rva_found);
               }
             }
+          } else if ( edges.has_rconst_count(gCMax) )
+          {
+            if (edges.reduce())
+            {
+              printf("REDUCED:\n");
+              // dump again
+              dump_edge(edges);
+            }
+            if ( tests.mods.empty() )
+            {
+              DWORD rva_found = 0;
+              if (der->apply(x, edges, rva_found))
+              {
+                printf("apply return %X, must_be %X\n", rva_found, rva);
+                if (rva == rva_found)
+                  can_be_found++;
+              }
+            } else {
+              DWORD idx = 0;
+              for ( auto miter = tests.mods.begin(); miter != tests.mods.end(); miter++, idx++ )
+              {
+                DWORD rva_found = 0;
+                if ( miter->der->apply(x, edges, rva_found) )
+                  printf("Test[%d]: %X\n", idx, rva_found);
+              }
+            }
           } else if ( x.in_fids_table )
           {
             if ( edges.is_trivial() )

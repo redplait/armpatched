@@ -29,6 +29,27 @@ int deriv_tests::add_module(const wchar_t *fname)
   return 1;
 }
 
+const path_item *path_edge::get_best_rconst() const
+{
+  const path_item *res = NULL;
+  for ( const auto &c: list )
+  {
+    if ( c.type != ldr_rdata )
+      continue;
+    if ( !c.value_count )
+      continue;
+    if ( res == NULL )
+    {
+      res = &c;
+      continue;
+    }
+    if ( res->value_count < c.value_count )
+      continue;
+    res = &c;
+  }
+  return res;
+}
+
 const path_item *path_edge::get_best_const() const
 {
   const path_item *res = NULL;
@@ -88,6 +109,11 @@ int path_edge::can_reduce() const
       state = 1;
   }
   return 0;
+}
+
+int path_edge::has_rconst_count(int below) const
+{
+  return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return (item.type == ldr_rdata) && item.value_count && (item.value_count < below); });
 }
 
 int path_edge::has_const_count(int below) const
@@ -493,7 +519,62 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
     const path_item *imm = path.get_best_const();
     if ( imm == NULL )
     {
-      printf("cannot get_best_const\n");
+      imm = path.get_best_rconst();
+      if ( imm == NULL )
+      {
+        printf("cannot get_best_const and get_best_rconst\n");
+        return 0;
+      }
+      // find constants in .rdata
+      const one_section *r = m_pe->find_section_by_name(".rdata");
+      if ( r == NULL )
+      {
+        printf("no .rdata section found\n");
+        return 0;
+      }
+      PBYTE start = m_pe->base_addr() + r->va;
+      PBYTE end = start + r->size;
+      bm_search srch((const PBYTE)imm->rconst, sizeof(imm->rconst));
+      PBYTE curr = start;
+      std::list<PBYTE> founds;
+      while ( curr < end )
+      {
+        const PBYTE fres = srch.search(curr, end - curr);
+        if ( NULL == fres )
+          break;
+        try
+        {
+          founds.push_back(fres);
+        } catch(std::bad_alloc)
+        { return 0; }
+        curr = fres + sizeof(imm->value);
+      }
+      if ( founds.empty() )
+      {
+        printf("cannot find constant %X in section .rdata\n", *(PDWORD)imm->rconst);
+        return 0;
+      }
+      // now find refs to this constant
+      std::set<PBYTE> cached_funcs;
+      for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
+      {
+        std::list<PBYTE> refs;
+        xref_finder xf;
+        if ( !xf.find(m_pe->base_addr() + cs->va, cs->size, *citer, refs) )
+          continue;
+        for ( const auto &cref: refs )
+        {
+          PBYTE func = find_pdata(cref);
+          if ( NULL == func )
+            continue;
+          auto already_processed = cached_funcs.find(func);
+          if ( already_processed != cached_funcs.end() )
+            continue;
+          cached_funcs.insert(func);
+          if ( try_apply(s, func, path, found) )
+            return 1;
+        }
+      }
       return 0;
     }
     PBYTE start = m_pe->base_addr() + cs->va;

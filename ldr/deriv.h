@@ -116,9 +116,11 @@ class path_edge
    int is_dimp1_only(std::string &) const;
    int contains_dimp(std::string &) const;
    int has_const_count(int below) const;
+   int has_rconst_count(int below) const;
    int can_reduce() const;
    int reduce();
    const path_item *get_best_const() const;
+   const path_item *get_best_rconst() const;
 };
 
 class deriv_hack: public iat_mod
