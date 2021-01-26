@@ -83,6 +83,19 @@ struct path_item
   DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata
   std::string name; // for call_imp/call_exp
 
+  path_item() = default;
+  template <typename T>
+  path_item(std::initializer_list<T> l)
+  {
+    type = ldr_rdata;
+    value_count = 0;
+    size_t i;
+    for ( i = 0; i < _countof(rconst); i++ )
+      rconst[i] = 0;
+    i = 0;
+    for ( auto const li = l.cbegin(); li != l.cend() && i < _countof(rconst); ++li, i++ )
+      rconst[i] = (BYTE)*li;
+  }
   void dump() const;
   int is_load_store() const;
   bool operator==(const path_item&) const;
