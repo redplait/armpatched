@@ -9,6 +9,7 @@
 #include "rpc_hack.h"
 #include "rpcrt4_hack.h"
 #include "deriv.h"
+#include "ser.h"
 #include "../source/armadillo.h"
 
 // some global options
@@ -16,6 +17,9 @@ int gSE = 0;    // skip exported branches
 int gCMax = 3;
 int gUseLC = 0; // use data from load_config
 int gUseRData = 0; // use constants loading from .rdata section
+
+// and other global data
+serialize *gSer = NULL;
 
 void usage(const wchar_t *progname)
 {
@@ -30,6 +34,7 @@ void usage(const wchar_t *progname)
   printf(" -ds - dump sections\n");
   printf(" -d  - dump all\n");
   printf(" -lc - use load_config\n");
+  printf(" -o filename - store derived FSMs to file\n");
   printf(" -rd - use constants loading from .rdata section\n");
   printf(" -rpc - find rpc interfaces\n");
   printf(" -se - skip exported branches\n");
@@ -37,6 +42,11 @@ void usage(const wchar_t *progname)
   printf(" -T test file\n");
   printf(" -v - verbose output\n");
   printf(" -wpp - try to find WPP_GLOBAL_Controls\n");
+  if ( gSer != NULL )
+  {
+    delete gSer;
+    gSer = NULL;
+  }
   exit(6);
 }
 
@@ -146,7 +156,11 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
             {
               printf("apply return %X, must_be %X\n", rva_found, rva);
               if ( rva == rva_found )
+              {
+                if ( gSer != NULL )
+                  gSer->save(x, edges);
                 can_be_found++;
+              }
             }
           } else {
             DWORD idx = 0;
@@ -177,8 +191,12 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
               if (der->apply(x, edges, rva_found))
               {
                 printf("apply return %X, must_be %X\n", rva_found, rva);
-                if (rva == rva_found)
+                if ( rva == rva_found )
+                {
+                  if ( gSer != NULL )
+                    gSer->save(x, edges);
                   can_be_found++;
+                }
               }
             } else {
               DWORD idx = 0;
@@ -204,7 +222,11 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
               {
                 printf("apply return %X, must_be %X\n", rva_found, rva);
                 if (rva == rva_found)
+                {
+                  if ( gSer != NULL )
+                    gSer->save(x, edges);
                   can_be_found++;
+                }
               }
             } else {
               DWORD idx = 0;
@@ -294,6 +316,19 @@ int wmain(int argc, wchar_t **argv)
          if ( proc_count < threads_count )
            threads_count = proc_count;
        }
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-o") )
+     {
+       i++;
+       if ( i >= argc )
+       {
+         usage(argv[0]);
+         return 0;
+       }
+       if ( gSer != NULL )
+         delete gSer;
+       gSer = new pod_serialize(argv[i]);
        continue;
      }
      if ( !wcscmp(argv[i], L"-c") )
@@ -639,5 +674,8 @@ int wmain(int argc, wchar_t **argv)
        }
      }
    }
+
+   if ( gSer != NULL )
+     delete gSer;
    return 0;
 }

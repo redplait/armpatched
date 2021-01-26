@@ -83,6 +83,7 @@ struct path_item
   DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata
   std::string name; // for call_imp/call_exp
 
+  // constructors
   path_item() = default;
   template <typename T>
   path_item(std::initializer_list<T> l)
@@ -96,7 +97,16 @@ struct path_item
     for ( auto const li = l.cbegin(); li != l.cend() && i < _countof(rconst); ++li, i++ )
       rconst[i] = (BYTE)*li;
   }
+  path_item(DWORD val)
+  {
+    type = ldr_off;
+    value_count = 0;
+    value = val;
+  }
+
+  void reset();
   void dump() const;
+  void pod_dump(FILE *fp) const;
   int is_load_store() const;
   bool operator==(const path_item&) const;
 };
@@ -132,6 +142,11 @@ class path_edge
    int has_rconst_count(int below) const;
    int can_reduce() const;
    int reduce();
+   void reset()
+   {
+     last.reset();
+     std::for_each(list.begin(), list.end(), [](path_item &item){ item.reset(); });
+   }
    const path_item *get_best_const() const;
    const path_item *get_best_rconst() const;
 };

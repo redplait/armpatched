@@ -189,6 +189,7 @@
     <ClCompile Include="pe_file.cpp" />
     <ClCompile Include="rpcrt4_hack.cpp" />
     <ClCompile Include="rpc_hack.cpp" />
+    <ClCompile Include="ser.cpp" />
     <ClCompile Include="skci_hack.cpp" />
   </ItemGroup>
   <ItemGroup>

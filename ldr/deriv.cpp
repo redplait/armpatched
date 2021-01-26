@@ -225,6 +225,88 @@ bool path_item::operator==(const path_item &other) const
   return false;
 }
 
+void path_item::reset()
+{
+  switch(type)
+  {
+    case ldr_rdata:
+    case ldr_off:
+       value_count = 0;
+     break;
+  }
+}
+
+void path_item::pod_dump(FILE *fp) const
+{
+  if ( rva )
+    fprintf(fp, " # rva %X\n", rva);
+  switch(type)
+  {
+    case ldr_cookie:
+        fprintf(fp, " load_cookie\n");
+      break;
+    case load: 
+       if ( name.empty() )
+         fprintf(fp, " load\n");
+       else
+         fprintf(fp, " load %s\n", name.c_str());
+      break;
+    case store: 
+       if ( name.empty() )
+         fprintf(fp, " store\n");
+       else
+         fprintf(fp, " store %s\n", name.c_str());
+       break;
+    case ldrb:
+       if ( name.empty() )
+         fprintf(fp, " ldrb\n");
+       else
+         fprintf(fp, " ldrb %s\n", name.c_str());
+       break;
+    case ldrh:
+       if ( name.empty() )
+         fprintf(fp, " ldrh\n");
+       else
+         fprintf(fp, " ldrh %s\n", name.c_str());
+       break;
+    case strb:
+       if ( name.empty() )
+         fprintf(fp, " strb\n");
+       else
+         fprintf(fp, " strb %s\n", name.c_str());
+       break;
+    case strh:
+       if ( name.empty() )
+         fprintf(fp, " strh\n");
+       else
+         fprintf(fp," strh %s\n", name.c_str());
+       break;
+    case ldr_rdata:
+         fprintf(fp, " rdata");
+         for ( size_t i = 0; i < _countof(rconst); i++ )
+           fprintf(fp, " %2.2X", rconst[i]);
+          fprintf(fp, "\n");
+       break;
+    case ldr_off:
+         fprintf(fp, " const %X\n", value);
+       break;
+    case call_imp:
+        fprintf(fp, " call_imp %s\n", name.c_str());
+       break;
+    case call_dimp:
+        fprintf(fp, " call_dimp %s\n", name.c_str());
+       break;
+    case call_exp:
+        fprintf(fp, " call_exp %s\n", name.c_str());
+       break;
+    case call_icall:
+        fprintf(fp, " call_icall\n");
+       break;
+    default:
+        fprintf(fp, " unknown type %d\n", type);
+  }  
+}
+
 void path_item::dump() const
 {
   printf(" RVA %X", rva);
@@ -1109,13 +1191,10 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
         // loading of constants
         if ( is_ldr_off() )
         {
-          path_item tmp;
-          tmp.rva = m_psp - mz;
-          tmp.type = ldr_off;
-          tmp.value = *(PDWORD)m_dis.operands[1].op_imm.bits;
+          path_item tmp(*(PDWORD)m_dis.operands[1].op_imm.bits);
           if ( tmp.value ) // skip zero constants
           {
-            tmp.value_count = 0;
+            tmp.rva = m_psp - mz;
             iter->second.list.push_back(tmp);
           }
           continue;
