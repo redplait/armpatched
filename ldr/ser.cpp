@@ -10,6 +10,7 @@ int pod_serialize::save(const found_xref &what, const path_edge &edges)
     fprintf(stderr, "Cannot open file %S, error %d\n", fname.c_str(), err);
     return 0;
   }
+  fprintf(m_fp, "section %s\n", edges.symbol_section.c_str());
   if ( what.exported != NULL )
     fprintf(m_fp, "func %s\n", what.exported);
   else
