@@ -6,7 +6,25 @@ use warnings;
 
 my $prg = "D:/src/armpatched/Release/ldr.exe ";
 my @sections;
+my %gexp;
 my $tcount = 8;
+
+# fill exported from $prg -de
+sub read_exports
+{
+  my $fname = shift;
+  my($fh, $str);
+  open($fh, $prg . "-de " . $fname . "|") or die("cannot run $prg -de $fname, error $!\n");
+  while($str = <$fh>)
+  {
+    chomp $str;
+    next if ( $str !~ /Ord \d+ \d ([0-9a-f]+)/i );
+    my $rva = hex($1);
+    next if ( !$rva );
+    $gexp{$rva} = 1;
+  }
+  close $fh;
+}
 
 # fill @sections from $prg -ds
 sub read_sections
@@ -97,8 +115,11 @@ sub read_pdmp
     next if ( $str !~ m|^// pubsym <rva (\w+)> (.*)$| );
     $rva = hex($1);
     $str = $2;
+    # check if this symbol already exported
+    next if ( exists $gexp{$rva} );
     # we need only data
     next if ( $str =~ /<code>/ );
+    next if ( $str =~ /__imp_/ );
     next if ( $str =~ /\?\?_C@/ );
     $s = in_our_section($rva);
     next if ( !defined($s) );
@@ -116,5 +137,6 @@ if ( $#ARGV != 1 )
 }
 
 read_sections($ARGV[0]);
+read_exports($ARGV[0]);
 read_pdmp($ARGV[1], $ARGV[0]);
 dump_stat();
