@@ -1216,6 +1216,23 @@ end:
   return res;
 }
 
+void deriv_hack::prepare(found_xref &xref, path_edge &out_res)
+{
+  if ( xref.exported == NULL )
+    calc_const_count_in_section(xref.section_name.c_str(), out_res);
+  else {
+    const export_item *exp = m_ed->find(xref.exported);
+    if ( exp == NULL )
+    {
+      printf("cannot find function %s\n", xref.exported);
+      return;
+    }
+    PBYTE mz = m_pe->base_addr();
+    calc_const_count(mz + exp->rva, out_res);
+  }
+  calc_rdata_count(out_res);
+}
+
 void deriv_hack::calc_rdata_count(path_edge &out_res)
 {
   PBYTE mz = m_pe->base_addr();
@@ -1226,6 +1243,7 @@ void deriv_hack::calc_rdata_count(path_edge &out_res)
   {
     if ( item.type != ldr_rdata )
        continue;
+    item.value_count = 0;
     PBYTE start = mz + r->va;
     PBYTE end = start + r->size;
     bm_search srch((const PBYTE)item.rconst, sizeof(item.rconst));
@@ -1241,16 +1259,14 @@ void deriv_hack::calc_rdata_count(path_edge &out_res)
   }
 }
 
-void deriv_hack::calc_const_count(PBYTE func, path_edge &out_res)
+void deriv_hack::calc_const_count(const one_section *s, path_edge &out_res)
 {
   PBYTE mz = m_pe->base_addr();
-  const one_section *s = m_pe->find_section_rva(func - mz);
-  if ( s == NULL )
-    return;
   for ( auto& item: out_res.list )
   {
     if ( item.type != ldr_off )
        continue;
+    item.value_count = 0;
     PBYTE start = mz + s->va;
     PBYTE end = start + s->size;
     bm_search srch((const PBYTE)&item.value, sizeof(item.value));
@@ -1264,6 +1280,23 @@ void deriv_hack::calc_const_count(PBYTE func, path_edge &out_res)
       curr = fres + sizeof(item.value);
     }
   }
+}
+
+void deriv_hack::calc_const_count_in_section(const char *sname, path_edge &out_res)
+{
+  const one_section *s = m_pe->find_section_by_name(sname);
+  if ( s == NULL )
+    return;
+  calc_const_count(s, out_res);
+}
+
+void deriv_hack::calc_const_count(PBYTE func, path_edge &out_res)
+{
+  PBYTE mz = m_pe->base_addr();
+  const one_section *s = m_pe->find_section_rva(func - mz);
+  if ( s == NULL )
+    return;
+  calc_const_count(s, out_res);
 }
 
 // process one function (starting with psp) to find xref to what, add all newly discovered functions to fh

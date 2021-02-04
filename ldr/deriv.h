@@ -180,10 +180,13 @@ class deriv_hack: public iat_mod
     template <typename FH>
     int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
     int apply(found_xref &xref, path_edge &, DWORD &found);
+    void prepare(found_xref &xref, path_edge &);
   protected:
     const char *get_exported(PBYTE mz, PBYTE) const;
     int store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge);
     void calc_const_count(PBYTE func, path_edge &);
+    void calc_const_count_in_section(const char *, path_edge &);
+    void calc_const_count(const one_section *, path_edge &);
     void calc_rdata_count(path_edge &);
     int try_apply(const one_section *s, PBYTE psp, path_edge &, DWORD &found);
 };
@@ -228,6 +231,10 @@ class deriv_tests
    };
    std::list<deriv_test> mods;
    int add_module(const wchar_t *);
+   int empty() const
+   {
+     return mods.empty();
+   }
 };
 
 // multi-threaded version of deriv_hack - find own deriv_hack for every thread
