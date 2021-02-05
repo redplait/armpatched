@@ -62,6 +62,13 @@ typedef enum
   ldrh,
   strb,
   strh,
+  // versions with global storage - index in stg_index
+  gload,
+  gstore,
+  gldrb,
+  gldrh,
+  gstrb,
+  gstrh,  
   ldr_off,  // some constant
   call_imp, // [IAT] call
   call_dimp, // [delayed IAT] call
@@ -81,6 +88,7 @@ struct path_item
     BYTE  rconst[8]; // for ldr_rdata
   };
   DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata
+  DWORD stg_index;
   std::string name; // for call_imp/call_exp
 
   // constructors
@@ -140,6 +148,10 @@ class path_edge
    int contains_dimp(std::string &) const;
    int has_const_count(int below) const;
    int has_rconst_count(int below) const;
+   int has_stg() const
+   {
+     return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return item.stg_index != 0; });
+   }
    int can_reduce() const;
    int reduce();
    void reset()
@@ -181,6 +193,10 @@ class deriv_hack: public iat_mod
     int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
     int apply(found_xref &xref, path_edge &, DWORD &found);
     void prepare(found_xref &xref, path_edge &);
+    inline const std::map<DWORD, DWORD> &get_stg() const
+    {
+      return m_stg;
+    }
   protected:
     const char *get_exported(PBYTE mz, PBYTE) const;
     int store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge);
@@ -189,6 +205,9 @@ class deriv_hack: public iat_mod
     void calc_const_count(const one_section *, path_edge &);
     void calc_rdata_count(path_edge &);
     int try_apply(const one_section *s, PBYTE psp, path_edge &, DWORD &found);
+    void store_stg(DWORD index, DWORD value);
+    // global storage
+    std::map<DWORD, DWORD> m_stg;
 };
 
 // set of test files

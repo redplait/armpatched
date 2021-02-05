@@ -71,6 +71,20 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
 
 int fsm_reader::parse(path_edge &path)
 {
+  DWORD stg_index = 0;
+  // check for prefix stg - 3
+  if ( !strncmp(curr, "stg", 3) )
+  {
+    curr = trim_left(curr + 3);
+    char *end = NULL;
+    stg_index = strtoul(curr, &end, 10);
+    if ( !stg_index )
+    {
+      fprintf(stderr, "zero stg index at line %d\n", m_line);
+      return -2;
+    }
+    curr = trim_left(end);
+  }
   // section - 7
   if ( !strncmp(curr, "section", 7) )
   {
@@ -186,6 +200,22 @@ int fsm_reader::parse(path_edge &path)
     item.name.clear();
     if ( *curr )
       item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
+  // gload - 5
+  if ( !strncmp(curr, "gload", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    item.type = gload;
+    char *end = NULL;
+    item.stg_index = strtoul(curr, &end, 10);
+    if ( !item.stg_index )
+    {
+      fprintf(stderr, "zero stg in gload at line %d\n", m_line);
+      return -2;
+    }
     NEXT
   }
   // ldrb - 4
@@ -197,6 +227,22 @@ int fsm_reader::parse(path_edge &path)
     item.name.clear();
     if ( *curr )
       item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
+  // gldrb - 5
+  if ( !strncmp(curr, "gldrb", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    item.type = gldrb;
+    char *end = NULL;
+    item.stg_index = strtoul(curr, &end, 10);
+    if ( !item.stg_index )
+    {
+      fprintf(stderr, "zero stg in gldrb at line %d\n", m_line);
+      return -2;
+    }
     NEXT
   }
   // ldrh - 4
@@ -208,6 +254,22 @@ int fsm_reader::parse(path_edge &path)
     item.name.clear();
     if ( *curr )
       item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
+  // gldrh - 5
+  if ( !strncmp(curr, "gldrh", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    item.type = gldrh;
+    char *end = NULL;
+    item.stg_index = strtoul(curr, &end, 10);
+    if ( !item.stg_index )
+    {
+      fprintf(stderr, "zero stg in gldrh at line %d\n", m_line);
+      return -2;
+    }
     NEXT
   }
   // store - 5
@@ -219,6 +281,22 @@ int fsm_reader::parse(path_edge &path)
     item.name.clear();
     if ( *curr )
       item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
+  // gstore - 6
+  if ( !strncmp(curr, "gstore", 6) )
+  {
+    SLIST
+    curr = trim_left(curr + 6);
+    item.type = gstore;
+    char *end = NULL;
+    item.stg_index = strtoul(curr, &end, 10);
+    if ( !item.stg_index )
+    {
+      fprintf(stderr, "zero stg in gstore at line %d\n", m_line);
+      return -2;
+    }
     NEXT
   }
   // strb - 4
@@ -230,6 +308,22 @@ int fsm_reader::parse(path_edge &path)
     item.name.clear();
     if ( *curr )
       item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
+  // gstrb - 5
+  if ( !strncmp(curr, "gstrb", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    item.type = gstrb;
+    char *end = NULL;
+    item.stg_index = strtoul(curr, &end, 10);
+    if ( !item.stg_index )
+    {
+      fprintf(stderr, "zero stg in gstrb at line %d\n", m_line);
+      return -2;
+    }
     NEXT
   }
   // strh - 4
@@ -241,6 +335,22 @@ int fsm_reader::parse(path_edge &path)
     item.name.clear();
     if ( *curr )
       item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
+  // gstrh - 5
+  if ( !strncmp(curr, "gstrh", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    item.type = gstrh;
+    char *end = NULL;
+    item.stg_index = strtoul(curr, &end, 10);
+    if ( !item.stg_index )
+    {
+      fprintf(stderr, "zero stg in gstrh at line %d\n", m_line);
+      return -2;
+    }
     NEXT
   }
   // const - 5

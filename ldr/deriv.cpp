@@ -187,7 +187,7 @@ int path_item::is_load_store() const
     case ldrh:
     case strb:
     case strh:
-      if ( name.empty() )
+      if ( name.empty() && !stg_index )
         return 1;
   }
   return 0;
@@ -212,7 +212,15 @@ bool path_item::operator==(const path_item &other) const
     case ldrh:
     case strb:
     case strh:
-      return name == other.name;
+      return (name == other.name) && (stg_index == other.stg_index);
+
+    case gload:
+    case gstore:
+    case gldrb:
+    case gldrh:
+    case gstrb:
+    case gstrh:
+      return stg_index == other.stg_index;
 
     case ldr_rdata:
       return !memcmp(rconst, other.rconst, sizeof(rconst));
@@ -245,41 +253,71 @@ void path_item::pod_dump(FILE *fp) const
     case ldr_cookie:
         fprintf(fp, " load_cookie\n");
       break;
-    case load: 
+    case load:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
        if ( name.empty() )
          fprintf(fp, " load\n");
        else
          fprintf(fp, " load %s\n", name.c_str());
       break;
+    case gload:
+       fprintf(fp, " gload %d\n", stg_index);
+      break;
     case store: 
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
        if ( name.empty() )
          fprintf(fp, " store\n");
        else
          fprintf(fp, " store %s\n", name.c_str());
        break;
+    case gstore:
+         fprintf(fp, " gstore %d\n", stg_index);
+       break;
     case ldrb:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
        if ( name.empty() )
          fprintf(fp, " ldrb\n");
        else
          fprintf(fp, " ldrb %s\n", name.c_str());
        break;
+    case gldrb:
+         fprintf(fp, " gldrb %d\n", stg_index);
+       break;
     case ldrh:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
        if ( name.empty() )
          fprintf(fp, " ldrh\n");
        else
          fprintf(fp, " ldrh %s\n", name.c_str());
        break;
+    case gldrh:
+         fprintf(fp, " gldrh %d\n", stg_index);
+       break;
     case strb:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
        if ( name.empty() )
          fprintf(fp, " strb\n");
        else
          fprintf(fp, " strb %s\n", name.c_str());
        break;
+    case gstrb:
+         fprintf(fp, " gstrb %d\n", stg_index);
+       break;
     case strh:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
        if ( name.empty() )
          fprintf(fp, " strh\n");
        else
          fprintf(fp," strh %s\n", name.c_str());
+       break;
+    case gstrh:
+         fprintf(fp, " gstrh %d\n", stg_index);
        break;
     case ldr_rdata:
          fprintf(fp, " rdata");
@@ -316,40 +354,70 @@ void path_item::dump() const
         printf(" load_cookie\n");
       break;
     case load: 
+       if ( stg_index )
+         printf(" stg%d", stg_index);
        if ( name.empty() )
          printf(" load\n");
        else
          printf(" load exported %s\n", name.c_str());
       break;
+    case gload: 
+        printf(" gload %d\n", stg_index);
+      break;
     case store: 
+       if ( stg_index )
+         printf(" stg%d", stg_index);
        if ( name.empty() )
          printf(" store\n");
        else
          printf(" store exported %s\n", name.c_str());
        break;
+    case gstore: 
+         printf(" gstore %d\n", stg_index);
+       break;
     case ldrb:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
        if ( name.empty() )
          printf(" ldrb\n");
        else
          printf(" ldrb exported %s\n", name.c_str());
        break;
+    case gldrb:
+         printf(" gldrb %d\n", stg_index);
+       break;
     case ldrh:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
        if ( name.empty() )
          printf(" ldrh\n");
        else
          printf(" ldrh exported %s\n", name.c_str());
        break;
+    case gldrh:
+         printf(" gldrh %d\n", stg_index);
+       break;
     case strb:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
        if ( name.empty() )
          printf(" strb\n");
        else
          printf(" strb exported %s\n", name.c_str());
        break;
+    case gstrb:
+         printf(" gstrb %d\n", stg_index);
+       break;
     case strh:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
        if ( name.empty() )
          printf(" strh\n");
        else
          printf(" strh exported %s\n", name.c_str());
+       break;
+    case gstrh:
+         printf(" gstrh: %d\n", stg_index);
        break;
     case ldr_rdata:
          printf(" rdata");
@@ -440,6 +508,13 @@ int funcs_holder_ts::exchange(std::set<PBYTE> &outer)
   }
   m_current.clear();
   return 1;
+}
+
+void deriv_hack::store_stg(DWORD index, DWORD value)
+{
+  if ( !index )
+    return;
+  m_stg[index] = value;
 }
 
 const char *deriv_hack::get_exported(PBYTE mz, PBYTE addr) const
@@ -847,10 +922,12 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( strcmp(iter->second.s->name.c_str(), exp_name) )
               break;
+            store_stg(iter->second.s->stg_index, what - mz);
           } else {
             const one_section *their = m_pe->find_section_v(what - mz);
             if ( their == NULL || their != s )
               continue;
+            store_stg(iter->second.s->stg_index, what - mz);
           }
           if ( iter->second.next(path) )
           {
@@ -869,10 +946,12 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( strcmp(iter->second.s->name.c_str(), exp_name) )
               break;
+            store_stg(iter->second.s->stg_index, what - mz);
           } else {
             const one_section *their = m_pe->find_section_v(what - mz);
             if ( their == NULL || their != s )
               continue;
+            store_stg(iter->second.s->stg_index, what - mz);
           }
           if ( iter->second.next(path) )
           {
@@ -891,10 +970,12 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( strcmp(iter->second.s->name.c_str(), exp_name) )
               break;
+            store_stg(iter->second.s->stg_index, what - mz);
           } else {
             const one_section *their = m_pe->find_section_v(what - mz);
             if ( their == NULL || their != s )
               continue;
+            store_stg(iter->second.s->stg_index, what - mz);
           }
           if ( iter->second.next(path) )
           {
@@ -913,10 +994,12 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( strcmp(iter->second.s->name.c_str(), exp_name) )
               break;
+            store_stg(iter->second.s->stg_index, what - mz);
           } else {
             const one_section *their = m_pe->find_section_v(what - mz);
             if ( their == NULL || their != s )
               continue;
+            store_stg(iter->second.s->stg_index, what - mz);
           }
           if ( iter->second.next(path) )
           {
@@ -935,10 +1018,12 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( strcmp(iter->second.s->name.c_str(), exp_name) )
               break;
+            store_stg(iter->second.s->stg_index, what - mz);
           } else {
             const one_section *their = m_pe->find_section_v(what - mz);
             if ( their == NULL || their != s )
               continue;
+            store_stg(iter->second.s->stg_index, what - mz);
           }
           if ( iter->second.next(path) )
           {
@@ -957,10 +1042,12 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( strcmp(iter->second.s->name.c_str(), exp_name) )
               break;
+            store_stg(iter->second.s->stg_index, what - mz);
           } else {
             const one_section *their = m_pe->find_section_v(what - mz);
             if ( their == NULL || their != s )
               continue;
+            store_stg(iter->second.s->stg_index, what - mz);
           }
           if ( iter->second.next(path) )
           {

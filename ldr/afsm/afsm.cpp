@@ -11,6 +11,13 @@ int gUseRData = 1;
 
 deriv_tests gTestPool;
 
+void dump_edge(const path_edge &edges)
+{
+  for ( const auto &edge: edges.list )
+    edge.dump();
+  edges.last.dump();
+}
+
 void usage(const wchar_t *progname)
 {
   printf("%S: [options] arm64_pe file(s)\n", progname);
@@ -70,13 +77,23 @@ int wmain(int argc, wchar_t **argv)
       int read_res = rdr.read_rule(&ref, path);
       if ( read_res <= 0 )
         break;
+      if ( verbose )
+        dump_edge(path);
       int mod_idx = 0;
+      int has_stg = path.has_stg();
       for ( const auto &mod: gTestPool.mods )
       {
         mod.der->prepare(*ref, path);
         DWORD found = 0;
         if ( mod.der->apply(*ref, path, found) )
-          printf("[%d] found at %X\n", mod_idx, found);
+        {
+          printf("[%d] %S: found at %X\n", mod_idx, mod.fname.c_str(), found);
+          if ( has_stg )
+          {
+            auto stg = mod.der->get_stg();
+            std::for_each(stg.cbegin(), stg.cend(), [](const auto &item) { printf(" %d - %X\n", item.first, item.second); });
+          }
+        }
         mod_idx++;
       }
    }
