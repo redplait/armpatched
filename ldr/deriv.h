@@ -197,13 +197,15 @@ class deriv_tests
   public:
    struct deriv_test
    {
+     std::wstring fname;
      arm64_pe_file *pe;
      inmem_import_holder i_h;
      inmem_import_holder di_h; // delayed import holder
      deriv_hack *der;
      deriv_test(deriv_test &&outer)
        : i_h(std::move(outer.i_h)),
-         di_h(std::move(outer.di_h))
+         di_h(std::move(outer.di_h)),
+         fname(std::move(outer.fname))
      {
        pe = outer.pe;
        outer.pe = NULL;
@@ -215,8 +217,9 @@ class deriv_tests
        pe = NULL;
        der = NULL;
      }
-     deriv_test(arm64_pe_file *f, inmem_import_holder &&ih, inmem_import_holder &&dih, deriv_hack *d)
+     deriv_test(const wchar_t *name, arm64_pe_file *f, inmem_import_holder &&ih, inmem_import_holder &&dih, deriv_hack *d)
       : pe(f),
+        fname(name),
         i_h(std::move(ih)),
         di_h(std::move(dih)),
         der(d)

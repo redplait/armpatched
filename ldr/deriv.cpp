@@ -24,7 +24,7 @@ int deriv_tests::add_module(const wchar_t *fname)
   inmem_import_holder dih;
   module_import *mimp = ih.add(fname, f);
   module_import *dimp = dih.add_delayed(fname, f);
-  deriv_test obj{ f, std::move(ih), std::move(dih), new deriv_hack(f, f->get_export_dict(), mimp, dimp) };
+  deriv_test obj{ fname, f, std::move(ih), std::move(dih), new deriv_hack(f, f->get_export_dict(), mimp, dimp) };
   mods.push_back(std::move(obj));
   return 1;
 }
