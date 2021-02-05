@@ -882,6 +882,21 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               iter->second.next(path);
             continue;
           }
+          if ( iter->second.s->type == gload )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(what - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          }
           if ( iter->second.s->type != load )
             continue;
           if ( !iter->second.s->name.empty() )
@@ -891,10 +906,12 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( strcmp(iter->second.s->name.c_str(), exp_name) )
               break;
+            store_stg(iter->second.s->stg_index, what - mz);
           } else {
             const one_section *their = m_pe->find_section_v(what - mz);
             if ( their == NULL || their != s )
               continue;
+            store_stg(iter->second.s->stg_index, what - mz);
           }
           if ( iter->second.next(path) )
           {
@@ -913,6 +930,21 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldr() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == gload )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(what - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          }
           if ( iter->second.s->type != load )
             continue;
           if ( !iter->second.s->name.empty() )
@@ -936,9 +968,26 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           }
           continue;
         }
-        if ( is_ldrb() && iter->second.s->type == ldrb )
+        if ( is_ldrb() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == gldrb )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(what - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          }
+          if ( iter->second.s->type != ldrb )
+            continue;
           if ( !iter->second.s->name.empty() )
           {
             const char *exp_name = get_exported(mz, what);
@@ -960,9 +1009,26 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           }
           continue;
         }
-        if ( is_ldrh() && iter->second.s->type == ldrh )
+        if ( is_ldrh() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == gldrh )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(what - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          }
+          if ( iter->second.s->type != ldrh )
+            continue;
           if ( !iter->second.s->name.empty() )
           {
             const char *exp_name = get_exported(mz, what);
@@ -984,9 +1050,26 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           }
           continue;
         }
-        if ( is_str() && iter->second.s->type == store )
+        if ( is_str() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == gstore )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(what - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          }
+          if ( iter->second.s->type != store )
+            continue;
           if ( !iter->second.s->name.empty() )
           {
             const char *exp_name = get_exported(mz, what);
@@ -1008,9 +1091,26 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           }
           continue;
         }
-        if ( is_strb() && iter->second.s->type == strb )
+        if ( is_strb() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == gstrb )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(what - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          }
+          if ( iter->second.s->type != strb )
+            continue;
           if ( !iter->second.s->name.empty() )
           {
             const char *exp_name = get_exported(mz, what);
@@ -1032,9 +1132,26 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           }
           continue;
         }
-        if ( is_strh() && iter->second.s->type == strh )
+        if ( is_strh() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == gstrh )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(what - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          }
+          if ( iter->second.s->type != strh )
+            continue;
           if ( !iter->second.s->name.empty() )
           {
             const char *exp_name = get_exported(mz, what);
