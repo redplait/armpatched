@@ -421,6 +421,30 @@ int fsm_reader::parse(path_edge &path)
     }
     NEXT
   }
+  // guid - 4
+  if ( !strncmp(curr, "guid", 4) )
+  {
+    SLIST
+    curr = trim_left(curr + 4);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad guid at line %d\n", m_line);
+      return -1;
+    }
+    item.type = ldr_guid;
+    size_t i;
+    for ( i = 0; i < _countof(item.guid); i++ )
+      item.guid[i] = 0;
+    char *end = NULL;
+    for ( i = 0; i < _countof(item.guid); i++ )
+    {
+      item.guid[i] = (BYTE)strtol(curr, &end, 16);
+      if ( !*end )
+        break;
+      curr = trim_left(end);
+    }
+    NEXT
+  }
   fprintf(stderr, "cannot parse %s at line %d\n", curr, m_line);
   return -2;
 }

@@ -34,7 +34,7 @@ const path_item *path_edge::get_best_rconst() const
   const path_item *res = NULL;
   for ( const auto &c: list )
   {
-    if ( c.type != ldr_rdata )
+    if ( (c.type != ldr_rdata) && (c.type != ldr_guid) )
       continue;
     if ( !c.value_count )
       continue;
@@ -113,7 +113,7 @@ int path_edge::can_reduce() const
 
 int path_edge::has_rconst_count(int below) const
 {
-  return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return (item.type == ldr_rdata) && item.value_count && (item.value_count < below); });
+  return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return ((item.type == ldr_rdata) || (item.type == ldr_guid)) && item.value_count && (item.value_count < below); });
 }
 
 int path_edge::has_const_count(int below) const
@@ -225,6 +225,9 @@ bool path_item::operator==(const path_item &other) const
     case ldr_rdata:
       return !memcmp(rconst, other.rconst, sizeof(rconst));
 
+    case ldr_guid:
+      return !memcmp(guid, other.guid, sizeof(guid));
+
     case call_dimp:
     case call_imp:
     case call_exp:
@@ -237,6 +240,7 @@ void path_item::reset()
 {
   switch(type)
   {
+    case ldr_guid:
     case ldr_rdata:
     case ldr_off:
        value_count = 0;
@@ -318,6 +322,12 @@ void path_item::pod_dump(FILE *fp) const
        break;
     case gstrh:
          fprintf(fp, " gstrh %d\n", stg_index);
+       break;
+    case ldr_guid:
+         fprintf(fp, " guid");
+         for ( size_t i = 0; i < _countof(guid); i++ )
+           fprintf(fp, " %2.2X", guid[i]);
+          fprintf(fp, "\n");
        break;
     case ldr_rdata:
          fprintf(fp, " rdata");
@@ -418,6 +428,15 @@ void path_item::dump() const
        break;
     case gstrh:
          printf(" gstrh: %d\n", stg_index);
+       break;
+    case ldr_guid:
+         printf(" guid");
+         for ( size_t i = 0; i < _countof(guid); i++ )
+           printf(" %2.2X", guid[i]);
+         if ( value_count )
+           printf(" count %d\n", value_count);
+         else
+           printf("\n");
        break;
     case ldr_rdata:
          printf(" rdata");
@@ -700,7 +719,10 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
       }
       PBYTE start = m_pe->base_addr() + r->va;
       PBYTE end = start + r->size;
-      bm_search srch((const PBYTE)imm->rconst, sizeof(imm->rconst));
+      DWORD imm_size = sizeof(imm->rconst);
+      if ( imm->type == ldr_guid )
+        imm_size = sizeof(imm->guid);
+      bm_search srch((const PBYTE)imm->rconst, imm_size);
       PBYTE curr = start;
       std::list<PBYTE> founds;
       while ( curr < end )
@@ -713,7 +735,7 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
           founds.push_back(fres);
         } catch(std::bad_alloc)
         { return 0; }
-        curr = fres + sizeof(imm->value);
+        curr = fres + imm_size;
       }
       if ( founds.empty() )
       {
@@ -888,7 +910,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
                  rva + sizeof(iter->second.s->rconst) > (r->va + r->size) )
               continue;
             if ( !memcmp(iter->second.s->rconst, what, sizeof(iter->second.s->rconst)) )
-              iter->second.next(path);
+            {
+              if ( iter->second.next(path) )
+                return 1;
+            }
+            continue;
+          }
+          if ( r != NULL && (iter->second.s->type == ldr_guid) )
+          {
+            ptrdiff_t rva = what - mz;
+            if ( rva < r->va || 
+                 rva + sizeof(iter->second.s->guid) > (r->va + r->size) )
+              continue;
+            if ( !memcmp(iter->second.s->guid, what, sizeof(iter->second.s->guid)) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+            }
             continue;
           }
           if ( iter->second.s->type == gload )
@@ -1454,12 +1492,15 @@ void deriv_hack::calc_rdata_count(path_edge &out_res)
     return;
   for ( auto& item: out_res.list )
   {
-    if ( item.type != ldr_rdata )
+    if ( (item.type != ldr_rdata) && (item.type != ldr_guid) )
        continue;
     item.value_count = 0;
     PBYTE start = mz + r->va;
     PBYTE end = start + r->size;
-    bm_search srch((const PBYTE)item.rconst, sizeof(item.rconst));
+    DWORD imm_size = sizeof(item.rconst);
+    if ( item.type == ldr_guid )
+      imm_size = sizeof(item.guid);
+    bm_search srch((const PBYTE)item.rconst, item.type);
     PBYTE curr = start;
     while ( curr < end )
     {
@@ -1467,7 +1508,7 @@ void deriv_hack::calc_rdata_count(path_edge &out_res)
       if ( NULL == fres )
         break;
       item.value_count++;
-      curr = fres + sizeof(item.rconst);
+      curr = fres + item.type;
     }
   }
 }

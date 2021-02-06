@@ -76,7 +76,8 @@ typedef enum
   call_exp, // call of some exported function
   ldr_cookie, // load security_cookie
   call_icall, // call load_config.GuardCFCheckFunctionPointer
-  ldr_rdata,  // load constant from .rdata section
+  ldr_rdata,  // load 8 byte constant from .rdata section
+  ldr_guid,   // almost the same as ldr_rdata but for GUID in "guid" field
 } path_item_type;
 
 struct path_item
@@ -85,10 +86,11 @@ struct path_item
   path_item_type type;
   union
   {
-    DWORD value;  // for ldr_off
+    DWORD value;     // for ldr_off
     BYTE  rconst[8]; // for ldr_rdata
+    BYTE  guid[16];  // for ldr_guid
   };
-  DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata
+  DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata/ldr_guid
   DWORD stg_index;
   std::string name; // for call_imp/call_exp
 
@@ -97,14 +99,21 @@ struct path_item
   template <typename T>
   path_item(std::initializer_list<T> l)
   {
-    type = ldr_rdata;
+    if ( l.size() == 16 )
+      type = ldr_guid;
+    else
+      type = ldr_rdata;
     value_count = 0;
     size_t i;
     for ( i = 0; i < _countof(rconst); i++ )
       rconst[i] = 0;
     i = 0;
-    for ( auto const li = l.cbegin(); li != l.cend() && i < _countof(rconst); ++li, i++ )
-      rconst[i] = (BYTE)*li;
+    if ( type == ldr_rdata )
+      for ( auto const li = l.cbegin(); li != l.cend() && i < _countof(rconst); ++li, i++ )
+        rconst[i] = (BYTE)*li;
+    else
+      for ( auto const li = l.cbegin(); li != l.cend() && i < _countof(guid); ++li, i++ )
+        guid[i] = (BYTE)*li;
   }
   path_item(DWORD val)
   {
