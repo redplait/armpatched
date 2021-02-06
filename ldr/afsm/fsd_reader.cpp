@@ -121,6 +121,33 @@ int fsm_reader::parse(path_edge &path)
     export_name = curr;
     m_symbol.section_name.clear();
     m_symbol.exported = export_name.c_str();
+    m_symbol.stg_index = 0;
+    NEXT
+  }
+  // sfunc - 5
+  if ( !strncmp(curr, "sfunc", 5) )
+  {
+    if ( m_state != 1 )
+    {
+      fprintf(stderr, "bad sfunc at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    m_state = 2; 
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad function storage at line %d\n", m_line);
+      return -1;
+    }
+    char *end = NULL;
+    m_symbol.stg_index = strtoul(curr, &end, 10);
+    if ( !m_symbol.stg_index )
+    {
+      fprintf(stderr, "zero storage index for sfunc at line %d\n", m_line);
+      return -2;
+    }
+    m_symbol.exported = NULL;
+    m_symbol.section_name.clear();
     NEXT
   }
   // fsection - 8
@@ -140,6 +167,7 @@ int fsm_reader::parse(path_edge &path)
     }
     m_symbol.exported = NULL;
     m_symbol.section_name = curr;
+    m_symbol.stg_index = 0;
     NEXT
   }
   // call_imp - 8

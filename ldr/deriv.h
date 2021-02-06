@@ -9,6 +9,7 @@ struct found_xref
   const char *exported; // in not exported - will be NULL
   std::string section_name; // in which section this function located
   int in_fids_table;    // found function presents in load_config.GuardCFFunctionTable
+  int stg_index;
 };
 
 class funcs_holder_cmn

@@ -666,6 +666,15 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
       return 0;
     }
     return try_apply(s, m_pe->base_addr() + exp->rva, path, found);
+  } else if ( xref.stg_index )
+  {
+    auto value = m_stg.find(xref.stg_index);
+    if ( value == m_stg.end() )
+    {
+      printf("cannot find stored value %d\n", xref.stg_index);
+      return 0;
+    }
+    return try_apply(s, m_pe->base_addr() + value->second, path, found);
   } else {
     const one_section *cs = m_pe->find_section_by_name(xref.section_name.c_str());
     if ( cs == NULL )
@@ -1614,6 +1623,7 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
     {
       found_xref tmp { mz + first->off, 0 };
       tmp.in_fids_table = find_in_fids_table(mz, mz + first->off);
+      tmp.stg_index = 0;
       check_exported(mz, tmp);
       out_res.push_back(tmp);
       res++;
@@ -1631,6 +1641,7 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
       {
         found_xref tmp { c, 0 };
         tmp.in_fids_table = find_in_fids_table(mz, c);
+        tmp.stg_index = 0;
         check_exported(mz, tmp);
         out_res.push_back(tmp);
         res++;
@@ -1683,6 +1694,7 @@ int deriv_pool::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
        {
          task_res.xref.pfunc = addr;
          task_res.xref.in_fids_table = m_ders[i]->find_in_fids_table(mz, addr);
+         task_res.xref.stg_index = 0;
          m_ders[i]->check_exported(mz, task_res.xref);
        }
        return task_res;
@@ -1731,6 +1743,7 @@ int deriv_pool::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
          {
            task_res.xref.pfunc = c;
            task_res.xref.in_fids_table = m_ders[i]->find_in_fids_table(mz, c);
+           task_res.xref.stg_index = 0;
            m_ders[i]->check_exported(mz, task_res.xref);
          }
          return task_res;
