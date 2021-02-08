@@ -74,6 +74,8 @@ typedef enum
   call_imp, // [IAT] call
   call_dimp, // [delayed IAT] call
   call_exp, // call of some exported function
+  call,     // just some call, perhaps in section name, may be stored in m_stg
+  gcall,    // call to early remembered address in m_stg
   ldr_cookie, // load security_cookie
   call_icall, // call load_config.GuardCFCheckFunctionPointer
   ldr_rdata,  // load 8 byte constant from .rdata section
@@ -160,7 +162,11 @@ class path_edge
    int has_rconst_count(int below) const;
    int has_stg() const
    {
-     return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return item.stg_index != 0; });
+     int res = std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return item.stg_index != 0; });
+     if ( res )
+       return res;
+     // check last
+     return last.stg_index != 0;
    }
    int can_reduce() const;
    int reduce();

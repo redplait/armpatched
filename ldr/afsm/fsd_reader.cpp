@@ -212,11 +212,39 @@ int fsm_reader::parse(path_edge &path)
     item.name = curr;
     NEXT
   }
+  // call - 4
+  // must be below all call_XXX for obvious reason
+  if ( !strncmp(curr, "call", 4) )
+  {
+    SLIST
+    item.type = call;
+    item.name.clear();
+    curr = trim_left(curr + 4);
+    if ( *curr )
+      item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
   // load_cookie - 11
   if ( !strncmp(curr, "load_cookie", 11) )
   {
     SLIST
     item.type = ldr_cookie;
+    NEXT
+  }
+  // gcall - 5
+  if ( !strncmp(curr, "gcall", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    item.type = gcall;
+    char *end = NULL;
+    item.stg_index = strtoul(curr, &end, 10);
+    if ( !item.stg_index )
+    {
+      fprintf(stderr, "zero stg in gcall at line %d\n", m_line);
+      return -2;
+    }
     NEXT
   }
   // load - 4

@@ -212,8 +212,10 @@ bool path_item::operator==(const path_item &other) const
     case ldrh:
     case strb:
     case strh:
+    case call:
       return (name == other.name) && (stg_index == other.stg_index);
 
+    case gcall:
     case gload:
     case gstore:
     case gldrb:
@@ -256,6 +258,18 @@ void path_item::pod_dump(FILE *fp) const
   {
     case ldr_cookie:
         fprintf(fp, " load_cookie\n");
+      break;
+    case gcall:
+       fprintf(fp, " gcall %d\n", stg_index);
+      break;
+    case call:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+       if ( name.empty() )
+         fprintf(fp, " call\n");
+       else
+         fprintf(fp, " call %s\n", name.c_str());
+      break;
       break;
     case load:
        if ( stg_index )
@@ -363,7 +377,18 @@ void path_item::dump() const
     case ldr_cookie:
         printf(" load_cookie\n");
       break;
-    case load: 
+    case gcall:
+        printf(" gcall %d\n", stg_index);
+      break;
+    case call:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+       if ( name.empty() )
+         printf(" call\n");
+       else
+         printf(" call in %s section\n", name.c_str());
+      break;
+    case load:
        if ( stg_index )
          printf(" stg%d", stg_index);
        if ( name.empty() )
@@ -846,15 +871,53 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         }
         // check for bl
         PBYTE caddr = NULL;
-        if ( is_bl_jimm(caddr) && iter->second.s->type == call_exp )
+        if ( is_bl_jimm(caddr) )
         {
-          const char *exp_func = get_exported(mz, caddr);
-          if ( exp_func == NULL )
-            continue;
-          if ( !strcmp(exp_func, iter->second.s->name.c_str()) )
-            iter->second.next(path);
-          else
-            break;
+          if ( iter->second.s->type == call_exp )
+          {
+            const char *exp_func = get_exported(mz, caddr);
+            if ( exp_func == NULL )
+              continue;
+            if ( !strcmp(exp_func, iter->second.s->name.c_str()) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+            } else
+              break;
+          } else if ( iter->second.s->type == gcall )
+          {
+            auto found = m_stg.find(iter->second.s->stg_index);
+            // if not found - perhaps it was not filled yet, try to continue
+            if ( found == m_stg.end() )
+              continue;
+            if ( found->second == (DWORD)(caddr - mz) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              // let assume that this address will be somewhere in next code
+              continue;
+          } else if ( iter->second.s->type == call )
+          {
+            if ( iter->second.s->name.empty() )
+            {
+              store_stg(iter->second.s->stg_index, caddr - mz);
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            }
+            // check that this is call of function in specified section
+            const one_section *s = m_pe->find_section_rva(caddr - mz);
+            if ( s == NULL )
+              continue;
+            if ( !strcmp(s->name, iter->second.s->name.c_str()) )
+            {
+              if ( iter->second.next(path) )
+                return 1;
+            } else
+              break;
+          }
           continue;
         }
         if ( is_br_reg() )
@@ -1500,7 +1563,7 @@ void deriv_hack::calc_rdata_count(path_edge &out_res)
     DWORD imm_size = sizeof(item.rconst);
     if ( item.type == ldr_guid )
       imm_size = sizeof(item.guid);
-    bm_search srch((const PBYTE)item.rconst, item.type);
+    bm_search srch((const PBYTE)item.rconst, imm_size);
     PBYTE curr = start;
     while ( curr < end )
     {
@@ -1508,7 +1571,7 @@ void deriv_hack::calc_rdata_count(path_edge &out_res)
       if ( NULL == fres )
         break;
       item.value_count++;
-      curr = fres + item.type;
+      curr = fres + imm_size;
     }
   }
 }
