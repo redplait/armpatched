@@ -695,6 +695,9 @@ struct path_state
 
 int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
 {
+  int has_stg = path.has_stg();
+  if ( has_stg )
+    m_stg_copy = m_stg; // backup storage
   const one_section *s = m_pe->find_section_by_name(path.symbol_section.c_str());
   if ( s == NULL )
   {
@@ -709,7 +712,10 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
       printf("cannot find exported function %s\n", xref.exported);
       return 0;
     }
-    return try_apply(s, m_pe->base_addr() + exp->rva, path, found);
+    int res = try_apply(s, m_pe->base_addr() + exp->rva, path, found);
+    if ( !res && has_stg )
+      m_stg = m_stg_copy; // restore storage
+    return res;
   } else if ( xref.stg_index )
   {
     auto value = m_stg.find(xref.stg_index);
@@ -718,7 +724,10 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
       printf("cannot find stored value %d\n", xref.stg_index);
       return 0;
     }
-    return try_apply(s, m_pe->base_addr() + value->second, path, found);
+    int res = try_apply(s, m_pe->base_addr() + value->second, path, found);
+    if ( !res && has_stg )
+      m_stg = m_stg_copy; // restore storage
+    return res;
   } else {
     const one_section *cs = m_pe->find_section_by_name(xref.section_name.c_str());
     if ( cs == NULL )
@@ -786,6 +795,8 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
           cached_funcs.insert(func);
           if ( try_apply(s, func, path, found) )
             return 1;
+          if ( has_stg )
+            m_stg = m_stg_copy; // restore storage
         }
       }
       return 0;
@@ -819,6 +830,8 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
         continue;
       if ( try_apply(s, func, path, found) )
         return 1;
+      if ( has_stg )
+        m_stg = m_stg_copy; // restore storage
     }
   }
   return 0;

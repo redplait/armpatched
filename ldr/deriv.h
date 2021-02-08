@@ -224,6 +224,7 @@ class deriv_hack: public iat_mod
     void store_stg(DWORD index, DWORD value);
     // global storage
     std::map<DWORD, DWORD> m_stg;
+    std::map<DWORD, DWORD> m_stg_copy;
 };
 
 // set of test files
