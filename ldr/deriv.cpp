@@ -230,6 +230,10 @@ bool path_item::operator==(const path_item &other) const
     case ldr_guid:
       return !memcmp(guid, other.guid, sizeof(guid));
 
+    case ldrx:
+    case addx:
+      return (reg_index == other.reg_index) && (stg_index == other.stg_index);
+
     case call_dimp:
     case call_imp:
     case call_exp:

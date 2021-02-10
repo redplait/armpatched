@@ -80,6 +80,8 @@ typedef enum
   call_icall, // call load_config.GuardCFCheckFunctionPointer
   ldr_rdata,  // load 8 byte constant from .rdata section
   ldr_guid,   // almost the same as ldr_rdata but for GUID in "guid" field
+  ldrx,       // ldr regXX, reg, imm, index of register in reg_index
+  addx,       // add regXX, reg, imm, index of register in reg_index
 } path_item_type;
 
 struct path_item
@@ -94,6 +96,7 @@ struct path_item
   };
   DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata/ldr_guid
   DWORD stg_index;
+  int reg_index;
   std::string name; // for call_imp/call_exp
 
   // constructors

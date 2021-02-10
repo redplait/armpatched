@@ -1,0 +1,49 @@
+# see http://redplait.blogspot.com/2021/02/fsm-rules-syntax.html#more for details
+# FsRtlpHeatRegisterVolume - located in PAGE section
+section .data
+fsection PAGE
+call_exp ExAcquireResourceExclusiveLite
+# MS_StorageTiering_Provider_Context - store in index 2
+stg2 load
+# MS_StorageTiering_Provider
+guid FC 55 0C 99 62 26 F6 47 B7 D7 EB 3C 02 7C B1 3F
+stg1 call
+
+# IoInitSystemPreDrivers - located in INIT section
+section .data
+fsection INIT
+call_imp ExpInitializeStateSeparationPhase0
+# IoTraceHandle - store in index 3
+stg3 load
+# IoTraceProvider
+guid BD CA 03 A1 42 82 93 4A 8D F5 1C DF 3B 3F 26 A6
+call_exp EtwRegister
+# IoMgrProvider_Context - store in index 4
+stg4 load
+# IoMgrProvider
+guid 86 F5 F1 AB 50 2E A8 4B 92 8D 49 04 4E 6F 0D B7
+# call to MS_StorageTiering_Provider - stored in first rule with index 1
+gcall 1
+
+# PnpDiagInitialize - located in INIT section
+section .data
+fsection INIT
+# MS_KernelPnP_Provider_Context - store in index 5
+stg5 load
+# MS_KernelPnP_Provider
+guid 39 5A 20 9C 50 12 7D 48 AB D7 E8 31 C6 29 05 39
+# call to MS_StorageTiering_Provider - stored in first rule with index 1
+gcall 1
+
+# on kernel versions like 18362 IoMgrTraceHandle registered with EtwRegister and no IoMgrProvider_Context
+# IoInitSystemPreDrivers on old kernel
+section .data
+fsection INIT
+call_imp ExpInitializeStateSeparationPhase0
+stg3 load
+guid BD CA 03 A1 42 82 93 4A 8D F5 1C DF 3B 3F 26 A6
+call_exp EtwRegister
+# IoMgrTraceHandle - store in index 6
+stg6 load
+guid 86 F5 F1 AB 50 2E A8 4B 92 8D 49 04 4E 6F 0D B7
+call_exp EtwRegister
