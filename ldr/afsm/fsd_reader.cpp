@@ -473,6 +473,32 @@ int fsm_reader::parse(path_edge &path)
     }
     NEXT
   }
+  // ldrx - 4
+  if ( !strncmp(curr, "ldrx", 4) )
+  {
+    SLIST
+    item.type = ldrx;
+    item.name.clear();
+    item.stg_index = stg_index;
+    item.reg_index = -1;
+    curr = trim_left(curr + 4);
+    if ( *curr )
+      item.reg_index = atoi(curr);
+    NEXT
+  }
+  // addx - 4
+  if ( !strncmp(curr, "addx", 4) )
+  {
+    SLIST
+    item.type = addx;
+    item.name.clear();
+    item.stg_index = stg_index;
+    item.reg_index = -1;
+    curr = trim_left(curr + 4);
+    if ( *curr )
+      item.reg_index = atoi(curr);
+    NEXT
+  }
   fprintf(stderr, "cannot parse %s at line %d\n", curr, m_line);
   return -2;
 }

@@ -368,6 +368,22 @@ void path_item::pod_dump(FILE *fp) const
     case call_icall:
         fprintf(fp, " call_icall\n");
        break;
+    case ldrx:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+       if ( -1 == reg_index )
+         fprintf(fp, " ldrx\n");
+       else
+         fprintf(fp, " ldrx %d\n", reg_index);
+       break;
+    case addx:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+       if ( -1 == reg_index )
+         fprintf(fp, " addx\n");
+       else
+         fprintf(fp, " addx %d\n", reg_index);
+       break;
     default:
         fprintf(fp, " unknown type %d\n", type);
   }  
@@ -493,6 +509,22 @@ void path_item::dump() const
        break;
     case call_icall:
         printf(" call_icall\n");
+       break;
+    case ldrx:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+       if ( -1 == reg_index )
+         printf(" ldrx\n");
+       else
+         printf(" ldrx %d\n", reg_index);
+       break;
+    case addx:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+       if ( -1 == reg_index )
+         printf(" addx\n");
+       else
+         printf(" addx %d\n", reg_index);
        break;
     default:
         printf(" unknown type %d\n", type);
@@ -982,6 +1014,15 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_add() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == addx )
+          {
+            if ( (iter->second.s->reg_index != -1) && (get_reg(0) != iter->second.s->reg_index) )
+              continue;
+            store_stg(iter->second.s->stg_index, (DWORD)m_dis.operands[2].op_imm.bits);
+            if ( iter->second.next(path) )
+              return 1;
+            continue;
+          }
           // check constant in .rdata
           if ( r != NULL && (iter->second.s->type == ldr_rdata) )
           {
@@ -1057,6 +1098,15 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldr() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == ldrx )
+          {
+            if ( (iter->second.s->reg_index != -1) && (get_reg(0) != iter->second.s->reg_index) )
+              continue;
+            store_stg(iter->second.s->stg_index, (DWORD)m_dis.operands[2].op_imm.bits);
+            if ( iter->second.next(path) )
+              return 1;
+            continue;
+          }
           if ( iter->second.s->type == gload )
           {
             auto found = m_stg.find(iter->second.s->stg_index);
