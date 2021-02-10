@@ -1,0 +1,32 @@
+# find some etw offsets in kernel - like
+#  ESERVERSILO_GLOBALS.EtwSiloState - in index 2
+#  ETW_GUID_ENTRY.Lock - in index 6
+#  ETW_GUID_ENTRY.Guid - in index 7
+# start from exported EtwRegister
+section .data
+func EtwRegister
+# store PsGetCurrentServerSiloGlobals
+stg1 call
+# store ESERVERSILO_GLOBALS.EtwSiloState offset
+stg2 ldrx0
+# store EtwpRegisterProvider
+stg3 call
+
+# now disasm EtwpRegisterProvider
+section .data
+sfunc 3
+call_exp memcmp
+# store EtwpFindGuidEntryByGuid
+stg4 call
+# store EtwpAddGuidEntry
+stg5 call
+# store ETW_GUID_ENTRY.Lock
+stg6 addx0
+call_exp ExAcquirePushLockExclusiveEx
+
+# from EtwpFindGuidEntryByGuid get ETW_GUID_ENTRY.Guid offset
+section .data
+sfunc 4
+call_exp ExAcquirePushLockSharedEx
+stg7 addx1
+call_exp memcmp
