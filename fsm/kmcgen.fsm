@@ -40,10 +40,13 @@ gcall 1
 section .data
 fsection INIT
 call_imp ExpInitializeStateSeparationPhase0
+# IoTraceHandle - store in index 3
 stg3 load
+# IoTraceProvider
 guid BD CA 03 A1 42 82 93 4A 8D F5 1C DF 3B 3F 26 A6
 call_exp EtwRegister
 # IoMgrTraceHandle - store in index 6
 stg6 load
+# IoMgrProvider
 guid 86 F5 F1 AB 50 2E A8 4B 92 8D 49 04 4E 6F 0D B7
 call_exp EtwRegister
