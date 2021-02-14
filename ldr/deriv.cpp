@@ -230,6 +230,7 @@ bool path_item::operator==(const path_item &other) const
     case ldr_guid:
       return !memcmp(guid, other.guid, sizeof(guid));
 
+    case movx:
     case ldrx:
     case addx:
       return (reg_index == other.reg_index) && (stg_index == other.stg_index);
@@ -384,6 +385,14 @@ void path_item::pod_dump(FILE *fp) const
        else
          fprintf(fp, " addx %d\n", reg_index);
        break;
+    case movx:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+       if ( -1 == reg_index )
+         fprintf(fp, " movx\n");
+       else
+         fprintf(fp, " movx %d\n", reg_index);
+       break;  
     default:
         fprintf(fp, " unknown type %d\n", type);
   }  
@@ -525,6 +534,14 @@ void path_item::dump() const
          printf(" addx\n");
        else
          printf(" addx %d\n", reg_index);
+       break;
+    case movx:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+       if ( -1 == reg_index )
+         printf(" movx\n");
+       else
+         printf(" movx %d\n", reg_index);
        break;
     default:
         printf(" unknown type %d\n", type);
@@ -1009,6 +1026,16 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               iter->second.next(path);
           }
           continue;
+        }
+        // mov reg, imm
+        if ( is_mov_rimm() && iter->second.s->type == movx )
+        {
+           if ( (iter->second.s->reg_index != -1) && (get_reg(0) != iter->second.s->reg_index) )
+             continue;
+           store_stg(iter->second.s->stg_index, (DWORD)m_dis.operands[1].op_imm.bits);
+           if ( iter->second.next(path) )
+             return 1;
+           continue;
         }
         // and now different variants of xref
         if ( is_add() )

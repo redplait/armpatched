@@ -499,6 +499,19 @@ int fsm_reader::parse(path_edge &path)
       item.reg_index = atoi(curr);
     NEXT
   }
+  // movx - 4
+  if ( !strncmp(curr, "movx", 4) )
+  {
+    SLIST
+    item.type = movx;
+    item.name.clear();
+    item.stg_index = stg_index;
+    item.reg_index = -1;
+    curr = trim_left(curr + 4);
+    if ( *curr )
+      item.reg_index = atoi(curr);
+    NEXT
+  }
   fprintf(stderr, "cannot parse %s at line %d\n", curr, m_line);
   return -2;
 }
