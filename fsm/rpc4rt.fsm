@@ -1,0 +1,52 @@
+# fsm to extract RPC_SERVER_T and some fields offsets
+# see http://redplait.blogspot.com/2017/11/how-to-find-rpcrt4globalrpcserver.html for x86
+section .data
+func I_RpcServerRegisterForwardFunction
+# 1 - RpcHasBeenInitialized
+stg1 load
+# 2 - GlobalRpcServer
+stg2 load
+# 3 - ForwardFunction offset
+stg3 strx
+
+# InitializeRpcServer
+section .data
+fsection .text
+# size of RPC_SERVER_T - 1st arg to AllocWrapper, stored with index 4
+stg4 movx0
+# AllocWrapper
+call
+# store to GlobalRpcServer
+gstore 2
+# x0 - offset to critical section, stored with index 5
+stg5 addx0
+call_imp RtlInitializeCriticalSectionAndSpinCount
+# wait call_imp GetTickCount
+guid 60 00 00 00 80 BD A8 AF  8A 7D C9 11 BE F4 08 00
+call .text
+# 6 - GlobalManagementInterface
+stg6 store
+call_imp RtlEnterCriticalSection
+
+# stop event offset - from RpcMgmtStopServerListening
+section .data
+func RpcMgmtStopServerListening
+gload 1
+gload 2
+# 7 - offset to stop event, 1st arg to SetEvent
+stg7 ldrx0
+call_imp SetEvent
+
+# mcgen contexts
+section .data
+fsection .text
+wait call_imp WinSqmIsOptedIn
+# RpcEtwGuid_Context - in storage with index 8
+stg8 load
+guid 32 2B D5 6A 09 D6 E9 4B AE 07 CE 8D AE 93 7E 39
+# call to McGenEventRegister - in storage with index 9
+stg9 call
+# RpcLegacyEvents_Context - in storage with index 10
+stg10 load
+guid C7 D7 AE F4 98 A8 27 46 B0 53 44 A7 CA A1 2F CD
+gcall 9
