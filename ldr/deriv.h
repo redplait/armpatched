@@ -97,8 +97,10 @@ struct path_item
     BYTE  guid[16];  // for ldr_guid
   };
   DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata/ldr_guid
-  DWORD stg_index;
   int reg_index;
+  // attributes
+  DWORD stg_index;
+  int wait_for;
   std::string name; // for call_imp/call_exp
 
   // constructors

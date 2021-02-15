@@ -66,24 +66,38 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
 }
 
 #define NEXT    curr = NULL; return 0;
-#define SLIST   if ( m_state == 3 ) { path.list.push_back(item); } m_state = 3;
+#define SLIST   if ( m_state == 3 ) { path.list.push_back(item); } m_state = 3; item.wait_for = wait_for;
 
 
 int fsm_reader::parse(path_edge &path)
 {
   DWORD stg_index = 0;
-  // check for prefix stg - 3
-  if ( !strncmp(curr, "stg", 3) )
+  int wait_for = 0;
+  // read prefixes
+  while ( *curr )
   {
-    curr = trim_left(curr + 3);
-    char *end = NULL;
-    stg_index = strtoul(curr, &end, 10);
-    if ( !stg_index )
+    // stg - 3
+    if ( !strncmp(curr, "stg", 3) )
     {
-      fprintf(stderr, "zero stg index at line %d\n", m_line);
-      return -2;
+      curr = trim_left(curr + 3);
+      char *end = NULL;
+      stg_index = strtoul(curr, &end, 10);
+      if ( !stg_index )
+      {
+        fprintf(stderr, "zero stg index at line %d\n", m_line);
+        return -2;
+      }
+      curr = trim_left(end);
+      continue;
     }
-    curr = trim_left(end);
+    // wait - 4
+    if ( !strncmp(curr, "wait", 4) )
+    {
+      wait_for = 1;
+      curr = trim_left(curr + 4);
+      continue;
+    }
+    break;
   }
   // section - 7
   if ( !strncmp(curr, "section", 7) )

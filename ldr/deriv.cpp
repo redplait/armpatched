@@ -239,7 +239,7 @@ bool path_item::operator==(const path_item &other) const
     case call_dimp:
     case call_imp:
     case call_exp:
-      return name == other.name;
+      return (name == other.name) && (wait_for == other.wait_for);
   }
   return false;
 }
@@ -410,6 +410,8 @@ void path_item::pod_dump(FILE *fp) const
 void path_item::dump() const
 {
   printf(" RVA %X", rva);
+  if ( wait_for )
+    printf(" wait");
   switch(type)
   {
     case ldr_cookie:
@@ -907,6 +909,8 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
   return 0;
 }
 
+#define CHECK_WAIT { if ( !iter->second.s->wait_for ) break; continue; }
+
 int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWORD &found)
 {
   PBYTE mz = m_pe->base_addr();
@@ -966,7 +970,7 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               if ( iter->second.next(path) )
                 return 1;
             } else
-              break;
+              CHECK_WAIT
           } else if ( iter->second.s->type == gcall )
           {
             auto found = m_stg.find(iter->second.s->stg_index);
@@ -999,7 +1003,7 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               if ( iter->second.next(path) )
                 return 1;
             } else
-              break;
+              CHECK_WAIT
           }
           continue;
         }
@@ -1030,7 +1034,7 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
                 return 1;
               continue;
             } else
-              break;
+              CHECK_WAIT
           } else if ( iter->second.s->type == call_dimp )
           {
             const char *name = get_diat_func(what);
@@ -1042,7 +1046,7 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
                 return 1;
               continue;
             } else
-              break;
+              CHECK_WAIT
           } else if ( iter->second.s->type == call_icall )
           {
             if ( what == m_GuardCFCheckFunctionPointer )
