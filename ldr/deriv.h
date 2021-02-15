@@ -81,6 +81,7 @@ typedef enum
   ldr_rdata,  // load 8 byte constant from .rdata section
   ldr_guid,   // almost the same as ldr_rdata but for GUID in "guid" field
   ldrx,       // ldr regXX, reg, imm. index of register in reg_index
+  strx,       // str regXX, reg, imm. index of register in reg_index
   addx,       // add regXX, reg, imm. index of register in reg_index
   movx,       // mov regXX, imm. index of register in reg_index
 } path_item_type;
