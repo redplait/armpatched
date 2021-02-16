@@ -17,8 +17,6 @@ int pod_serialize::save(const found_xref &what, const path_edge &edges)
     fprintf(m_fp, "fsection %s\n", what.section_name.c_str());
   // store edges
   std::for_each(edges.list.begin(), edges.list.end(), [&](const path_item &item) { item.pod_dump(m_fp); });
-  // last edge
-  edges.last.pod_dump(m_fp);
   fprintf(m_fp, "\n");
   return 1;
 }

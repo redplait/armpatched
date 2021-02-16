@@ -692,17 +692,15 @@ int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, 
   PBYTE mz = m_pe->base_addr();
   if ( pattern == what )
   {
-    edge.last.type = t;
-    edge.last.rva = m_psp - mz;
+    path_item tmp(t, m_psp - mz);
+    edge.list.push_back(tmp);
     return 1;
   }
   // check if this symbol is exported
   const char *exp_func = get_exported(mz, what);
   if ( exp_func != NULL )
   {
-    path_item tmp;
-    tmp.rva = m_psp - mz;
-    tmp.type = t;
+    path_item tmp(t, m_psp - mz);
     tmp.name = exp_func;
     edge.list.push_back(tmp);
     return 0;
@@ -710,9 +708,7 @@ int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, 
   // check for security_cookie
   if ( gUseLC && what == m_cookie )
   {
-    path_item tmp;
-    tmp.type = ldr_cookie;
-    tmp.rva = m_psp - mz;
+    path_item tmp(ldr_cookie, m_psp - mz);
     edge.list.push_back(tmp);
     return 0;
   }
@@ -721,9 +717,7 @@ int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, 
     return 0;
   if ( other != s )
     return 0;
-  path_item tmp;
-  tmp.type = t;
-  tmp.rva = m_psp - mz;
+  path_item tmp(t, m_psp - mz);
   edge.list.push_back(tmp);
   return 0;
 }
@@ -743,7 +737,6 @@ struct path_state
   std::list<path_item>::const_iterator iter;
   const path_item *s;
   int n;
-  int last;
 
   bool operator<(const path_state& s) const
   {
@@ -751,13 +744,8 @@ struct path_state
   }
   int next(path_edge &path)
   {
-    if ( last )
-      return 1;
     if ( ++iter == path.list.cend() )
-    {
-      s = &path.last;
-      last = 1;
-    }
+      return 1;
     else
       s = &(*iter);
     n++;
@@ -917,9 +905,10 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
   const one_section *r = m_pe->find_section_by_name(".rdata");
   statefull_graph<PBYTE, path_state> cgraph;
   std::list<std::pair<PBYTE, path_state> > addr_list;
-  int is_empty = path.list.empty();
+  if ( path.list.empty() )
+    return 0;
   auto citer = path.list.cbegin();
-  path_state state { citer, is_empty ? &path.last : &(*citer), 0, is_empty ? 1 : 0 };
+  path_state state { citer, &(*citer) };
   auto curr = std::make_pair(psp, state);
   addr_list.push_back(curr);
   int edge_gen = 0;
@@ -1485,10 +1474,8 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           const char *exp_func = get_exported(mz, caddr);
           if ( exp_func != NULL )
           {
-            path_item tmp;
-            tmp.rva = m_psp - mz;
+            path_item tmp(call_exp, m_psp - mz);
             tmp.name = exp_func;
-            tmp.type = call_exp;
             iter->second.list.push_back(tmp);
           }
           continue;
@@ -1512,17 +1499,13 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           const char *name = get_iat_func(what);
           if ( name != NULL )
           {
-            path_item tmp;
-            tmp.rva = m_psp - mz;
+            path_item tmp(call_imp, m_psp - mz);
             tmp.name = name;
-            tmp.type = call_imp;
             iter->second.list.push_back(tmp);
             continue;
           } else if ( gUseLC && what == m_GuardCFCheckFunctionPointer )
           {
-            path_item tmp;
-            tmp.rva = m_psp - mz;
-            tmp.type = call_icall;
+            path_item tmp(call_icall, m_psp - mz);
             iter->second.list.push_back(tmp);
             continue;
           }
@@ -1530,10 +1513,8 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           name = get_diat_func(what);
           if ( name != NULL )
           {
-            path_item tmp;
-            tmp.rva = m_psp - mz;
+            path_item tmp(call_dimp, m_psp - mz);
             tmp.name = name;
-            tmp.type = call_dimp;
             iter->second.list.push_back(tmp);
           }
           continue;
@@ -1546,13 +1527,10 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           if ( r != NULL && gUseRData && !is_inside_IAT(what) )
           {
             ptrdiff_t rva = what - mz;
-            path_item tmp;
             if ( rva >= r->va &&
-                 rva + sizeof(tmp.rconst) <= (r->va + r->size) )
+                 rva + sizeof(path_item::rconst) <= (r->va + r->size) )
             {
-              tmp.rva = m_psp - mz;
-              tmp.type = ldr_rdata;
-              tmp.value_count = 0;
+              path_item tmp(ldr_rdata, m_psp - mz);
               memcpy(tmp.rconst, what, sizeof(tmp.rconst));
               iter->second.list.push_back(tmp);
               continue;

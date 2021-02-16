@@ -15,7 +15,6 @@ void dump_edge(const path_edge &edges)
 {
   for ( const auto &edge: edges.list )
     edge.dump();
-  edges.last.dump();
 }
 
 void usage(const wchar_t *progname)

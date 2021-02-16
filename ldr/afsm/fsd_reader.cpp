@@ -31,7 +31,7 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
        {
          if ( m_state >= 2 )
          {
-           path.last = item;
+           path.list.push_back(item);
            m_state = 0;
            return 1;
          }
@@ -58,7 +58,7 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
       return res;
     if ( res == 1 )
     {
-       path.last = item;
+       path.list.push_back(item);
        return 1;
     }
   }

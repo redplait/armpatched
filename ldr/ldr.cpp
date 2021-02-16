@@ -104,7 +104,6 @@ void dump_edge(const path_edge &edges)
 {
   for ( const auto &edge: edges.list )
     edge.dump();
-  edges.last.dump();
 }
 
 int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xrefs)

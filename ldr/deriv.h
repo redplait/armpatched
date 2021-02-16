@@ -105,6 +105,15 @@ struct path_item
 
   // constructors
   path_item() = default;
+  path_item(path_item_type t, DWORD arva)
+  {
+    type = t;
+    rva = arva;
+    reg_index = 0;
+    value_count = 0;
+    stg_index = 0;
+    wait_for = 0;
+  }
   template <typename T>
   path_item(std::initializer_list<T> l)
   {
@@ -113,6 +122,8 @@ struct path_item
     else
       type = ldr_rdata;
     value_count = 0;
+    stg_index = 0;
+    wait_for = 0;
     size_t i;
     for ( i = 0; i < _countof(rconst); i++ )
       rconst[i] = 0;
@@ -129,6 +140,9 @@ struct path_item
     type = ldr_off;
     value_count = 0;
     value = val;
+    reg_index = 0;
+    stg_index = 0;
+    wait_for = 0;
   }
 
   void reset();
@@ -143,15 +157,12 @@ class path_edge
   public:
    std::string symbol_section;
    std::list<path_item> list;
-   path_item last;
    bool operator<(const path_edge& s) const
    {
      return list.size() < s.list.size();
    }
    bool operator==(const path_edge &other) const
    {
-     if ( !(last == other.last) )
-       return false;
      if ( list.size() != other.list.size() )
        return false;
      // compare lists
@@ -169,17 +180,12 @@ class path_edge
    int has_rconst_count(int below) const;
    int has_stg() const
    {
-     int res = std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return item.stg_index != 0; });
-     if ( res )
-       return res;
-     // check last
-     return last.stg_index != 0;
+     return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return item.stg_index != 0; });
    }
    int can_reduce() const;
    int reduce();
    void reset()
    {
-     last.reset();
      std::for_each(list.begin(), list.end(), [](path_item &item){ item.reset(); });
    }
    const path_item *get_best_const() const;
