@@ -11,7 +11,7 @@ stg1 load
 # CoSetAsyncCallCancelListenerTestHook - ordinal 141
 section .data
 func ord141
-# just store - index 3
+# just store - index 2
 stg2 store
 
 # SetRuntimeBrokerActivationTestHook - ordinal 171
