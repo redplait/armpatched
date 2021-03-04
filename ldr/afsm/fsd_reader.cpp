@@ -212,7 +212,7 @@ int fsm_reader::parse(path_edge &path)
     item.name = curr;
     NEXT
   }
-  // call_imp - 8
+  // call_exp - 8
   if ( !strncmp(curr, "call_exp", 8) )
   {
     SLIST
@@ -224,6 +224,13 @@ int fsm_reader::parse(path_edge &path)
     }
     item.type = call_exp;
     item.name = curr;
+    NEXT
+  }
+  // call_icall - 9
+  if ( !strncmp(curr, "call_icall", 9) )
+  {
+    SLIST
+    item.type = call_icall;
     NEXT
   }
   // call - 4

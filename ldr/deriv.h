@@ -16,6 +16,12 @@ struct found_xref
   {
     return (exported != NULL) || exported_ord;
   }
+  int ord_prefix() const
+  {
+    if ( exported == NULL )
+      return 0;
+     return (exported[0] == 'o') && (exported[1] == 'r') && (exported[2] == 'd');
+  }
 };
 
 class funcs_holder_cmn

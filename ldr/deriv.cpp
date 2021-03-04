@@ -778,7 +778,7 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
       }
     } else {
        exp = m_ed->find(xref.exported);
-       if ( (exp == NULL) && (xref.exported[0] == 'o') && (xref.exported[1] == 'r') && (xref.exported[1] == 'd') )
+       if ( (exp == NULL) && xref.ord_prefix() )
        {
          exp = m_ed->find(atoi(xref.exported + 3));
          if ( exp != NULL && exp->name != NULL )
@@ -1664,13 +1664,23 @@ end:
 
 void deriv_hack::prepare(found_xref &xref, path_edge &out_res)
 {
-  if ( xref.exported == NULL )
+  if ( !xref.is_exported() )
     calc_const_count_in_section(xref.section_name.c_str(), out_res);
   else {
-    const export_item *exp = m_ed->find(xref.exported);
+    const export_item *exp = NULL;
+    if ( xref.exported == NULL )
+      exp = m_ed->find(xref.exported_ord);
+    else {
+      exp = m_ed->find(xref.exported);
+      if ( exp == NULL && xref.ord_prefix() )
+        exp = m_ed->find(atoi(xref.exported + 3));
+    }
     if ( exp == NULL )
     {
-      printf("cannot find function %s\n", xref.exported);
+      if ( xref.exported == NULL )
+        printf("cannot find function with ordinal %d\n", xref.exported_ord);
+      else
+        printf("cannot find function %s\n", xref.exported);
       return;
     }
     PBYTE mz = m_pe->base_addr();
