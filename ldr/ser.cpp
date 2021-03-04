@@ -11,9 +11,13 @@ int pod_serialize::save(const found_xref &what, const path_edge &edges)
     return 0;
   }
   fprintf(m_fp, "section %s\n", edges.symbol_section.c_str());
-  if ( what.exported != NULL )
-    fprintf(m_fp, "func %s\n", what.exported);
-  else
+  if ( what.is_exported() )
+  {
+    if ( what.exported != NULL )
+      fprintf(m_fp, "func %s\n", what.exported);
+    else
+      fprintf(m_fp, "func ord%d\n", what.exported_ord);
+  } else
     fprintf(m_fp, "fsection %s\n", what.section_name.c_str());
   // store edges
   std::for_each(edges.list.begin(), edges.list.end(), [&](const path_item &item) { item.pod_dump(m_fp); });

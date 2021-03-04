@@ -682,9 +682,10 @@ void deriv_hack::check_exported(PBYTE mz, found_xref &item) const
   const export_item *ei = m_ed->find_exact(rva);
   if ( ei == NULL )
     return;
-  if ( ei->name == NULL )
-    return;
-  item.exported = ei->name;
+  if ( ei->name != NULL )
+    item.exported = ei->name;
+  else
+    item.exported_ord = ei->ordinal;
 }
 
 int deriv_hack::store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge)
@@ -764,12 +765,35 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
     printf("cannot find section %s\n", path.symbol_section.c_str());
     return 0;
   }
-  if ( xref.exported != NULL )
+  if ( xref.is_exported() )
   {
-    const export_item *exp = m_ed->find(xref.exported);
+    const export_item *exp = NULL;
+    if ( xref.exported == NULL )
+    {
+      exp = m_ed->find(xref.exported_ord);
+      if ( exp != NULL && exp->name != NULL )
+      {
+        printf("exported function with ordinal %d has name %s\n", xref.exported_ord, exp->name);
+        return 0;
+      }
+    } else {
+       exp = m_ed->find(xref.exported);
+       if ( (exp == NULL) && (xref.exported[0] == 'o') && (xref.exported[1] == 'r') && (xref.exported[1] == 'd') )
+       {
+         exp = m_ed->find(atoi(xref.exported + 3));
+         if ( exp != NULL && exp->name != NULL )
+         {
+           printf("exported function with ordinal %d has name %s\n", xref.exported_ord, exp->name);
+           return 0;
+         }
+       }
+    }
     if ( exp == NULL )
     {
-      printf("cannot find exported function %s\n", xref.exported);
+      if ( xref.exported == NULL )
+        printf("cannot find exported function with ordinal %d\n", xref.exported_ord);
+      else
+        printf("cannot find exported function %s\n", xref.exported);
       return 0;
     }
     int res = try_apply(s, m_pe->base_addr() + exp->rva, path, found);
@@ -1833,7 +1857,7 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
   {
     if ( disasm_one_func(mz + first->off, mz + rva, f) )
     {
-      found_xref tmp { mz + first->off, 0 };
+      found_xref tmp { mz + first->off, NULL, 0 };
       tmp.in_fids_table = find_in_fids_table(mz, mz + first->off);
       tmp.stg_index = 0;
       check_exported(mz, tmp);
@@ -1851,7 +1875,7 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
     {
       if ( disasm_one_func(c, mz + rva, f) )
       {
-        found_xref tmp { c, 0 };
+        found_xref tmp { c, NULL, 0 };
         tmp.in_fids_table = find_in_fids_table(mz, c);
         tmp.stg_index = 0;
         check_exported(mz, tmp);

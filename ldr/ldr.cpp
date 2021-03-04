@@ -118,9 +118,13 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
   }
   for ( auto &x: xrefs )
   {
-     if ( x.exported != NULL )
-        printf("found at %p - %s\n", PVOID(x.pfunc - mz), x.exported);
-     else
+     if ( x.is_exported() )
+     {
+        if ( x.exported != NULL )
+          printf("found at %p - %s\n", PVOID(x.pfunc - mz), x.exported);
+        else
+          printf("found at %p - ord%d\n", PVOID(x.pfunc - mz), x.exported_ord);
+     } else
      {
         if ( x.section_name.empty() )
         {
@@ -140,7 +144,7 @@ int derive_edges(DWORD rva, PBYTE mz, deriv_hack *der, std::list<found_xref> &xr
      if ( der->make_path(rva, x.pfunc, edges) )
      {
         dump_edge(edges);
-        if ( x.exported != NULL )
+        if ( x.is_exported() )
         {
           if (edges.reduce())
           {

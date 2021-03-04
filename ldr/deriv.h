@@ -7,9 +7,15 @@ struct found_xref
 {
   PBYTE pfunc;
   const char *exported; // in not exported - will be NULL
+  DWORD exported_ord;
   std::string section_name; // in which section this function located
   int in_fids_table;    // found function presents in load_config.GuardCFFunctionTable
   int stg_index;
+
+  int is_exported() const
+  {
+    return (exported != NULL) || exported_ord;
+  }
 };
 
 class funcs_holder_cmn
