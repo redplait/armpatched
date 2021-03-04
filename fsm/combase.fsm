@@ -1,0 +1,22 @@
+# try to find NSA "TestHooks" in combase.dll
+# CoSetContainerIdListenerTestHook - ordinal 142
+section .data
+func ord142
+call_icall
+# first loading is g_ContainerIdListenerTestHookLock
+load
+# next is our target - store it with index 1
+stg1 load
+
+# CoSetAsyncCallCancelListenerTestHook - ordinal 141
+section .data
+func ord141
+# just store - index 3
+stg2 store
+
+# SetRuntimeBrokerActivationTestHook - ordinal 171
+section .data
+func ord171
+call_icall
+# index 3
+stg3 load
