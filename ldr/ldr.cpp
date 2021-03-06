@@ -17,6 +17,7 @@ int gSE = 0;    // skip exported branches
 int gCMax = 3;
 int gUseLC = 0; // use data from load_config
 int gUseRData = 0; // use constants loading from .rdata section
+int gCE = 0;    // deriv from exported functions
 
 // and other global data
 serialize *gSer = NULL;
@@ -26,6 +27,7 @@ void usage(const wchar_t *progname)
   printf("%S: [options] arm64_pe file(s)\n", progname);
   printf("Options:\n");
   printf(" -c max const count\n");
+  printf(" -ce - deriv from exported functions\n");
   printf(" -dlc - dump load_config\n");
   printf(" -de - dump exports\n");
   printf(" -di - dump imports\n");
@@ -371,6 +373,11 @@ int wmain(int argc, wchar_t **argv)
      if ( !wcscmp(argv[i], L"-rd") )
      {
        gUseRData = 1;
+       continue;
+     }
+     if ( !wcscmp(argv[i], L"-ce") )
+     {
+       gCE = 1;
        continue;
      }
      if ( !wcscmp(argv[i], L"-se") )

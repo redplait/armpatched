@@ -234,6 +234,25 @@ class arm64_hack
    {
      return (m_pdata_rva != 0) && (m_pdata_size != 0);
    }
+   inline const struct export_item *get_exports(size_t &total) const
+   {
+     if ( m_ed == NULL )
+       return NULL;
+     total = m_ed->total();
+     return m_ed->items();
+   }
+   inline int in_executable_section(ptrdiff_t off) const
+   {
+     const one_section *s = m_pe->find_section_rva(off);
+     if ( NULL == s )
+       return 0;
+     return (s->flags & IMAGE_SCN_CNT_CODE) ||
+            (s->flags & IMAGE_SCN_MEM_EXECUTE);
+   }
+   inline int in_executable_section(PBYTE addr) const
+   {
+     return in_executable_section(addr - m_pe->base_addr());
+   }
   protected:
    void init_aux(const char *, PBYTE &aux);
    void fill_lc();
@@ -458,22 +477,16 @@ class arm64_hack
      used_regs->ldar(get_reg(0), get_reg(1));
      return 1;
    }
-   inline int in_section(PBYTE addr, const char *sname) const
+   inline int in_section(ptrdiff_t off, const char *sname) const
    {
-     ptrdiff_t off = addr - m_pe->base_addr();
      const one_section *s = m_pe->find_section_v(off);
      if ( NULL == s )
        return 0;
      return !strcmp(s->name, sname);
    }
-   inline int in_executable_section(PBYTE addr) const
+   inline int in_section(PBYTE addr, const char *sname) const
    {
-     ptrdiff_t off = addr - m_pe->base_addr();
-     const one_section *s = m_pe->find_section_rva(off);
-     if ( NULL == s )
-       return 0;
-     return (s->flags & IMAGE_SCN_CNT_CODE) ||
-            (s->flags & IMAGE_SCN_MEM_EXECUTE);
+     return in_section(addr - m_pe->base_addr(), sname);
    }
    void adjust_pdata();
    PBYTE find_pdata(PBYTE);

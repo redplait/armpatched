@@ -3,7 +3,7 @@
 #include "bm_search.h"
 #include "deriv.h"
 
-extern int gSE;
+extern int gSE, gCE;
 extern int gUseLC;
 extern int gUseRData;
 
@@ -567,6 +567,13 @@ void path_item::dump() const
   }
 }
 
+int funcs_holder_ts::is_processed(PBYTE addr)
+{
+  const std::lock_guard<std::mutex> lock(m_mutex);
+  auto already = m_processed.find(addr);
+  return already != m_processed.end();
+}
+
 void funcs_holder_ts::add_processed(PBYTE addr)
 {
   const std::lock_guard<std::mutex> lock(m_mutex);
@@ -582,6 +589,12 @@ void funcs_holder_ts::add(PBYTE addr)
   if ( already != m_processed.end() )
     return;
   m_current.insert(addr);
+}
+
+int funcs_holder::is_processed(PBYTE addr)
+{
+  auto already = m_processed.find(addr);
+  return already != m_processed.end();
 }
 
 void funcs_holder::add_processed(PBYTE addr)
@@ -1855,25 +1868,56 @@ struct pdata_item
 
 int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
 {
-  if ( !has_pdata() )
-    return 0;
   PBYTE mz = m_pe->base_addr();
+  int with_pdata = has_pdata();
+  if ( !with_pdata )
+    gCE = 1;
   funcs_holder f(this);
   int res = 0;
-  // process pdata first
-  const pdata_item *first = (const pdata_item *)(mz + m_pdata_rva);
-  const pdata_item *last = (const pdata_item *)(mz + m_pdata_rva + m_pdata_size);
-  for ( ; first < last; first++ )
+  if ( with_pdata )
   {
-    if ( disasm_one_func(mz + first->off, mz + rva, f) )
+    // process pdata first
+    const pdata_item *first = (const pdata_item *)(mz + m_pdata_rva);
+    const pdata_item *last = (const pdata_item *)(mz + m_pdata_rva + m_pdata_size);
+    for ( ; first < last; first++ )
     {
-      found_xref tmp { mz + first->off, NULL, 0 };
-      tmp.in_fids_table = find_in_fids_table(mz, mz + first->off);
-      tmp.stg_index = 0;
-      check_exported(mz, tmp);
-      out_res.push_back(tmp);
-      res++;
+      if ( disasm_one_func(mz + first->off, mz + rva, f) )
+      {
+        found_xref tmp { mz + first->off, NULL, 0 };
+        tmp.in_fids_table = find_in_fids_table(mz, mz + first->off);
+        tmp.stg_index = 0;
+        check_exported(mz, tmp);
+        out_res.push_back(tmp);
+        res++;
+      }
     }
+  }
+  if ( gCE )
+  {
+     size_t exp_size = 0;
+     auto exports = get_exports(exp_size);
+     if ( exports != NULL ) 
+     {
+       for ( size_t exp_idx = 0; exp_idx < exp_size; exp_idx++ )
+       {
+         if ( exports[exp_idx].forwarded )
+           continue;
+         if ( !in_executable_section(exports[exp_idx].rva) )
+           continue;
+         // check if we already processed this function (I hope this is function)
+         if ( f.is_processed(mz + exports[exp_idx].rva) )
+           continue;
+         if ( disasm_one_func(mz + exports[exp_idx].rva, mz + rva, f) )
+         {
+           found_xref tmp { mz + exports[exp_idx].rva, NULL, 0 };
+           tmp.in_fids_table = find_in_fids_table(mz, mz + exports[exp_idx].rva);
+           tmp.stg_index = 0;
+           check_exported(mz, tmp);
+           out_res.push_back(tmp);
+           res++;
+         }
+       }
+     }
   }
   if ( f.empty() )
     return res;
@@ -1901,62 +1945,126 @@ int deriv_hack::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
 int deriv_pool::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
 {
   deriv_hack *d = get_first();
-  if ( !d->has_pdata() )
-    return 0;
+  int with_pdata = d->has_pdata();
   const PBYTE mz = d->base_addr();
+  if ( !with_pdata )
+    gCE = 1;
   funcs_holder_ts f(d);
   int res = 0;
-  DWORD pdata_rva = 0,
-        pdata_size = 0;
-  d->get_pdata(pdata_rva, pdata_size);
-  // process pdata first
-  const pdata_item *first = (const pdata_item *)(mz + pdata_rva);
-  const pdata_item *last = (const pdata_item *)(mz + pdata_rva + pdata_size);
   int tcsize = m_ders.size();
   std::vector<std::future<xref_res> > futures(tcsize);
-  DWORD i = 0;
-  for ( ; first < last; first++ )
+  if ( with_pdata )
   {
-    if ( i >= tcsize )
+    DWORD pdata_rva = 0,
+          pdata_size = 0;
+    d->get_pdata(pdata_rva, pdata_size);
+    // process pdata first
+    const pdata_item *first = (const pdata_item *)(mz + pdata_rva);
+    const pdata_item *last = (const pdata_item *)(mz + pdata_rva + pdata_size);
+    DWORD i = 0;
+    for ( ; first < last; first++ )
     {
-      // harvest results
-      for ( DWORD j = 0; j < tcsize; j++ )
+      if ( i >= tcsize )
       {
-        xref_res tres = futures[j].get();
-        if ( tres.res )
+        // harvest results
+        for ( DWORD j = 0; j < tcsize; j++ )
         {
-          res++;
-          out_res.push_back(tres.xref);
+          xref_res tres = futures[j].get();
+          if ( tres.res )
+          {
+            res++;
+            out_res.push_back(tres.xref);
+          }
         }
+        i = 0;
       }
-      i = 0;
+      // put new task
+      PBYTE addr = mz + first->off;
+      std::packaged_task<xref_res()> job([&, i, addr] {
+         xref_res task_res = { 0 };
+         task_res.res = m_ders[i]->disasm_one_func(addr, mz + rva, f);
+         if (task_res.res)
+         {
+           task_res.xref.pfunc = addr;
+           task_res.xref.in_fids_table = m_ders[i]->find_in_fids_table(mz, addr);
+           task_res.xref.stg_index = 0;
+           m_ders[i]->check_exported(mz, task_res.xref);
+         }
+         return task_res;
+        }
+      );
+      futures[i++] = std::move(m_tpool.add(job));
     }
-    // put new task
-    PBYTE addr = mz + first->off;
-    std::packaged_task<xref_res()> job([&, i, addr] {
-       xref_res task_res = { 0 };
-       task_res.res = m_ders[i]->disasm_one_func(addr, mz + rva, f);
-       if (task_res.res)
+    // collect remaining results
+    for ( DWORD j = 0; j < i; j++ )
+    {
+       xref_res tres = futures[j].get();
+       if ( tres.res )
        {
-         task_res.xref.pfunc = addr;
-         task_res.xref.in_fids_table = m_ders[i]->find_in_fids_table(mz, addr);
-         task_res.xref.stg_index = 0;
-         m_ders[i]->check_exported(mz, task_res.xref);
+         res++;
+         out_res.push_back(tres.xref);
        }
-       return task_res;
-      }
-    );
-    futures[i++] = std::move(m_tpool.add(job));
+    }
   }
-  // collect remaining results
-  for ( DWORD j = 0; j < i; j++ )
+  // exports
+  if ( gCE )
   {
-     xref_res tres = futures[j].get();
-     if ( tres.res )
+     size_t exp_size = 0;
+     auto exports = d->get_exports(exp_size);
+     if ( exports != NULL ) 
      {
-       res++;
-       out_res.push_back(tres.xref);
-     }
+       DWORD i = 0;
+       for ( size_t exp_idx = 0; exp_idx < exp_size; exp_idx++ )
+       {
+         if ( exports[exp_idx].forwarded )
+           continue;
+         if ( !d->in_executable_section(exports[exp_idx].rva) )
+           continue;
+         // check if we already processed this function (I hope this is function)
+         if ( f.is_processed(mz + exports[exp_idx].rva) )
+           continue;
+         if ( i >= tcsize )
+         {
+           // harvest results
+           for ( DWORD j = 0; j < tcsize; j++ )
+           {
+             xref_res tres = futures[j].get();
+             if ( tres.res )
+             {
+               res++;
+               out_res.push_back(tres.xref);
+             }
+           }
+           i = 0;
+         }
+         // put new task
+         PBYTE addr = mz + exports[exp_idx].rva;
+         std::packaged_task<xref_res()> job([&, i, addr] {
+            xref_res task_res = { 0 };
+            task_res.res = m_ders[i]->disasm_one_func(addr, mz + rva, f);
+            if (task_res.res)
+            {
+              task_res.xref.pfunc = addr;
+              task_res.xref.in_fids_table = m_ders[i]->find_in_fids_table(mz, addr);
+              task_res.xref.stg_index = 0;
+              m_ders[i]->check_exported(mz, task_res.xref);
+            }
+           return task_res;
+          }
+         );
+         futures[i++] = std::move(m_tpool.add(job));
+       }
+       // collect remaining results
+       for ( DWORD j = 0; j < i; j++ )
+       {
+          xref_res tres = futures[j].get();
+          if ( tres.res )
+          {
+            res++;
+            out_res.push_back(tres.xref);
+         }
+       }
+    }
   }
 
   if ( f.empty() )
@@ -1964,7 +2072,7 @@ int deriv_pool::find_xrefs(DWORD rva, std::list<found_xref> &out_res)
   std::set<PBYTE> current_set;
   while( f.exchange(current_set) )
   {
-    i = 0;
+    DWORD i = 0;
     for ( auto c : current_set )
     {
       if ( i >= tcsize )

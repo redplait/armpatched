@@ -6,6 +6,7 @@
 #include "fsd_reader.h"
 
 int gSE = 1;
+int gCE = 0;
 int gUseLC = 0;
 int gUseRData = 1;
 

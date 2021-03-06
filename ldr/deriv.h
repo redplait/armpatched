@@ -50,6 +50,7 @@ class funcs_holder: public funcs_holder_cmn
     void add(PBYTE);
     void add_processed(PBYTE);
     int exchange(std::set<PBYTE> &);
+    int is_processed(PBYTE);
 };
 
 // thread-safe version
@@ -63,6 +64,7 @@ class funcs_holder_ts: public funcs_holder_cmn
     void add(PBYTE);
     void add_processed(PBYTE);
     int exchange(std::set<PBYTE> &);
+    int is_processed(PBYTE);
   protected:
     std::mutex m_mutex;
 };
