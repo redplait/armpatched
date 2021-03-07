@@ -20,3 +20,39 @@ func ord171
 call_icall
 # s_RuntimeBrokerActivationTestHook - index 3
 stg3 load
+
+# CoVrfSetMockApplicationVerifierStop - ordinal 146
+section .data
+func ord146
+# gMockApplicationVerifierStop - store with index 4
+stg4 store
+
+# CoSuppressExceptionReporting - ordinal 150
+section .data
+func ord150
+# g_testSuppressExceptionReporting - store with index 5
+stg5 strb
+
+# CoSetInParameterMitigationTestMode - ordinal 123
+section .data
+func ord123
+# s_inParameterMitigationStatus - store with index 5
+stg5 store
+
+# CoSetInprocOutParameterMitigationTestMode - ordinal 124
+section .data
+func ord124
+# s_inprocOutParameterMitigationStatus - store with index 6
+stg6 store
+
+# CoSetOutofprocOutParameterMitigationTestMode - ordinal 125
+section .data
+func ord125
+# s_outofprocOutParameterMitigationStatus - store with index 7
+stg7 store
+
+# CoSetInprocDirectMarshalingMitigationTestMode - ordinal 126
+section .data
+func ord126
+# s_inprocDirectMarshalingMitigationStatus - store with index 8
+stg8 store
