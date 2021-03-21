@@ -17,7 +17,9 @@ int pod_serialize::save(const found_xref &what, const path_edge &edges)
       fprintf(m_fp, "func %s\n", what.exported);
     else
       fprintf(m_fp, "func ord%d\n", what.exported_ord);
-  } else
+  } else if ( !what.yara_rule.empty() )
+   fprintf(m_fp, "yfunc %s\n", what.yara_rule.c_str()); 
+  else
     fprintf(m_fp, "fsection %s\n", what.section_name.c_str());
   // store edges
   std::for_each(edges.list.begin(), edges.list.end(), [&](const path_item &item) { item.pod_dump(m_fp); });

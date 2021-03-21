@@ -778,7 +778,32 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
     printf("cannot find section %s\n", path.symbol_section.c_str());
     return 0;
   }
-  if ( xref.is_exported() )
+  if ( !xref.yara_rule.empty() )
+  {
+     const auto rules = yara_results.find(xref.yara_rule);
+     if ( rules == yara_results.cend() )
+     {
+       printf("cannot find results of yara rule %s\n", xref.yara_rule.c_str());
+       return 0;
+     }
+     std::set<PBYTE> cached_funcs;
+     for ( DWORD val: rules->second )
+     {
+       PBYTE func = find_pdata(m_pe->base_addr() + val);
+       if ( NULL == func )
+         continue;
+       // check in cache
+       auto already_processed = cached_funcs.find(func);
+       if ( already_processed != cached_funcs.end() )
+          continue;
+       cached_funcs.insert(func);
+       if ( try_apply(s, func, path, found) )
+          return 1;      
+     }
+     if ( has_stg )
+        m_stg = m_stg_copy; // restore storage
+     return 0;
+  } else if ( xref.is_exported() )
   {
     const export_item *exp = NULL;
     if ( xref.exported == NULL )
@@ -793,10 +818,11 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
        exp = m_ed->find(xref.exported);
        if ( (exp == NULL) && xref.ord_prefix() )
        {
-         exp = m_ed->find(atoi(xref.exported + 3));
+         int ord = atoi(xref.exported + 3);
+         exp = m_ed->find(ord);
          if ( exp != NULL && exp->name != NULL )
          {
-           printf("exported function with ordinal %d has name %s\n", xref.exported_ord, exp->name);
+           printf("exported function with ordinal %d has name %s\n", ord, exp->name);
            return 0;
          }
        }

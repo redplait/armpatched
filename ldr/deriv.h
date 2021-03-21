@@ -9,6 +9,7 @@ struct found_xref
   const char *exported; // in not exported - will be NULL
   DWORD exported_ord;
   std::string section_name; // in which section this function located
+  std::string yara_rule;
   int in_fids_table;    // found function presents in load_config.GuardCFFunctionTable
   int stg_index;
 
@@ -221,7 +222,7 @@ class deriv_hack: public iat_mod
     {
       m_ed = NULL;
     }
-    inline PBYTE base_addr()
+    inline PBYTE base_addr() const
     {
       return m_pe->base_addr();
     }
@@ -240,6 +241,8 @@ class deriv_hack: public iat_mod
     {
       return m_stg;
     }
+    // yara results
+    std::map<std::string, std::set<DWORD> > yara_results;
   protected:
     const char *get_exported(PBYTE mz, PBYTE) const;
     int store_op(path_item_type t, const one_section *s, PBYTE pattern, PBYTE what, path_edge &edge);

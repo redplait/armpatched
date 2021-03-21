@@ -306,6 +306,8 @@ class arm64_pe_file
    const one_section *find_section_rva(DWORD addr) const;
    // search in whole section content
    const one_section *find_section_v(DWORD addr) const;
+   // return list of executable sections
+   void get_exec_sections(std::list<one_section> &out_list) const;
    // exports
    exports_dict *get_export_dict();
    // read relocs

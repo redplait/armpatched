@@ -134,8 +134,29 @@ int fsm_reader::parse(path_edge &path)
     }
     export_name = curr;
     m_symbol.section_name.clear();
+    m_symbol.yara_rule.clear();
     m_symbol.exported = export_name.c_str();
     m_symbol.stg_index = 0;
+    NEXT
+  }
+  // yfunc - 5
+  if ( !strncmp(curr, "yfunc", 5) )
+  {
+    if ( m_state != 1 )
+    {
+      fprintf(stderr, "bad yfunc at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    m_state = 2; 
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad yara rule at line %d\n", m_line);
+      return -1;
+    }
+    m_symbol.yara_rule = curr;
+    m_symbol.exported = NULL;
+    m_symbol.section_name.clear();
     NEXT
   }
   // sfunc - 5
@@ -162,6 +183,7 @@ int fsm_reader::parse(path_edge &path)
     }
     m_symbol.exported = NULL;
     m_symbol.section_name.clear();
+    m_symbol.yara_rule.clear();
     NEXT
   }
   // fsection - 8
