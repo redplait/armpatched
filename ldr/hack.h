@@ -168,6 +168,60 @@ class xref_finder
      return NULL;
    }
    // find pair of adrp/ldr pointing to what
+   int find_ldr(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &out_list)
+   {
+     int res = 0;
+     size &= ~3;
+     struct ad_insn dis;
+     int reg_n;
+     for ( DWORD i = 0; i < size / sizeof(DWORD); i++, start += 4 )
+     {
+       DWORD val = *(PDWORD)start;
+       // check for adrp
+       if ( (val & 0x9f000000) == 0x90000000 )
+       {
+         if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+           continue;
+         disasm_cnt++;
+         if ( dis.instr_id != AD_INSTR_ADRP )
+           continue;
+         adrp_cnt++;
+         reg_n = dis.operands[0].op_reg.rn;
+         if ( reg_n >= AD_REG_SP )
+           continue;
+         m_regs[reg_n].addr = (PBYTE)dis.operands[1].op_imm.bits;
+         m_regs[reg_n].where = start;
+         continue;
+       }
+       // check for ldr
+       if ( (val & 0xbfc00000) == 0xb9400000 )
+       {
+         if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+           continue;
+         disasm_cnt++;
+         if ( dis.instr_id != AD_INSTR_LDR )
+           continue;
+         add_cnt++;
+         reg_n = dis.operands[1].op_reg.rn;
+         if ( reg_n >= AD_REG_SP )
+           continue;
+         if ( !purge(reg_n, start) )
+           continue;
+         if ( NULL == m_regs[reg_n].addr )
+           continue;
+         if ( m_regs[reg_n].addr + (reg64_t)dis.operands[2].op_imm.bits == what )
+         {
+           try
+           {
+             out_list.push_back(start);
+             res++;
+           } catch(std::bad_alloc)
+           { break; }
+         }
+       }
+     }
+     return res;
+   }
    PBYTE find_ldr(PBYTE start, DWORD size, PBYTE what)
    {
      size &= ~3;
@@ -195,7 +249,7 @@ class xref_finder
          continue;
        }
        // check for ldr
-       if ( (val & 0xb9400000) == 0xbfc00000 )
+       if ( (val & 0xbfc00000) == 0xb9400000 )
        {
          if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
            continue;
