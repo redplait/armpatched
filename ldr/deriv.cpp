@@ -239,6 +239,7 @@ bool path_item::operator==(const path_item &other) const
     case call_dimp:
     case call_imp:
     case call_exp:
+    case limp:
       return (name == other.name) && (wait_for == other.wait_for);
   }
   return false;
@@ -357,6 +358,9 @@ void path_item::pod_dump(FILE *fp) const
        break;
     case ldr_off:
          fprintf(fp, " const %X\n", value);
+       break;
+    case limp:
+         fprintf(fp, " limp %s\n", name.c_str());
        break;
     case call_imp:
         fprintf(fp, " call_imp %s\n", name.c_str());
@@ -517,6 +521,9 @@ void path_item::dump() const
            printf(" const %X count %d\n", value, value_count);
          else
            printf(" const %X\n", value);
+       break;
+    case limp:
+        printf(" limp %s\n", name.c_str());
        break;
     case call_imp:
         printf(" call_imp %s\n", name.c_str());
@@ -1204,6 +1211,19 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldr() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == limp )
+          {
+            const char *imp_name = get_iat_func(what);
+            if ( imp_name == NULL )
+              continue;
+            if ( !strcmp(imp_name, iter->second.s->name.c_str()) )
+            {
+              if (iter->second.next(path))
+                return 1;
+              continue;
+            } else
+              CHECK_WAIT
+          }
           if ( iter->second.s->type == ldrx )
           {
             if ( (iter->second.s->reg_index != -1) && (get_reg(0) != iter->second.s->reg_index) )

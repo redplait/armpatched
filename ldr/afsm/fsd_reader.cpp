@@ -206,6 +206,20 @@ int fsm_reader::parse(path_edge &path)
     m_symbol.stg_index = 0;
     NEXT
   }
+  // limp - 4
+  if ( !strncmp(curr, "limp", 4) )
+  {
+    SLIST
+    curr = trim_left(curr + 4);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad limp name at line %d\n", m_line);
+      return -1;
+    }
+    item.type = limp;
+    item.name = curr;
+    NEXT
+  }   
   // call_imp - 8
   if ( !strncmp(curr, "call_imp", 8) )
   {

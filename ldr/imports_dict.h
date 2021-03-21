@@ -70,7 +70,7 @@ class inmem_import_holder: public import_holder_intf
    {
      m_modules = outer.m_modules;
      outer.m_modules = NULL;
-     m_names = outer.m_modules;
+     m_names = outer.m_names;
      outer.m_names = NULL;
    }
   ~inmem_import_holder();

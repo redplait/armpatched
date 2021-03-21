@@ -86,6 +86,7 @@ typedef enum
   gstrb,
   gstrh,  
   ldr_off,  // some constant
+  limp,     // load from [IAT]
   call_imp, // [IAT] call
   call_dimp, // [delayed IAT] call
   call_exp, // call of some exported function
@@ -116,7 +117,7 @@ struct path_item
   // attributes
   DWORD stg_index;
   int wait_for;
-  std::string name; // for call_imp/call_exp
+  std::string name; // for call_imp/call_exp/limp
 
   // constructors
   path_item() = default;
