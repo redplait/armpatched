@@ -116,8 +116,8 @@ class xref_finder
      m_regs[i].reset();
      return 0;
    }
-   // find pair of adrp/add pointing to what
    int find_bl(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &);
+   // find pair of adrp/add pointing to what
    int find(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &);
    PBYTE find(PBYTE start, DWORD size, PBYTE what)
    {

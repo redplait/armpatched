@@ -190,6 +190,7 @@ class path_edge
    }
    int is_imp1_only(std::string &) const;
    int contains_imp(std::string &) const;
+   int contains_limp(std::string &) const;
    int is_dimp1_only(std::string &) const;
    int contains_dimp(std::string &) const;
    int has_const_count(int below) const;
@@ -206,6 +207,7 @@ class path_edge
    }
    const path_item *get_best_const() const;
    const path_item *get_best_rconst() const;
+   int collect_limps(std::set<std::string> &) const;
 };
 
 class deriv_hack: public iat_mod

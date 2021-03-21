@@ -133,6 +133,33 @@ int path_edge::contains_imp(std::string &name) const
   return 0;
 }
 
+int path_edge::collect_limps(std::set<std::string> &out_res) const
+{
+  for ( const auto &c: list )
+  {
+    if ( c.type != limp )
+      continue;
+    try
+    {
+      out_res.insert(c.name);
+    } catch(std::bad_alloc)
+    { return 0; }
+  }
+  return !out_res.empty();
+}
+
+int path_edge::contains_limp(std::string &name) const
+{
+  for ( const auto &c: list )
+  {
+    if ( c.type != limp )
+      continue;
+    if ( c.name == name )
+      return 1;
+  }
+  return 0;
+}
+
 int path_edge::contains_dimp(std::string &name) const
 {
   for ( const auto &c: list )
@@ -805,10 +832,10 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
           continue;
        cached_funcs.insert(func);
        if ( try_apply(s, func, path, found) )
-          return 1;      
+         return 1;      
+       if ( has_stg )
+         m_stg = m_stg_copy; // restore storage
      }
-     if ( has_stg )
-        m_stg = m_stg_copy; // restore storage
      return 0;
   } else if ( xref.is_exported() )
   {
@@ -859,21 +886,56 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
       m_stg = m_stg_copy; // restore storage
     return res;
   } else {
+    int has_const = 0,
+        has_rconst = 0;
     const one_section *cs = m_pe->find_section_by_name(xref.section_name.c_str());
     if ( cs == NULL )
     {
       printf("cannot find functions section %s\n", xref.section_name.c_str());
       return 0;
     }
+    std::set<PBYTE> cached_funcs;
     const path_item *imm = path.get_best_const();
-    if ( imm == NULL )
+    if ( imm != NULL )
     {
-      imm = path.get_best_rconst();
-      if ( imm == NULL )
+      // process constants
+      PBYTE start = m_pe->base_addr() + cs->va;
+      PBYTE end = start + cs->size;
+      bm_search srch((const PBYTE)&imm->value, sizeof(imm->value));
+      PBYTE curr = start;
+      std::list<PBYTE> founds;
+      while ( curr < end )
       {
-        printf("cannot get_best_const and get_best_rconst\n");
+        const PBYTE fres = srch.search(curr, end - curr);
+        if ( NULL == fres )
+          break;
+        try
+        {
+          founds.push_back(fres);
+        } catch(std::bad_alloc)
+        { return 0; }
+        curr = fres + sizeof(imm->value);
+      }
+      if ( founds.empty() )
+      {
+        printf("cannot find constant %X in section %s\n", imm->value, xref.section_name.c_str());
         return 0;
       }
+      for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
+      {
+        PBYTE func = find_pdata(*citer);
+        if ( NULL == func )
+         continue;
+        if ( try_apply(s, func, path, found) )
+          return 1;
+        if ( has_stg )
+          m_stg = m_stg_copy; // restore storage
+      }
+    } else
+      has_const = 0;
+    imm = path.get_best_rconst();
+    if ( imm != NULL )
+    {
       // find constants in .rdata
       const one_section *r = m_pe->find_section_by_name(".rdata");
       if ( r == NULL )
@@ -907,7 +969,6 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
         return 0;
       }
       // now find refs to this constant
-      std::set<PBYTE> cached_funcs;
       for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
       {
         std::list<PBYTE> refs;
@@ -929,39 +990,43 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
             m_stg = m_stg_copy; // restore storage
         }
       }
-      return 0;
-    }
-    PBYTE start = m_pe->base_addr() + cs->va;
-    PBYTE end = start + cs->size;
-    bm_search srch((const PBYTE)&imm->value, sizeof(imm->value));
-    PBYTE curr = start;
-    std::list<PBYTE> founds;
-    while ( curr < end )
+    } else
+      has_rconst = 0;
+    // try import names from limp states
+    std::set<std::string> limps;
+    if ( !path.collect_limps(limps) )
     {
-      const PBYTE fres = srch.search(curr, end - curr);
-      if ( NULL == fres )
-        break;
-      try
+       if ( !has_const && !has_rconst )
+         printf("path don`t has const/rconst/limp - don`t know how to find such functions\n");
+       return 0;
+    }
+    for ( auto &cimp: limps )
+    {
+      PBYTE mz = m_pe->base_addr();
+      DWORD off = get_iat_by_name(cimp.c_str());
+      if ( !off )
       {
-        founds.push_back(fres);
-      } catch(std::bad_alloc)
-      { return 0; }
-      curr = fres + sizeof(imm->value);
-    }
-    if ( founds.empty() )
-    {
-      printf("cannot find constant %X in section %s\n", imm->value, xref.section_name.c_str());
-      return 0;
-    }
-    for ( auto citer = founds.cbegin(); citer != founds.cend(); ++citer )
-    {
-      PBYTE func = find_pdata(*citer);
-      if ( NULL == func )
+        printf("cannot find %s in IAT\n", cimp.c_str());
         continue;
-      if ( try_apply(s, func, path, found) )
-        return 1;
-      if ( has_stg )
-        m_stg = m_stg_copy; // restore storage
+      }
+      std::list<PBYTE> refs;
+      xref_finder xf;
+      if ( !xf.find_ldr(mz + cs->va, cs->size, off + mz, refs) )
+          continue;
+      for ( const auto &cref: refs )
+      {
+         PBYTE func = find_pdata(cref);
+         if ( NULL == func )
+            continue;
+         auto already_processed = cached_funcs.find(func);
+         if ( already_processed != cached_funcs.end() )
+           continue;
+         cached_funcs.insert(func);
+         if ( try_apply(s, func, path, found) )
+           return 1;
+         if ( has_stg )
+           m_stg = m_stg_copy; // restore storage
+      }
     }
   }
   return 0;
