@@ -248,6 +248,12 @@ bool path_item::operator==(const path_item &other) const
     case ldr_off:
       return value == other.value;
 
+    case sload:
+    case sstore:
+    case sldrb:
+    case sldrh:
+    case sstrb:
+    case sstrh:
     case load:
     case store:
     case ldrb:
@@ -308,6 +314,7 @@ void path_item::pod_dump(FILE *fp) const
     case ldr_cookie:
         fprintf(fp, " load_cookie\n");
       break;
+
     case gcall:
        fprintf(fp, " gcall %d\n", stg_index);
       break;
@@ -319,6 +326,11 @@ void path_item::pod_dump(FILE *fp) const
        else
          fprintf(fp, " call %s\n", name.c_str());
       break;
+
+    case sload:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+       fprintf(fp, " sload %s\n", name.c_str());
       break;
     case load:
        if ( stg_index )
@@ -331,6 +343,12 @@ void path_item::pod_dump(FILE *fp) const
     case gload:
        fprintf(fp, " gload %d\n", stg_index);
       break;
+
+    case sstore:
+       if ( stg_index )
+          fprintf(fp, " stg%d", stg_index);
+        fprintf(fp, " sstore %s\n", name.c_str());
+       break;
     case store: 
        if ( stg_index )
          fprintf(fp, " stg%d", stg_index);
@@ -341,6 +359,12 @@ void path_item::pod_dump(FILE *fp) const
        break;
     case gstore:
          fprintf(fp, " gstore %d\n", stg_index);
+       break;
+
+    case sldrb:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+        fprintf(fp, " sldrb %s\n", name.c_str());
        break;
     case ldrb:
        if ( stg_index )
@@ -353,6 +377,12 @@ void path_item::pod_dump(FILE *fp) const
     case gldrb:
          fprintf(fp, " gldrb %d\n", stg_index);
        break;
+
+    case sldrh:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+        fprintf(fp, " sldrh %s\n", name.c_str());
+       break;
     case ldrh:
        if ( stg_index )
          fprintf(fp, " stg%d", stg_index);
@@ -363,6 +393,12 @@ void path_item::pod_dump(FILE *fp) const
        break;
     case gldrh:
          fprintf(fp, " gldrh %d\n", stg_index);
+       break;
+
+    case sstrb:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+        fprintf(fp, " sstrb %s\n", name.c_str());
        break;
     case strb:
        if ( stg_index )
@@ -375,6 +411,12 @@ void path_item::pod_dump(FILE *fp) const
     case gstrb:
          fprintf(fp, " gstrb %d\n", stg_index);
        break;
+
+    case sstrh:
+       if ( stg_index )
+         fprintf(fp, " stg%d", stg_index);
+        fprintf(fp," sstrh %s\n", name.c_str());
+       break;
     case strh:
        if ( stg_index )
          fprintf(fp, " stg%d", stg_index);
@@ -386,6 +428,7 @@ void path_item::pod_dump(FILE *fp) const
     case gstrh:
          fprintf(fp, " gstrh %d\n", stg_index);
        break;
+
     case ldr_guid:
          fprintf(fp, " guid");
          for ( size_t i = 0; i < _countof(guid); i++ )
@@ -474,6 +517,12 @@ void path_item::dump() const
        else
          printf(" call in %s section\n", name.c_str());
       break;
+
+    case sload:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+       printf(" sload %s\n", name.c_str());
+      break;
     case load:
        if ( stg_index )
          printf(" stg%d", stg_index);
@@ -485,6 +534,12 @@ void path_item::dump() const
     case gload: 
         printf(" gload %d\n", stg_index);
       break;
+
+    case sstore: 
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+        printf(" sstore %s\n", name.c_str());
+       break;
     case store: 
        if ( stg_index )
          printf(" stg%d", stg_index);
@@ -495,6 +550,12 @@ void path_item::dump() const
        break;
     case gstore: 
          printf(" gstore %d\n", stg_index);
+       break;
+
+    case sldrb:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+        printf(" sldrb %s\n", name.c_str());
        break;
     case ldrb:
        if ( stg_index )
@@ -507,6 +568,12 @@ void path_item::dump() const
     case gldrb:
          printf(" gldrb %d\n", stg_index);
        break;
+
+    case sldrh:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+        printf(" sldrh %s\n", name.c_str());
+       break;
     case ldrh:
        if ( stg_index )
          printf(" stg%d", stg_index);
@@ -517,6 +584,12 @@ void path_item::dump() const
        break;
     case gldrh:
          printf(" gldrh %d\n", stg_index);
+       break;
+
+    case sstrb:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+        printf(" sstrb %s\n", name.c_str());
        break;
     case strb:
        if ( stg_index )
@@ -529,6 +602,12 @@ void path_item::dump() const
     case gstrb:
          printf(" gstrb %d\n", stg_index);
        break;
+
+    case sstrh:
+       if ( stg_index )
+         printf(" stg%d", stg_index);
+        printf(" sstrh exported %s\n", name.c_str());
+       break;
     case strh:
        if ( stg_index )
          printf(" stg%d", stg_index);
@@ -540,6 +619,7 @@ void path_item::dump() const
     case gstrh:
          printf(" gstrh: %d\n", stg_index);
        break;
+
     case ldr_guid:
          printf(" guid");
          for ( size_t i = 0; i < _countof(guid); i++ )

@@ -72,12 +72,20 @@ class funcs_holder_ts: public funcs_holder_cmn
 
 typedef enum
 {
+  // section name setted with section directive
   load = 0,
   store,
   ldrb,
   ldrh,
   strb,
   strh,
+  // versions with explicit section name (stored in name)
+  sload,
+  sstore,
+  sldrb,
+  sldrh,
+  sstrb,
+  sstrh,
   // versions with global storage - index in stg_index
   gload,
   gstore,
@@ -85,7 +93,7 @@ typedef enum
   gldrh,
   gstrb,
   gstrh,  
-  ldr_off,  // some constant
+  ldr_off,  // load constant from pool
   limp,     // load from [IAT]
   call_imp, // [IAT] call
   call_dimp, // [delayed IAT] call

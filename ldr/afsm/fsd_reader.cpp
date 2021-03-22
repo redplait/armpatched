@@ -117,6 +117,7 @@ int fsm_reader::parse(path_edge &path)
     path.symbol_section = curr;
     NEXT
   }
+
   // func - 4
   if ( !strncmp(curr, "func", 4) )
   {
@@ -206,6 +207,7 @@ int fsm_reader::parse(path_edge &path)
     m_symbol.stg_index = 0;
     NEXT
   }
+
   // limp - 4
   if ( !strncmp(curr, "limp", 4) )
   {
@@ -304,6 +306,22 @@ int fsm_reader::parse(path_edge &path)
     }
     NEXT
   }
+
+  // sload - 5
+  if ( !strncmp(curr, "sload", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad section name for sload at line %d\n", m_line);
+      return -1;
+    }
+    item.name = curr;
+    item.type = sload;
+    item.stg_index = stg_index;
+    NEXT
+  }
   // load - 4
   if ( !strncmp(curr, "load", 4) )
   {
@@ -329,6 +347,21 @@ int fsm_reader::parse(path_edge &path)
       fprintf(stderr, "zero stg in gload at line %d\n", m_line);
       return -2;
     }
+    NEXT
+  }
+  // sldrb - 5
+  if ( !strncmp(curr, "sldrb", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad section name for sldrb at line %d\n", m_line);
+      return -1;
+    }
+    item.type = sldrb;
+    item.name = curr;
+    item.stg_index = stg_index;
     NEXT
   }
   // ldrb - 4
@@ -358,6 +391,21 @@ int fsm_reader::parse(path_edge &path)
     }
     NEXT
   }
+  // sldrh - 5
+  if ( !strncmp(curr, "sldrh", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad section name for sldrh at line %d\n", m_line);
+      return -1;
+    }
+    item.type = sldrh;
+    item.name = curr;
+    item.stg_index = stg_index;
+    NEXT
+  }
   // ldrh - 4
   if ( !strncmp(curr, "ldrh", 4) )
   {
@@ -383,6 +431,21 @@ int fsm_reader::parse(path_edge &path)
       fprintf(stderr, "zero stg in gldrh at line %d\n", m_line);
       return -2;
     }
+    NEXT
+  }
+  // sstore - 6
+  if ( !strncmp(curr, "sstore", 6) )
+  {
+    SLIST
+    curr = trim_left(curr + 6);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad section name for sstore at line %d\n", m_line);
+      return -1;
+    }
+    item.name = curr;
+    item.type = sstore;
+    item.stg_index = stg_index;
     NEXT
   }
   // store - 5
@@ -412,6 +475,21 @@ int fsm_reader::parse(path_edge &path)
     }
     NEXT
   }
+  // sstrb - 5
+  if ( !strncmp(curr, "sstrb", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad section name for sstrb at line %d\n", m_line);
+      return -1;
+    }
+    item.name = curr;
+    item.type = sstrb;
+    item.stg_index = stg_index;
+    NEXT
+  }
   // strb - 4
   if ( !strncmp(curr, "strb", 4) )
   {
@@ -437,6 +515,21 @@ int fsm_reader::parse(path_edge &path)
       fprintf(stderr, "zero stg in gstrb at line %d\n", m_line);
       return -2;
     }
+    NEXT
+  }
+  // sstrh - 5
+  if ( !strncmp(curr, "sstrh", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad section name for sstrh at line %d\n", m_line);
+      return -1;
+    }
+    item.name = curr;
+    item.type = sstrh;
+    item.stg_index = stg_index;
     NEXT
   }
   // strh - 4
