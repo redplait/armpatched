@@ -1444,6 +1444,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               // let assume that this address will be somewhere in next code
               continue;
           }
+          if ( iter->second.s->type == sload )
+          {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL )
+              continue;
+            if ( !strcmp(their->name, iter->second.s->name.c_str()) )
+            {
+              store_stg(iter->second.s->stg_index, what - mz);
+              if ( iter->second.next(path) )
+              {
+                found = what - mz;
+                return 1;
+              }
+              continue;
+            } else 
+              CHECK_WAIT
+          }
           if ( iter->second.s->type != load )
             continue;
           if ( !iter->second.s->name.empty() )
@@ -1470,6 +1487,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldrb() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == sldrb )
+          {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL )
+              continue;
+            if ( !strcmp(their->name, iter->second.s->name.c_str()) )
+            {
+              store_stg(iter->second.s->stg_index, what - mz);
+              if ( iter->second.next(path) )
+              {
+                found = what - mz;
+                return 1;
+              }
+              continue;
+            } else 
+              CHECK_WAIT
+          }
           if ( iter->second.s->type == gldrb )
           {
             auto found = m_stg.find(iter->second.s->stg_index);
@@ -1511,6 +1545,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_ldrh() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == sldrh )
+          {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL )
+              continue;
+            if ( !strcmp(their->name, iter->second.s->name.c_str()) )
+            {
+              store_stg(iter->second.s->stg_index, what - mz);
+              if ( iter->second.next(path) )
+              {
+                found = what - mz;
+                return 1;
+              }
+              continue;
+            } else 
+              CHECK_WAIT
+          }
           if ( iter->second.s->type == gldrh )
           {
             auto found = m_stg.find(iter->second.s->stg_index);
@@ -1561,6 +1612,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               return 1;
             continue;
           }
+          if ( iter->second.s->type == sstore )
+          {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL )
+              continue;
+            if ( !strcmp(their->name, iter->second.s->name.c_str()) )
+            {
+              store_stg(iter->second.s->stg_index, what - mz);
+              if ( iter->second.next(path) )
+              {
+                found = what - mz;
+                return 1;
+              }
+              continue;
+            } else 
+              CHECK_WAIT
+          }
           if ( iter->second.s->type == gstore )
           {
             auto found = m_stg.find(iter->second.s->stg_index);
@@ -1602,6 +1670,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_strb() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == sstrb )
+          {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL )
+              continue;
+            if ( !strcmp(their->name, iter->second.s->name.c_str()) )
+            {
+              store_stg(iter->second.s->stg_index, what - mz);
+              if ( iter->second.next(path) )
+              {
+                found = what - mz;
+                return 1;
+              }
+              continue;
+            } else 
+              CHECK_WAIT
+          }
           if ( iter->second.s->type == gstrb )
           {
             auto found = m_stg.find(iter->second.s->stg_index);
@@ -1643,6 +1728,23 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_strh() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if ( iter->second.s->type == sstrh )
+          {
+            const one_section *their = m_pe->find_section_v(what - mz);
+            if ( their == NULL )
+              continue;
+            if ( !strcmp(their->name, iter->second.s->name.c_str()) )
+            {
+              store_stg(iter->second.s->stg_index, what - mz);
+              if ( iter->second.next(path) )
+              {
+                found = what - mz;
+                return 1;
+              }
+              continue;
+            } else 
+              CHECK_WAIT
+          }
           if ( iter->second.s->type == gstrh )
           {
             auto found = m_stg.find(iter->second.s->stg_index);
