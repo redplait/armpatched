@@ -9,3 +9,13 @@ call_imp UserAddAtomToAtomTableEx
 stg1 load
 # acatomSysUse - stored with index 2
 stg2 load
+
+# gihmodUserApiHook & gihmodUserApiHookWOW - can be extracted from exported _UnregisterUserApiHook
+section .data
+func _UnregisterUserApiHook
+wait limp gppiUserApiHook
+# gihmodUserApiHook - store index 3
+stg3 load
+call
+# gihmodUserApiHookWOW - store index 4
+stg4 load
