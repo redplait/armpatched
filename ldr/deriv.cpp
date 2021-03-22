@@ -133,6 +133,21 @@ int path_edge::contains_imp(std::string &name) const
   return 0;
 }
 
+int path_edge::collect_call_imps(std::set<std::string> &out_res) const
+{
+  for ( const auto &c: list )
+  {
+    if ( c.type != call_imp )
+      continue;
+    try
+    {
+      out_res.insert(c.name);
+    } catch(std::bad_alloc)
+    { return 0; }
+  }
+  return !out_res.empty();
+}
+
 int path_edge::collect_limps(std::set<std::string> &out_res) const
 {
   for ( const auto &c: list )
@@ -887,17 +902,21 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
     return res;
   } else {
     int has_const = 0,
-        has_rconst = 0;
+        has_rconst = 0,
+        has_limps = 0;
     const one_section *cs = m_pe->find_section_by_name(xref.section_name.c_str());
     if ( cs == NULL )
     {
       printf("cannot find functions section %s\n", xref.section_name.c_str());
       return 0;
     }
+    PBYTE mz = m_pe->base_addr();
     std::set<PBYTE> cached_funcs;
     const path_item *imm = path.get_best_const();
+    // try loading constants from pool
     if ( imm != NULL )
     {
+      has_const = 1;
       // process constants
       PBYTE start = m_pe->base_addr() + cs->va;
       PBYTE end = start + cs->size;
@@ -931,11 +950,12 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
         if ( has_stg )
           m_stg = m_stg_copy; // restore storage
       }
-    } else
-      has_const = 0;
+    }
+    // try constant from .rdata section - from ldr_rdata/ldr_guid
     imm = path.get_best_rconst();
     if ( imm != NULL )
     {
+      has_rconst = 1;
       // find constants in .rdata
       const one_section *r = m_pe->find_section_by_name(".rdata");
       if ( r == NULL )
@@ -990,34 +1010,65 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
             m_stg = m_stg_copy; // restore storage
         }
       }
-    } else
-      has_rconst = 0;
+    }
     // try import names from limp states
     std::set<std::string> limps;
-    if ( !path.collect_limps(limps) )
+    if ( path.collect_limps(limps) )
     {
-       if ( !has_const && !has_rconst )
-         printf("path don`t has const/rconst/limp - don`t know how to find such functions\n");
+      has_limps = 1;
+      for ( auto &cimp: limps )
+      {
+        DWORD off = get_iat_by_name(cimp.c_str());
+        if ( !off )
+        {
+          printf("cannot find %s in IAT\n", cimp.c_str());
+          continue;
+        }
+        std::list<PBYTE> refs;
+        xref_finder xf;
+        if ( !xf.find_ldr(mz + cs->va, cs->size, off + mz, refs) )
+          continue;
+        for ( const auto &cref: refs )
+        {
+           PBYTE func = find_pdata(cref);
+           if ( NULL == func )
+             continue;
+           auto already_processed = cached_funcs.find(func);
+           if ( already_processed != cached_funcs.end() )
+             continue;
+           cached_funcs.insert(func);
+           if ( try_apply(s, func, path, found) )
+             return 1;
+           if ( has_stg )
+             m_stg = m_stg_copy; // restore storage
+        }
+      }
+    }
+    // finally try just imported functions
+    limps.clear();
+    if ( !path.collect_call_imps(limps) )
+    {
+       if ( !has_const && !has_rconst && !has_limps)
+         printf("path don`t has const/rconst/limp/call_imp - don`t know how to find such functions\n");
        return 0;
     }
     for ( auto &cimp: limps )
     {
-      PBYTE mz = m_pe->base_addr();
       DWORD off = get_iat_by_name(cimp.c_str());
       if ( !off )
       {
-        printf("cannot find %s in IAT\n", cimp.c_str());
-        continue;
+         printf("cannot find %s in IAT\n", cimp.c_str());
+         continue;
       }
       std::list<PBYTE> refs;
       xref_finder xf;
-      if ( !xf.find_ldr(mz + cs->va, cs->size, off + mz, refs) )
-          continue;
+      if ( !xf.find(mz + cs->va, cs->size, off + mz, refs) )
+        continue;
       for ( const auto &cref: refs )
       {
          PBYTE func = find_pdata(cref);
          if ( NULL == func )
-            continue;
+           continue;
          auto already_processed = cached_funcs.find(func);
          if ( already_processed != cached_funcs.end() )
            continue;
