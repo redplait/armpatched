@@ -1,0 +1,11 @@
+# test to find catomSysTableEntries & acatomSysUse using functions search for limp states
+# target nonexported function is win32kfull.sys!GetHmodTableIndex and none of caller is exported too
+# so it`s hard to find it with constants
+section .data
+fsection .text
+wait limp UserLibmgmtAtomTableHandle
+call_imp UserAddAtomToAtomTableEx
+# catomSysTableEntries - stored with index 1
+stg1 load
+# acatomSysUse - stored with index 2
+stg2 load
