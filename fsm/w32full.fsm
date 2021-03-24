@@ -19,3 +19,48 @@ stg3 load
 call
 # gihmodUserApiHookWOW - store index 4
 stg4 load
+
+# gShellFrameAppThreadsAssociationList - from non-exported AssociateShellFrameAppThreads
+section .data
+fsection .text
+const 0x79737355
+call_imp Win32AllocPoolZInit
+stg5 load
+
+# gpUMDriverFunc - from non-exported UMPD_ldevFillTable
+# but it`s too short so first find it`s caller UMPD_ldevLoadDriver
+section .data
+fsection .text
+const 706D7547
+call_imp EngAllocMem
+wait call_imp PsGetCurrentProcessWin32Process
+# UMPDDrvDriverFn
+call 
+# UMPD_ldevFillTable - stored with index 6
+stg6 call
+
+# now process UMPD_ldevFillTable
+section .data
+sfunc 6
+# size as second arg to memset
+stg7 movx2
+call
+# gpUMDriverFunc - stored with index 8
+stg8 load
+
+# gihmodDManipHook - from exported _UnregisterDManipHook
+section .data
+func _UnregisterDManipHook
+wait limp gppiDManipHook
+# store gihmodDManipHook with index 9
+stg9 load
+
+# gihmodUserApiHook - from exported _UnregisterUserApiHook
+section .data
+func _UnregisterUserApiHook
+wait limp gppiUserApiHook
+# store gihmodUserApiHook with index 10
+stg10 load
+call
+# and gihmodUserApiHookWOW with index 11
+stg11 load
