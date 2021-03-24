@@ -54,13 +54,3 @@ func _UnregisterDManipHook
 wait limp gppiDManipHook
 # store gihmodDManipHook with index 9
 stg9 load
-
-# gihmodUserApiHook - from exported _UnregisterUserApiHook
-section .data
-func _UnregisterUserApiHook
-wait limp gppiUserApiHook
-# store gihmodUserApiHook with index 10
-stg10 load
-call
-# and gihmodUserApiHookWOW with index 11
-stg11 load
