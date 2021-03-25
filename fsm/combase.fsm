@@ -56,3 +56,15 @@ section .data
 func ord126
 # s_inprocDirectMarshalingMitigationStatus - store with index 8
 stg8 store
+
+# TLSPreallocateData - from exported CoGetCallerTID
+section .data
+func CoGetCallerTID
+wait call_imp GetCurrentThreadId
+stg9 call
+
+# get size of TLS data
+section .data
+sfunc 9
+stg10 movx2
+call_imp HeapAlloc
