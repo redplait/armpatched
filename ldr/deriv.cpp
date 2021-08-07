@@ -55,7 +55,7 @@ const path_item *path_edge::get_best_const() const
   const path_item *res = NULL;
   for ( const auto &c: list )
   {
-    if ( c.type != ldr_off )
+    if ( (c.type != ldr_off) && (c.type != ldr64_off) )
       continue;
     if ( !c.value_count )
       continue;
@@ -118,7 +118,7 @@ int path_edge::has_rconst_count(int below) const
 
 int path_edge::has_const_count(int below) const
 {
-  return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return (item.type == ldr_off) && item.value_count && (item.value_count < below); });
+  return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return (item.type == ldr_off || item.type == ldr64_off) && item.value_count && (item.value_count < below); });
 }
 
 int path_edge::contains_imp(std::string &name) const
@@ -247,6 +247,8 @@ bool path_item::operator==(const path_item &other) const
 
     case ldr_off:
       return value == other.value;
+    case ldr64_off:
+      return value64 == other.value64;
 
     case sload:
     case sstore:
@@ -300,6 +302,7 @@ void path_item::reset()
     case ldr_guid:
     case ldr_rdata:
     case ldr_off:
+    case ldr64_off:
        value_count = 0;
      break;
   }
@@ -443,6 +446,9 @@ void path_item::pod_dump(FILE *fp) const
        break;
     case ldr_off:
          fprintf(fp, " const %X\n", value);
+       break;
+    case ldr64_off:
+         fprintf(fp, " const %I64X\n", value64);
        break;
     case limp:
          fprintf(fp, " limp %s\n", name.c_str());
@@ -643,6 +649,12 @@ void path_item::dump() const
            printf(" const %X count %d\n", value, value_count);
          else
            printf(" const %X\n", value);
+       break;
+    case ldr64_off:
+         if ( value_count )
+           printf(" const %I64X count %d\n", value64, value_count);
+         else
+           printf(" const %I64X\n", value64);
        break;
     case limp:
         printf(" limp %s\n", name.c_str());
@@ -1791,6 +1803,15 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           iter->second.next(path);
           continue;
         }
+        if ( is_ldr_off() && iter->second.s->type == ldr64_off )
+        {
+          if (iter->second.s->value64 == *(uint64_t *)m_dis.operands[1].op_imm.bits)
+          {
+            iter->second.next(path);
+            continue;
+          } else
+            CHECK_WAIT
+        }
       }
       cgraph.add_range(psp, m_psp - psp);
     }
@@ -2080,12 +2101,15 @@ void deriv_hack::calc_const_count(const one_section *s, path_edge &out_res)
   PBYTE mz = m_pe->base_addr();
   for ( auto& item: out_res.list )
   {
-    if ( item.type != ldr_off )
+    int csize = sizeof(item.value);
+    if ( item.type == ldr64_off )
+      csize = sizeof(item.value64);
+    else if ( item.type != ldr_off )
        continue;
     item.value_count = 0;
     PBYTE start = mz + s->va;
     PBYTE end = start + s->size;
-    bm_search srch((const PBYTE)&item.value, sizeof(item.value));
+    bm_search srch(item.type == ldr64_off ? (const PBYTE)&item.value64: (const PBYTE)&item.value, csize);
     PBYTE curr = start;
     while ( curr < end )
     {
@@ -2093,7 +2117,7 @@ void deriv_hack::calc_const_count(const one_section *s, path_edge &out_res)
       if ( NULL == fres )
         break;
       item.value_count++;
-      curr = fres + sizeof(item.value);
+      curr = fres + csize;
     }
   }
 }

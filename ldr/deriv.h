@@ -93,7 +93,8 @@ typedef enum
   gldrh,
   gstrb,
   gstrh,  
-  ldr_off,  // load constant from pool
+  ldr_off,   // load constant from pool
+  ldr64_off, // load 64bit constant from pool
   limp,     // load from [IAT]
   call_imp, // [IAT] call
   call_dimp, // [delayed IAT] call
@@ -116,11 +117,12 @@ struct path_item
   path_item_type type;
   union
   {
-    DWORD value;     // for ldr_off
-    BYTE  rconst[8]; // for ldr_rdata
-    BYTE  guid[16];  // for ldr_guid
+    DWORD value;      // for ldr_off
+    uint64_t value64; // for ldr64_off
+    BYTE  rconst[8];  // for ldr_rdata
+    BYTE  guid[16];   // for ldr_guid
   };
-  DWORD value_count; // count of value in this section for ldr_off, in .rdata for ldr_rdata/ldr_guid
+  DWORD value_count; // count of value in this section for ldr_off/ldr64_off, in .rdata for ldr_rdata/ldr_guid
   int reg_index;
   // attributes
   DWORD stg_index;
@@ -164,6 +166,15 @@ struct path_item
     type = ldr_off;
     value_count = 0;
     value = val;
+    reg_index = 0;
+    stg_index = 0;
+    wait_for = 0;
+  }
+  path_item(uint64_t val)
+  {
+    type = ldr64_off;
+    value_count = 0;
+    value64 = val;
     reg_index = 0;
     stg_index = 0;
     wait_for = 0;

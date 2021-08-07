@@ -559,6 +559,22 @@ int fsm_reader::parse(path_edge &path)
     }
     NEXT
   }
+  // const64 - 7
+  if ( !strncmp(curr, "const64", 7) )
+  {
+    SLIST
+    curr = trim_left(curr + 7);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad const64 at line %d\n", m_line);
+      return -1;
+    }
+    item.type = ldr64_off;
+    item.value_count = 0;
+    char *end = NULL;
+    item.value64 = _strtoui64(curr, &end, 16);
+    NEXT
+  }
   // const - 5
   if ( !strncmp(curr, "const", 5) )
   {
