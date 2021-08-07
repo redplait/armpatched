@@ -1,0 +1,6 @@
+# see https://i.blackhat.com/USA21/Wednesday-Handouts/us-21-Windows-Heap-Backed-Pool-The-Good-The-Bad-And-The-Encoded.pdf
+# seems that RtlpHeapKey inited in ExpInitSystemPhase0 right after KUSER_SHARED_DATA.SuiteMask
+section .data
+fsection INIT
+wait const64 FFFFF780000002D0
+stg1 store
