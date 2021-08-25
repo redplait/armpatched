@@ -39,8 +39,12 @@ unsigned int sign_extend(unsigned int number, int numbits){
 
 uint64 sign_ext64(uint64 number, int numbits)
 {
+#ifdef _MSC_VER
     if(number & (1I64 << (numbits - 1)))
         return number | ~((1I64 << numbits) - 1);
-
+#else
+    if(number & ((uint64)1 << (numbits - 1)))
+        return number | ~(((uint64)1 << numbits) - 1);
+#endif 
     return number;
 }

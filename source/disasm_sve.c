@@ -1278,7 +1278,7 @@ static int op00_op10_op21(struct instruction *i, struct ad_insn *out, unsigned o
   return 1;
 }
 
-static op00_op11_op20(struct instruction *i, struct ad_insn *out, unsigned op3)
+static int op00_op11_op20(struct instruction *i, struct ad_insn *out, unsigned op3)
 {
   unsigned op0 = bits(i->opcode, 22, 23);
   unsigned op1 = bits(i->opcode, 18, 19);
@@ -1324,7 +1324,7 @@ static op00_op11_op20(struct instruction *i, struct ad_insn *out, unsigned op3)
   return 0;
 }
 
-static op00_op11_op21(struct instruction *i, struct ad_insn *out, unsigned op3)
+static int op00_op11_op21(struct instruction *i, struct ad_insn *out, unsigned op3)
 {
   // SVE Integer Wide Immediate - Predicated - page 
   unsigned op0 = bits(i->opcode, 13, 15);

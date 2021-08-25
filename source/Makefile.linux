@@ -1,0 +1,4 @@
+OBJ = armadillo.o bits.o BranchExcSys.o DataProcessingFloatingPoint.o DataProcessingImmediate.o DataProcessingRegister.o disasm_sve.o LoadsAndStores.o strext.o utils.o
+
+libudis86.a: $(OBJ)
+	$(AR) $(ARFLAGS) $@ $(OBJ)
