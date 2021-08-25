@@ -23,7 +23,7 @@ static int DisassembleConditionalImmediateBranchInstr(struct instruction *i, str
     ADD_FIELD(out, o0);
     ADD_FIELD(out, cond);
     {
-    uint64 imm = sign_extend(imm19 << 2, 64) + i->PC;
+    uint64 imm = i->PC + sign_ext64(imm19 << 2, 21);
     const char *dc = decode_cond(cond);
 
     ADD_IMM_OPERAND(out, AD_IMM_ULONG, /*(unsigned long *)&*/imm);
