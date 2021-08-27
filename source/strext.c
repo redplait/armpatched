@@ -14,7 +14,11 @@ static int _concat_internal(char *dst, const char *src, va_list args)
     srclen = strlen(src);
     if (dst[0])
       dstlen = strlen(dst);
+#ifdef _MSC_VER
     w = vsprintf_s(dst + dstlen, 79 - dstlen, src, args);
+#else
+    w = vsnprintf(dst + dstlen, 79 - dstlen, src, args);
+#endif
     return w;
 }
 
