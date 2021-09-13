@@ -480,4 +480,148 @@
                                     "WifiCx.sys"
                                 ]
     },
+    {
+        "ProviderGUID":  "4D199C90-7E39-5548-BB5D-0F1B3E3AA467",
+        "ProviderName":  "Microsoft.Windows.ShellCommon.SystemModalDialog",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "NotificationController.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "487905A0-9830-4D41-BA68-E3325AFFA8C2",
+        "ProviderName":  "Microsoft.Windows.Shell.SystemSettings.AumidNotifications",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "NotificationController.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "E86FF119-662F-5D23-69B1-0ED8BF7686C2",
+        "ProviderName":  "Microsoft.Windows.UDK.AppExtensions",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "windowsudk.shellcommon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "6CBE140E-B0C2-5D7B-2B2A-58055D14AA02",
+        "ProviderName":  "Microsoft.WindowsUDK.Security.Authorization.AppCapabilityAccess",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "windowsudk.shellcommon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "F9503D6B-33B7-59E0-C41C-D181A673D1ED",
+        "ProviderName":  "Microsoft.Windows.UDK.Services.Iris",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "windowsudk.shellcommon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "F9F36CA5-F6E3-548A-5EEC-AF9A94B49208",
+        "ProviderName":  "Microsoft.Windows.UDK.ShellViewController",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "windowsudk.shellcommon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "00BC0257-86C8-4145-83FE-5E076765237C",
+        "ProviderName":  "Microsoft.Windows.UDK.TaskbarLayout",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "windowsudk.shellcommon.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "1936B710-E2E7-53F0-0035-9C44B816977E",
+        "ProviderName":  "Microsoft.Windows.Sensors.App.ReadingNotificationSession",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "Windows.Devices.Sensors.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "1EE8BA37-11AE-3855-800A-58D6BAD1FEF8",
+        "ProviderName":  "Microsoft.Windows.Shell.RunOnce",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "explorer.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "6A9EECF3-F74D-497F-A731-12CA5484F3FD",
+        "ProviderName":  "Microsoft.Windows.Shell.ScoobeEligibility",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "explorer.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "63BB30B6-3C6B-5D94-397B-C036B728E987",
+        "ProviderName":  "Microsoft.Windows.Shell.Oobe.ExpeditedUpdate",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "explorer.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "E2715C07-2F9D-5477-20D1-0E9FA269C0DF",
+        "ProviderName":  "Microsoft.Windows.Shell.Taskbar.DefaultPinningProvider",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "explorer.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "69693006-D82B-5B8F-4CAB-490D3FF14106",
+        "ProviderName":  "Microsoft.Windows.Shell.Desktop.SoftLandingAnaheimPromotion",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "explorer.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "4C2D8663-9664-55EA-209A-5B4D45E2A9E1",
+        "ProviderName":  "Microsoft.Windows.Shell.Taskbar.ProgrammableTaskbar",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "explorer.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "2C00A440-76DE-4FE3-856F-00557535BE83",
+        "ProviderName":  "Microsoft.Windows.Shell.ControlCenter",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "explorer.exe"
+                                ]
+    },
+    {
+        "ProviderGUID":  "38639609-7820-5EC0-488E-0EDBC80BDC24",
+        "ProviderName":  "Microsoft.Windows.SHCore.Oplock",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "SHCore.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "0C4C1871-8B0C-4577-9471-0B45454ADF50",
+        "ProviderName":  "Microsoft.Windows.Shell.SHCore",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "SHCore.dll"
+                                ]
+    },
+    {
+        "ProviderGUID":  "59D9D293-19BA-432E-A4FE-CA44A3367519",
+        "ProviderName":  "Microsoft.Windows.AppModel.ProcessCreation",
+        "ProviderGroupGUID":  "",
+        "AssociatedFilenames":  [
+                                    "KernelBase.dll"
+                                ]
+    },
 ]
