@@ -1187,8 +1187,8 @@ static int DisassembleLoadAndStoreRegisterPairInstr(struct instruction *i,
     return 0;
 }
 
-static int DisassembleLoadAndStoreRegisterInstr(struct instruction *i,
-        struct ad_insn *out, int kind){
+static int DisassembleLoadAndStoreRegisterInstr(struct instruction *i, struct ad_insn *out, int kind)
+{
     unsigned size = bits(i->opcode, 30, 31);
     unsigned V = bits(i->opcode, 26, 26);
     unsigned opc = bits(i->opcode, 22, 23);
@@ -1330,21 +1330,23 @@ static int DisassembleLoadAndStoreRegisterInstr(struct instruction *i,
                 shift = size;
             }
             {
-            unsigned long pimm = imm12 << shift;
+              unsigned long pimm = imm12 << shift;
 
-            if(pimm != 0){
-                ADD_IMM_OPERAND(out, AD_IMM_ULONG, *(unsigned long *)&pimm);
-
+              if(pimm != 0)
+              {
+                ADD_IMM_OPERAND(out, AD_IMM_ULONG, pimm);
                 concat(DECODE_STR(out), ", #"S_LX"", S_LA(pimm));
-            }
+              }
             }
             concat(DECODE_STR(out), "]");
         }
         else if(kind == IMMEDIATE_POST_INDEXED){
+            ADD_IMM_OPERAND(out, AD_IMM_ULONG, imm9);
             concat(DECODE_STR(out), "], #"S_X"", S_A(imm9));
         }
         else if(kind == IMMEDIATE_PRE_INDEXED){
-            concat(DECODE_STR(out), ", #"S_X"]!", S_A(imm9));
+          ADD_IMM_OPERAND(out, AD_IMM_ULONG, imm9);
+          concat(DECODE_STR(out), ", #"S_X"]!", S_A(imm9));
         }
     }
 
