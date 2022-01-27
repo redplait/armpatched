@@ -1,0 +1,9 @@
+# find g_bDontAllowNewConnections
+section .data
+func Shutdown
+# index 1 - g_ShutdownCalled
+stg1 load
+# next wait for call
+wait call_imp ?Enter@CWbemCriticalSection@@QEAAHK@Z
+# next store is our target - index 2
+stg2 store
