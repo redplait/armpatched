@@ -7,3 +7,10 @@ stg1 load
 wait call_imp ?Enter@CWbemCriticalSection@@QEAAHK@Z
 # next store is our target - index 2
 stg2 store
+
+# to find CCoreServices vftable - from ~CCoreServices
+section .rdata
+fsection .text
+stg3 load
+guid 21 DF 14 0E 8D 0C 94 31 05 F9 A2 B6 B3 FC 34 F3
+wait call_imp ?WbemMemFree@CWin32DefaultArena@@SAHPEAX@Z
