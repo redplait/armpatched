@@ -115,9 +115,27 @@ int fsm_reader::parse(path_edge &path)
       return -1;
     }
     path.symbol_section = curr;
+    path.m_line = m_line;
     NEXT
   }
-
+  // rule - 4
+  if ( !strncmp(curr, "rule", 4) )
+  {
+    if ( m_state != 1 )
+    {
+      fprintf(stderr, "bad rule at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    if ( path.m_rule )
+    {
+      fprintf(stderr, "bad rule at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    curr = trim_left(curr + 4);
+    char *end = NULL;
+    path.m_rule = strtoul(curr, &end, 10);
+    NEXT
+  }
   // func - 4
   if ( !strncmp(curr, "func", 4) )
   {

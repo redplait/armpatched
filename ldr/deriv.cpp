@@ -908,7 +908,7 @@ struct path_state
   }
 };
 
-int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
+int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<PBYTE> *cand)
 {
   int has_stg = path.has_stg();
   if ( has_stg )
@@ -1038,7 +1038,12 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
         if ( NULL == func )
          continue;
         if ( try_apply(s, func, path, found) )
-          return 1;
+        {
+          if ( cand != NULL )
+            cand->insert(func);
+          else
+            return 1;
+        }
         if ( has_stg )
           m_stg = m_stg_copy; // restore storage
       }
@@ -1097,7 +1102,12 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
             continue;
           cached_funcs.insert(func);
           if ( try_apply(s, func, path, found) )
-            return 1;
+          {
+            if ( cand != NULL )
+              cand->insert(func);
+            else
+              return 1;
+          }
           if ( has_stg )
             m_stg = m_stg_copy; // restore storage
         }
@@ -1130,8 +1140,12 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
              continue;
            cached_funcs.insert(func);
            if ( try_apply(s, func, path, found) )
-             return 1;
-           if ( has_stg )
+           {
+              if ( cand != NULL )
+                cand->insert(func);
+              else
+                return 1;
+           } if ( has_stg )
              m_stg = m_stg_copy; // restore storage
         }
       }
@@ -1140,6 +1154,8 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
     limps.clear();
     if ( !path.collect_call_imps(limps) )
     {
+       if (cand != NULL && !cand->empty())
+         return 1;
        if ( !has_const && !has_rconst && !has_limps)
          printf("path don`t has const/rconst/limp/call_imp - don`t know how to find such functions\n");
        return 0;
@@ -1166,12 +1182,19 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found)
            continue;
          cached_funcs.insert(func);
          if ( try_apply(s, func, path, found) )
-           return 1;
+         {
+            if ( cand != NULL )
+              cand->insert(func);
+            else
+             return 1;
+         }
          if ( has_stg )
            m_stg = m_stg_copy; // restore storage
       }
     }
   }
+  if ( cand != NULL )
+    return !cand->empty();
   return 0;
 }
 

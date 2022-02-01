@@ -276,13 +276,23 @@ int wmain(int argc, wchar_t **argv)
       {
         mod.der->prepare(*ref, path);
         DWORD found = 0;
-        if ( mod.der->apply(*ref, path, found) )
+        if ( !path.m_rule )
         {
-          printf("[%d] %S: found at %X\n", mod_idx, mod.fname.c_str(), found);
-          if ( has_stg )
+          if ( mod.der->apply(*ref, path, found) )
           {
-            auto stg = mod.der->get_stg();
-            std::for_each(stg.cbegin(), stg.cend(), [](const auto &item) { printf(" %d - %X\n", item.first, item.second); });
+            printf("[%d] %S: found at %X\n", mod_idx, mod.fname.c_str(), found);
+            if ( has_stg )
+            {
+              auto stg = mod.der->get_stg();
+              std::for_each(stg.cbegin(), stg.cend(), [](const auto &item) { printf(" %d - %X\n", item.first, item.second); });
+            }
+          }
+        } else {
+          std::set<PBYTE> candidates;
+          if ( mod.der->apply(*ref, path, found, &candidates) )
+          {
+            for ( auto cands: candidates )
+              printf("[%d] %S: found at %X\n", mod_idx, mod.fname.c_str(), cands - mod.pe->base_addr());
           }
         }
         mod_idx++;

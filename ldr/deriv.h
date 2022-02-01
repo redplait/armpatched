@@ -190,6 +190,8 @@ struct path_item
 class path_edge
 {
   public:
+   DWORD m_line = 0;
+   DWORD m_rule = 0;
    std::string symbol_section;
    std::list<path_item> list;
    bool operator<(const path_edge& s) const
@@ -258,7 +260,7 @@ class deriv_hack: public iat_mod
     int find_in_fids_table(PBYTE mz, PBYTE func) const;
     template <typename FH>
     int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
-    int apply(found_xref &xref, path_edge &, DWORD &found);
+    int apply(found_xref &xref, path_edge &, DWORD &found, std::set<PBYTE> *c = NULL);
     void prepare(found_xref &xref, path_edge &);
     inline const std::map<DWORD, DWORD> &get_stg() const
     {
