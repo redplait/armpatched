@@ -1,0 +1,34 @@
+section .rdata
+rule 1
+fsection .text
+# IID_IAbortable
+guid 6F DD 13 F5 B4 61 60 42 B5 63 55 D3 94 E3 21 0B
+call
+# IID_IStreamSocket
+guid F7 19 78 65 DD 10 3D 40 99 FB 15 D8 4D 22 F7 EB
+call
+# IID_IHttp2Stream
+guid 48 9F CC E1 A1 C6 0A 4F 81 78 DF 0D 15 13 1A 84
+
+section .rdata
+# store found result in storage with index 1
+scan 1
+# at offset 18 must be function CHttp2Stream::QueryInterface from rule 1
+at 18 check 1
+
+section .data
+rule 2
+fsection .text
+# IID_IUnknown
+guid 00 00 00 00 00 00 00 00 C0 00 00 00 00 00 00 46
+call
+# IID_IProxyList
+guid 70 CF 3B 7C E1 2E E2 11 81 C1 08 00 20 0C 9A 66
+call
+
+# find CProxyList::vftable
+section .rdata
+# store found result in storage with index 2
+scan 2
+# at offset 0 must be function CProxyList::QueryInterface from rule 2
+at 0 check 2
