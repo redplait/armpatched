@@ -862,6 +862,19 @@ struct fids_item
 };
 #include <poppack.h>
 
+int deriv_hack::is_inside_fids_table(PBYTE addr) const
+{
+  DWORD lc_size = 0;
+  Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64 lc = (Prfg_IMAGE_LOAD_CONFIG_DIRECTORY64)m_pe->read_load_config(lc_size);
+  if ( lc == NULL || !lc_size || lc_size < offsetof(rfg_IMAGE_LOAD_CONFIG_DIRECTORY64, GuardFlags) )
+    return 0;
+  if ( !lc->GuardCFFunctionTable || !lc->GuardCFFunctionCount )
+    return 0;
+  PBYTE mz = m_pe->base_addr();
+  PBYTE fids = mz + lc->GuardCFFunctionTable - m_pe->image_base();
+  return (addr >= fids) && (addr < (fids + lc->GuardCFFunctionCount * sizeof(fids_item)));
+}
+
 int deriv_hack::find_in_fids_table(PBYTE mz, PBYTE func) const
 {
   if ( !gUseLC )

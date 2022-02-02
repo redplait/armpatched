@@ -2,6 +2,7 @@
 
 #include "iat_mod.h"
 #include "tpool.h"
+#include "bm_search.h"
 
 struct found_xref
 {
@@ -181,7 +182,13 @@ struct path_item
     stg_index = 0;
     wait_for = 0;
   }
-
+  inline int is_rule(int &out_val) const
+  {
+    if ( type != rule )
+      return 0;
+    out_val = reg_index;
+    return 1;
+  }
   void reset();
   void dump() const;
   void dump_at() const;
@@ -252,6 +259,9 @@ class path_edge
    int collect_call_imps(std::set<std::string> &) const;
 };
 
+typedef std::map<int, path_edge> Rules_set;
+int validate_scan(Rules_set &rules_set, path_edge &edge);
+
 class deriv_hack: public iat_mod
 {
   public:
@@ -281,6 +291,7 @@ class deriv_hack: public iat_mod
     template <typename FH>
     int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
     int apply(found_xref &xref, path_edge &, DWORD &found, std::set<PBYTE> *c = NULL);
+    int apply_scan(found_xref &xref, path_edge &, Rules_set &);
     void prepare(found_xref &xref, path_edge &);
     inline const std::map<DWORD, DWORD> &get_stg() const
     {
@@ -297,9 +308,15 @@ class deriv_hack: public iat_mod
     void calc_rdata_count(path_edge &);
     int try_apply(const one_section *s, PBYTE psp, path_edge &, DWORD &found);
     void store_stg(DWORD index, DWORD value);
+    int check_rule_results(found_xref &xref, Rules_set &, int rule_no);
+    int scan_value(found_xref &xref, bm_search &, int patter_size, path_edge &path, Rules_set &, std::set<PBYTE> &results);
+    int is_inside_fids_table(PBYTE addr) const;
     // global storage
     std::map<DWORD, DWORD> m_stg;
     std::map<DWORD, DWORD> m_stg_copy;
+    // results of lazy rules evaluation
+    // key - rule number, value - set with found results
+    std::map<int, std::set<PBYTE> > rules_result;
 };
 
 // set of test files
@@ -312,9 +329,6 @@ class deriv_tests
      arm64_pe_file *pe;
      inmem_import_holder i_h;
      inmem_import_holder di_h; // delayed import holder
-     // results of lazy rules evaluation
-     // key - rule number, value - set with found results
-     std::map<int, std::set<PBYTE> > rules_result;
      deriv_hack *der;
      deriv_test(deriv_test &&outer)
        : i_h(std::move(outer.i_h)),

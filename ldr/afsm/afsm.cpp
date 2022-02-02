@@ -268,6 +268,7 @@ int wmain(int argc, wchar_t **argv)
    fsm_reader rdr;
    if ( !rdr.open(fsm_name) )
      return 1;
+   Rules_set rules_set;
    while ( 1 )
    {
       found_xref *ref = NULL;
@@ -277,29 +278,36 @@ int wmain(int argc, wchar_t **argv)
         break;
       if ( g_verbose )
         dump_edge(path);
+      if ( path.m_rule && !path.is_scan() )
+      {
+        rules_set[path.m_rule] = path;
+        continue;
+      }
       int mod_idx = 0;
       int has_stg = path.has_stg();
       for ( const auto &mod: gTestPool.mods )
       {
         mod.der->prepare(*ref, path);
         DWORD found = 0;
-        if ( !path.m_rule )
+        if ( path.is_scan() )
         {
-          if ( mod.der->apply(*ref, path, found) )
+          if ( !validate_scan(rules_set, path) )
+            continue;
+          if ( mod.der->apply_scan(*ref, path, rules_set) )
           {
-            printf("[%d] %S: found at %X\n", mod_idx, mod.fname.c_str(), found);
-            if ( has_stg )
-            {
-              auto stg = mod.der->get_stg();
-              std::for_each(stg.cbegin(), stg.cend(), [](const auto &item) { printf(" %d - %X\n", item.first, item.second); });
-            }
+            printf("[%d] %S: scanned\n", mod_idx, mod.fname.c_str());
+            auto stg = mod.der->get_stg();
+            std::for_each(stg.cbegin(), stg.cend(), [](const auto &item) { printf(" %d - %X\n", item.first, item.second); });
           }
-        } else {
-          std::set<PBYTE> candidates;
-          if ( mod.der->apply(*ref, path, found, &candidates) )
+          continue;
+        }
+        if ( mod.der->apply(*ref, path, found) )
+        {
+          printf("[%d] %S: found at %X\n", mod_idx, mod.fname.c_str(), found);
+          if ( has_stg )
           {
-            for ( auto cands: candidates )
-              printf("[%d] %S: found at %X\n", mod_idx, mod.fname.c_str(), cands - mod.pe->base_addr());
+            auto stg = mod.der->get_stg();
+            std::for_each(stg.cbegin(), stg.cend(), [](const auto &item) { printf(" %d - %X\n", item.first, item.second); });
           }
         }
         mod_idx++;

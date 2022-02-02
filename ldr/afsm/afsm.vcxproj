@@ -172,6 +172,7 @@
     <ClCompile Include="..\iat_mod.cpp" />
     <ClCompile Include="..\imports_dict.cpp" />
     <ClCompile Include="..\pe_file.cpp" />
+    <ClCompile Include="..\scan.cpp" />
     <ClCompile Include="afsm.cpp" />
     <ClCompile Include="base_reader.cpp" />
     <ClCompile Include="fsd_reader.cpp" />
