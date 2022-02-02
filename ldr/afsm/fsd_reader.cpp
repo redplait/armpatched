@@ -31,7 +31,10 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
        {
          if ( m_state >= 2 )
          {
-           path.list.push_back(item);
+           if ( m_state > 3 )
+             path.scan_list.push_back(item);
+           else
+             path.list.push_back(item);
            m_state = 0;
            return 1;
          }
@@ -61,14 +64,29 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
        path.list.push_back(item);
        return 1;
     }
+    if ( res == 4 )
+    {
+       path.scan_list.push_back(item);
+       return 1;
+    }
   }
   return 0;
 }
 
 #define NEXT    curr = NULL; return 0;
-#define SLIST   if ( m_state == 3 ) { path.list.push_back(item); } m_state = 3; item.wait_for = wait_for;
+#define SLIST   if ( m_state == 3 ) { path.list.push_back(item); } \
+                if ( m_state < 3 ) m_state = 3; \
+                else if ( m_state == 5 ) { path.scan_list.push_back(item); } \
+                if ( m_state > 3 ) m_state = 5; \
+                item.wait_for = wait_for;
 
-
+// state:
+//   0 - initial state
+//   1 - was section keyword
+//   2 - was definition of func/sfunc/yfunc/rule etc and now wait for items to fill list
+//   3 - add some item to list and now wait next or return to 0 state
+//   4 - was definition of scan and now wait for items to fill scan_list
+//   5 - add some item to scan_list and now wait next or return to 0 state
 int fsm_reader::parse(path_edge &path)
 {
   DWORD stg_index = 0;
@@ -104,7 +122,10 @@ int fsm_reader::parse(path_edge &path)
   {
     if ( m_state > 1 )
     {
+      int old_state = m_state;
       m_state = 0;
+      if ( old_state > 3 )
+        return 4;
       return 1;
     }
     m_state = 1;
@@ -116,6 +137,20 @@ int fsm_reader::parse(path_edge &path)
     }
     path.symbol_section = curr;
     path.m_line = m_line;
+    NEXT
+  }
+  // scan - 4
+  if ( !strncmp(curr, "scan", 4) )
+  {
+    if ( m_state != 1 )
+    {
+      fprintf(stderr, "bad scan at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    curr = trim_left(curr + 4);
+    char *end = NULL;
+    path.m_rule = strtoul(curr, &end, 10);
+    m_state = 4;
     NEXT
   }
   // rule - 4
@@ -226,6 +261,38 @@ int fsm_reader::parse(path_edge &path)
     NEXT
   }
 
+  // at - 2
+  if ( !strncmp(curr, "at", 2) )
+  {
+    curr = trim_left(curr + 2);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad at command at line %d\n", m_line);
+      return -1;
+    }
+    item.at = strtol(curr, &curr, 16);
+    curr = trim_left(curr);
+  }
+  // check - 5
+  if ( !strncmp(curr, "check", 5) )
+  {
+    SLIST
+    curr = trim_left(curr + 5);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad check command at line %d\n", m_line);
+      return -1;
+    }
+    item.type = rule;
+    char *end = NULL;
+    item.reg_index = strtoul(curr, &end, 10);
+    if ( !item.reg_index )
+    {
+       fprintf(stderr, "zero rule index at line %d\n", m_line);
+       return -2;
+    }
+    NEXT
+  }     
   // limp - 4
   if ( !strncmp(curr, "limp", 4) )
   {

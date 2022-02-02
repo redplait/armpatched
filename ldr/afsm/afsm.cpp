@@ -129,8 +129,15 @@ std::string utf8_encode(const std::wstring &wstr)
 
 void dump_edge(const path_edge &edges)
 {
-  for ( const auto &edge: edges.list )
-    edge.dump();
+  if ( !edges.scan_list.empty() )
+  {
+    for ( const auto &scan: edges.scan_list )
+      scan.dump_at();
+  } else
+  {
+    for ( const auto &edge: edges.list )
+      edge.dump();
+  }
 }
 
 void usage(const wchar_t *progname)

@@ -93,14 +93,14 @@ typedef enum
   gldrh,
   gstrb,
   gstrh,  
-  ldr_off,   // load constant from pool
-  ldr64_off, // load 64bit constant from pool
-  limp,     // load from [IAT]
-  call_imp, // [IAT] call
-  call_dimp, // [delayed IAT] call
-  call_exp, // call of some exported function
-  call,     // just some call, perhaps in section name, may be stored in m_stg
-  gcall,    // call to early remembered address in m_stg
+  ldr_off,    // load constant from pool
+  ldr64_off,  // load 64bit constant from pool
+  limp,       // load from [IAT]
+  call_imp,   // [IAT] call
+  call_dimp,  // [delayed IAT] call
+  call_exp,   // call of some exported function
+  call,       // just some call, perhaps in section name, may be stored in m_stg
+  gcall,      // call to early remembered address in m_stg
   ldr_cookie, // load security_cookie
   call_icall, // call load_config.GuardCFCheckFunctionPointer
   ldr_rdata,  // load 8 byte constant from .rdata section
@@ -109,11 +109,13 @@ typedef enum
   strx,       // str regXX, reg, imm. index of register in reg_index
   addx,       // add regXX, reg, imm. index of register in reg_index
   movx,       // mov regXX, imm. index of register in reg_index
+  rule,       // some early defined rule, index of rule in reg_index
 } path_item_type;
 
 struct path_item
 {
   DWORD rva;
+  int at = 0;
   path_item_type type;
   union
   {
@@ -182,9 +184,11 @@ struct path_item
 
   void reset();
   void dump() const;
+  void dump_at() const;
   void pod_dump(FILE *fp) const;
   int is_load_store() const;
   bool operator==(const path_item&) const;
+  int get_upper_bound() const;
 };
 
 class path_edge
@@ -194,12 +198,28 @@ class path_edge
    DWORD m_rule = 0;
    std::string symbol_section;
    std::list<path_item> list;
+   std::list<path_item> scan_list;
+
+   inline int is_scan() const
+   {
+     return !scan_list.empty();
+   }
    bool operator<(const path_edge& s) const
    {
-     return list.size() < s.list.size();
+     if ( is_scan() )
+      return scan_list.size() < s.scan_list.size();
+     else
+      return list.size() < s.list.size();
    }
    bool operator==(const path_edge &other) const
    {
+     if ( is_scan() )
+     {
+       if ( scan_list.size() != other.scan_list.size() )
+         return false;
+       // compare lists
+       return std::equal(scan_list.cbegin(), scan_list.cend(), other.scan_list.cbegin());
+     }
      if ( list.size() != other.list.size() )
        return false;
      // compare lists
@@ -292,6 +312,9 @@ class deriv_tests
      arm64_pe_file *pe;
      inmem_import_holder i_h;
      inmem_import_holder di_h; // delayed import holder
+     // results of lazy rules evaluation
+     // key - rule number, value - set with found results
+     std::map<int, std::set<PBYTE> > rules_result;
      deriv_hack *der;
      deriv_test(deriv_test &&outer)
        : i_h(std::move(outer.i_h)),

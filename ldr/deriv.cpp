@@ -235,9 +235,27 @@ int path_item::is_load_store() const
   return 0;
 }
 
+int path_item::get_upper_bound() const
+{
+  switch(type)
+  {
+    case gcall:
+    case call_exp:
+    case call_dimp:
+    case call_imp:
+    case rule:
+      return at + 8; // size of ptr
+    case ldr_guid:
+      return at + 16;
+  }
+  return 0;
+}
+
 bool path_item::operator==(const path_item &other) const
 {
   if ( type != other.type )
+    return false;
+  if ( at != other.at )
     return false;
   switch(type)
   {
@@ -280,6 +298,7 @@ bool path_item::operator==(const path_item &other) const
     case ldr_guid:
       return !memcmp(guid, other.guid, sizeof(guid));
 
+    case rule:
     case movx:
     case ldrx:
     case strx:
@@ -497,9 +516,43 @@ void path_item::pod_dump(FILE *fp) const
        else
          fprintf(fp, " movx %d\n", reg_index);
        break;  
+    case rule:
+        fprintf(fp, " at %d rule %d\n", at, reg_index);
+       break;
     default:
         fprintf(fp, " unknown type %d\n", type);
   }  
+}
+
+void path_item::dump_at() const
+{
+  printf(" at %d", at);
+  switch(type)
+  {
+    case call_imp:
+        printf(" call_imp %s\n", name.c_str());
+       break;
+    case call_dimp:
+        printf(" call_dimp %s\n", name.c_str());
+       break;
+    case call_exp:
+        printf(" call_exp %s\n", name.c_str());
+       break;
+    case ldr_guid:
+         printf(" guid");
+         for ( size_t i = 0; i < _countof(guid); i++ )
+           printf(" %2.2X", guid[i]);
+         if ( value_count )
+           printf(" count %d\n", value_count);
+         else
+           printf("\n");
+       break;
+    case rule:
+        printf(" rule %d\n", reg_index);
+       break;
+    default:
+        printf(" unknown type %d\n", type);
+  }
 }
 
 void path_item::dump() const
@@ -702,6 +755,9 @@ void path_item::dump() const
          printf(" movx\n");
        else
          printf(" movx %d\n", reg_index);
+       break;
+    case rule:
+        printf(" at %d rule %d\n", at, reg_index);
        break;
     default:
         printf(" unknown type %d\n", type);
