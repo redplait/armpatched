@@ -309,6 +309,7 @@ class deriv_hack: public iat_mod
     int try_apply(const one_section *s, PBYTE psp, path_edge &, DWORD &found);
     void store_stg(DWORD index, DWORD value);
     int check_rule_results(found_xref &xref, Rules_set &, int rule_no);
+    int validate_scan_items(path_edge &edge);
     int scan_value(found_xref &xref, bm_search &, int patter_size, path_edge &path, Rules_set &, std::set<PBYTE> &results);
     int is_inside_fids_table(PBYTE addr) const;
     // global storage

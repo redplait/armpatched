@@ -77,7 +77,22 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
      int is_ok = (tail_iter == path.scan_list.end());
      for ( ; tail_iter != path.scan_list.end(); ++tail_iter)
      {
+       switch (tail_iter->type)
+       {
+         case call_exp:
+         case call_imp:
+         case call_dimp:
+           is_ok = ( *(UINT64 *)(tab + tail_iter->at) - m_pe->image_base() == tail_iter->rva );
+          break;
+         case ldr_guid:
+           is_ok = !memcmp(tab + tail_iter->at, tail_iter->guid, sizeof(tail_iter->guid));
+          break;
+         case rule:
 
+          break;
+         default:
+          fprintf(stderr, "unknown type %d in scan_value at line %d\n", tail_iter->type, path.m_line);
+       }
      }
      if ( is_ok )
      {
@@ -90,11 +105,46 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
   return res;
 }
 
+int deriv_hack::validate_scan_items(path_edge &edge)
+{
+  for ( auto& item: edge.scan_list )
+  {
+    if ( item.type == call_exp )
+    {
+      const export_item *exp = m_ed->find(item.name.c_str());
+      if ( exp == NULL )
+      {
+        fprintf(stderr, "cannot find exported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
+        return 0;
+      }
+      item.rva = exp->rva;
+    } else if ( item.type == call_imp )
+    {
+      item.rva = get_iat_by_name(item.name.c_str());
+      if ( !item.rva )
+      {
+        fprintf(stderr, "cannot find imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
+        return 0;
+      }
+    } else if ( item.type == call_dimp )
+    {
+      item.rva = get_diat_by_name(item.name.c_str());
+      if ( !item.rva )
+      {
+        fprintf(stderr, "cannot find delayed imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
 int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_set)
 {
+  if ( !validate_scan_items(path) )
+    return 0;
   auto iter = path.scan_list.begin();
   DWORD call_addr = 0;
-  const export_item *exp = NULL;
   UINT64 sign;
   int pattern_size = sizeof(sign);
   PBYTE mz = m_pe->base_addr();
@@ -117,34 +167,15 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
       }
      break;
     case call_exp:
-      exp = m_ed->find(iter->name.c_str());
-      if ( exp == NULL )
-      {
-        fprintf(stderr, "cannot find exported function %s for scan at line %d\n", iter->name.c_str(), path.m_line);
-        return 0;
-      }
-      call_addr = exp->rva;
-      sign = UINT64(m_pe->image_base() + call_addr);
+      sign = UINT64(m_pe->image_base() + iter->rva);
       srch.set((const PBYTE)&sign, pattern_size);
      break;
     case call_imp:
-      call_addr = get_iat_by_name(iter->name.c_str());
-      if ( !call_addr )
-      {
-        fprintf(stderr, "cannot find imported function %s for scan at line %d\n", iter->name.c_str(), path.m_line);
-        return 0;
-      }
-      sign = UINT64(m_pe->image_base() + call_addr);
+      sign = UINT64(m_pe->image_base() + iter->rva);
       srch.set((const PBYTE)&sign, pattern_size);
      break;
     case call_dimp:
-      call_addr = get_diat_by_name(iter->name.c_str());
-      if ( !call_addr )
-      {
-        fprintf(stderr, "cannot find delayed imported function %s for scan at line %d\n", iter->name.c_str(), path.m_line);
-        return 0;
-      }
-      sign = UINT64(m_pe->image_base() + call_addr);
+      sign = UINT64(m_pe->image_base() + iter->rva);
       srch.set((const PBYTE)&sign, pattern_size);
      break;
     case ldr_guid:
