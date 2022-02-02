@@ -88,7 +88,22 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
            is_ok = !memcmp(tab + tail_iter->at, tail_iter->guid, sizeof(tail_iter->guid));
           break;
          case rule:
-
+           // lets see if this rule already was evaluated
+           {
+             const auto eved = rules_result.find(tail_iter->reg_index);
+             if ( eved != rules_result.cend() )
+             {
+               for ( auto early: eved->second )
+               {
+                 UINT64 has = early - mz + m_pe->image_base();
+                 if ( has == *(UINT64 *)(tab + tail_iter->at) )
+                 {
+                   is_ok = 1;
+                   break;
+                 }
+               }
+             }
+           }
           break;
          default:
           fprintf(stderr, "unknown type %d in scan_value at line %d\n", tail_iter->type, path.m_line);
@@ -194,8 +209,7 @@ process_results:
     return 0;
   if ( results.size() > 1 )
   {
-     fprintf(stderr, "ambigious relusts for scan at line %d, found %d cadidates\n", path.m_line, (int)results.size());
-     fprintf(stderr, "candidates:\n");
+     fprintf(stderr, "ambigious relusts for scan at line %d, found %d cadidates:\n", path.m_line, (int)results.size());
      for ( const auto cand: results )
        fprintf(stderr, " %p\n", cand - mz);
      return 0;
