@@ -529,6 +529,9 @@ void path_item::dump_at() const
   printf(" at %d", at);
   switch(type)
   {
+    case gcall:
+        printf(" gcall %d\n", stg_index);
+       break;
     case call_imp:
         printf(" call_imp %s\n", name.c_str());
        break;

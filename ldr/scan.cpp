@@ -79,6 +79,7 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
      {
        switch (tail_iter->type)
        {
+         case gcall:
          case call_exp:
          case call_imp:
          case call_dimp:
@@ -149,6 +150,15 @@ int deriv_hack::validate_scan_items(path_edge &edge)
         fprintf(stderr, "cannot find delayed imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
         return 0;
       }
+    } else if ( item.type == gcall )
+    {
+      auto found = m_stg.find(item.stg_index);
+      if ( found == m_stg.end() )
+      {
+        fprintf(stderr, "nothing was found with storage index %d scan at line %d\n", item.stg_index, edge.m_line);
+        return 0;
+      }
+      item.rva = found->second;
     }
   }
   return 1;
@@ -181,15 +191,10 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
         goto process_results;
       }
      break;
-    case call_exp:
-      sign = UINT64(m_pe->image_base() + iter->rva);
-      srch.set((const PBYTE)&sign, pattern_size);
-     break;
+    case gcall:
     case call_imp:
-      sign = UINT64(m_pe->image_base() + iter->rva);
-      srch.set((const PBYTE)&sign, pattern_size);
-     break;
     case call_dimp:
+    case call_exp:
       sign = UINT64(m_pe->image_base() + iter->rva);
       srch.set((const PBYTE)&sign, pattern_size);
      break;
