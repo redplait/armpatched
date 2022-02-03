@@ -256,6 +256,7 @@ class path_edge
    }
    const path_item *get_best_const() const;
    const path_item *get_best_rconst() const;
+   int collect_poi(std::list<const path_item *> &) const;
    int collect_limps(std::set<std::string> &) const;
    int collect_call_imps(std::set<std::string> &) const;
 };

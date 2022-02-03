@@ -133,6 +133,21 @@ int path_edge::contains_imp(std::string &name) const
   return 0;
 }
 
+int path_edge::collect_poi(std::list<const path_item *> &out_res) const
+{
+  for (auto &c: list )
+  {
+    if ( c.type != poi )
+      continue;
+    try
+    {
+      out_res.push_back(&c);
+    } catch(std::bad_alloc)
+    { return 0; }
+  }
+  return !out_res.empty();
+}
+
 int path_edge::collect_call_imps(std::set<std::string> &out_res) const
 {
   for ( const auto &c: list )
@@ -634,6 +649,7 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<
   } else {
     int has_const = 0,
         has_rconst = 0,
+        has_poi = 0,
         has_limps = 0;
     const one_section *cs = m_pe->find_section_by_name(xref.section_name.c_str());
     if ( cs == NULL )
@@ -790,13 +806,49 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<
         }
       }
     }
+    // try poi
+    std::list<const path_item *> pois;
+    if ( path.collect_poi(pois) )
+    {
+      for ( auto cpoi: pois )
+      {
+        auto value = m_stg.find(cpoi->reg_index);
+        if ( value == m_stg.end() )
+          continue;
+        has_poi = 1;
+        std::list<PBYTE> refs;
+        xref_finder xf;
+        ptrdiff_t tab_value = *(UINT64 *)(mz + value->second + cpoi->value) - m_pe->image_base();
+        if ( !xf.find_ldr(mz + cs->va, cs->size, tab_value + mz, refs) )
+          continue;
+        for ( const auto &cref: refs )
+        {
+           PBYTE func = find_pdata(cref);
+           if ( NULL == func )
+             continue;
+           auto already_processed = cached_funcs.find(func);
+           if ( already_processed != cached_funcs.end() )
+             continue;
+           cached_funcs.insert(func);
+           if ( try_apply(s, func, path, found) )
+           {
+              if ( cand != NULL )
+                cand->insert(func);
+              else
+                return 1;
+           } 
+           if ( has_stg )
+             m_stg = m_stg_copy; // restore storage
+        }
+      }
+    }
     // finally try just imported functions
     limps.clear();
     if ( !path.collect_call_imps(limps) )
     {
        if (cand != NULL && !cand->empty())
          return 1;
-       if ( !has_const && !has_rconst && !has_limps)
+       if ( !has_const && !has_rconst && !has_limps && !has_poi)
          printf("path don`t has const/rconst/limp/call_imp - don`t know how to find such functions\n");
        return 0;
     }
