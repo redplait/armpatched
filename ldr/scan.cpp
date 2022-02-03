@@ -79,6 +79,7 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
      {
        switch (tail_iter->type)
        {
+         case gload:
          case gcall:
          case call_exp:
          case call_imp:
@@ -98,10 +99,11 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
                  return 0;
                eved = rules_result.find(tail_iter->reg_index);
              }
-             if ( eved == rules_result.cend() )
+             if ( eved == rules_result.end() )
                 return 0;
              for ( auto early: eved->second )
              {
+               // we want any match in results of this rule
                UINT64 has = early - mz + m_pe->image_base();
                if ( has == *(UINT64 *)(tab + tail_iter->at) )
                {
@@ -155,7 +157,7 @@ int deriv_hack::validate_scan_items(path_edge &edge)
         fprintf(stderr, "cannot find delayed imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
         return 0;
       }
-    } else if ( item.type == gcall )
+    } else if ( (item.type == gcall) || (item.type == gload) )
     {
       auto found = m_stg.find(item.stg_index);
       if ( found == m_stg.end() )
@@ -196,6 +198,7 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
         goto process_results;
       }
      break;
+    case gload:
     case gcall:
     case call_imp:
     case call_dimp:

@@ -239,6 +239,7 @@ int path_item::get_upper_bound() const
 {
   switch(type)
   {
+    case gload:
     case gcall:
     case call_exp:
     case call_dimp:
@@ -529,6 +530,9 @@ void path_item::dump_at() const
   printf(" at %d", at);
   switch(type)
   {
+    case gload:
+        printf(" gload %d\n", stg_index);
+       break;
     case gcall:
         printf(" gcall %d\n", stg_index);
        break;
