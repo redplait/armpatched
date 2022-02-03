@@ -79,6 +79,12 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
      {
        switch (tail_iter->type)
        {
+         case ldr_off:
+            is_ok = *(PDWORD)(tab + tail_iter->at) == tail_iter->value;
+           break;
+         case ldr64_off:
+            is_ok = *(uint64_t *)(tab + tail_iter->at) == tail_iter->value64;
+           break;
          case gload:
          case gcall:
          case call_exp:
@@ -205,6 +211,14 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
     case call_exp:
       sign = UINT64(m_pe->image_base() + iter->rva);
       srch.set((const PBYTE)&sign, pattern_size);
+     break;
+    case ldr_off:
+      pattern_size = sizeof(iter->value);
+      srch.set((const PBYTE)&iter->value, pattern_size);
+     break;
+    case ldr64_off:
+      pattern_size = sizeof(iter->value64);
+      srch.set((const PBYTE)&iter->value64, pattern_size);
      break;
     case ldr_guid:
        pattern_size = sizeof(iter->guid);

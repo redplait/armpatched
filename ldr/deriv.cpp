@@ -239,6 +239,10 @@ int path_item::get_upper_bound() const
 {
   switch(type)
   {
+    case ldr_off:
+      return at + sizeof(value);
+    case ldr64_off:
+      return at + sizeof(value64);
     case gload:
     case gcall:
     case call_exp:
@@ -530,6 +534,12 @@ void path_item::dump_at() const
   printf(" at %d", at);
   switch(type)
   {
+    case ldr_off:
+         printf(" const %X\n", value);
+       break;
+    case ldr64_off:
+         printf(" const %I64X\n", value64);
+       break;
     case gload:
         printf(" gload %d\n", stg_index);
        break;
