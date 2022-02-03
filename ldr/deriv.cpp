@@ -784,7 +784,8 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<
                 cand->insert(func);
               else
                 return 1;
-           } if ( has_stg )
+           } 
+           if ( has_stg )
              m_stg = m_stg_copy; // restore storage
         }
       }
@@ -997,6 +998,24 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_add() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          // check poi first
+          if ( iter->second.s->type == poi )
+          {
+            auto found = m_stg.find(iter->second.s->reg_index);
+            if ( found != m_stg.end() )
+            {
+              // ok, read ptr from early found tab
+              ptrdiff_t tab_value = *(UINT64 *)(mz + found->second + iter->second.s->value) - m_pe->image_base();
+              if ( what - mz == tab_value )
+              {
+                store_stg(iter->second.s->stg_index, what - mz);
+                if ( iter->second.next(path) )
+                  return 1;
+              } else if ( !iter->second.s->wait_for )
+                break;
+            }
+            // we fall down to find next states after poi here
+          }
           if ( iter->second.s->type == addx )
           {
             if ( (iter->second.s->reg_index != -1) && (get_reg(0) != iter->second.s->reg_index) )
