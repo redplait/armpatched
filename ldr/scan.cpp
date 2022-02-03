@@ -89,19 +89,24 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
            is_ok = !memcmp(tab + tail_iter->at, tail_iter->guid, sizeof(tail_iter->guid));
           break;
          case rule:
-           // lets see if this rule already was evaluated
            {
-             const auto eved = rules_result.find(tail_iter->reg_index);
-             if ( eved != rules_result.cend() )
+             auto eved = rules_result.find(tail_iter->reg_index);
+             // lets see if this rule already was evaluated
+             if ( eved == rules_result.end() )
              {
-               for ( auto early: eved->second )
+               if ( !check_rule_results(xref, rules_set, tail_iter->reg_index) )
+                 return 0;
+               eved = rules_result.find(tail_iter->reg_index);
+             }
+             if ( eved == rules_result.cend() )
+                return 0;
+             for ( auto early: eved->second )
+             {
+               UINT64 has = early - mz + m_pe->image_base();
+               if ( has == *(UINT64 *)(tab + tail_iter->at) )
                {
-                 UINT64 has = early - mz + m_pe->image_base();
-                 if ( has == *(UINT64 *)(tab + tail_iter->at) )
-                 {
-                   is_ok = 1;
-                   break;
-                 }
+                 is_ok = 1;
+                 break;
                }
              }
            }
