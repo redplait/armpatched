@@ -74,11 +74,16 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
 }
 
 #define NEXT    curr = NULL; return 0;
-#define SLIST   if ( m_state == 3 ) { path.list.push_back(item); } \
-                if ( m_state < 3 ) m_state = 3; \
-                else if ( m_state == 5 ) { path.scan_list.push_back(item); } \
-                if ( m_state > 3 ) m_state = 5; \
-                item.wait_for = wait_for;
+#define SLIST    if ( m_state == 3 ) { path.list.push_back(item); } \
+                 if ( m_state < 3 ) m_state = 3; \
+                 else if ( m_state > 3 ) m_state = 5; \
+                 item.wait_for = wait_for;
+
+#define AT_SLIST if ( m_state == 3 ) { path.list.push_back(item); } \
+                 if ( m_state < 3 ) m_state = 3; \
+                 else if ( m_state == 5 ) { path.scan_list.push_back(item); } \
+                 if ( m_state > 3 ) m_state = 5; \
+                 item.wait_for = wait_for;
 
 // state:
 //   0 - initial state
@@ -264,6 +269,8 @@ int fsm_reader::parse(path_edge &path)
   // at - 2
   if ( !strncmp(curr, "at", 2) )
   {
+    // push previous item
+    AT_SLIST
     curr = trim_left(curr + 2);
     if ( !*curr )
     {
