@@ -243,6 +243,7 @@ int path_item::get_upper_bound() const
       return at + sizeof(value);
     case ldr64_off:
       return at + sizeof(value64);
+    case sload:
     case gload:
     case gcall:
     case call_exp:
@@ -540,6 +541,9 @@ void path_item::dump_at() const
     case ldr64_off:
          printf(" const %I64X\n", value64);
        break;
+    case sload:
+         printf(" sload %s\n", name.c_str());
+       break; 
     case gload:
         printf(" gload %d\n", stg_index);
        break;

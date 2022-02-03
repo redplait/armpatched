@@ -85,6 +85,14 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
          case ldr64_off:
             is_ok = *(uint64_t *)(tab + tail_iter->at) == tail_iter->value64;
            break;
+         case sload:
+           {
+             DWORD off = *(UINT64 *)(tab + tail_iter->at) - m_pe->image_base();
+             auto s = m_pe->find_section_v(off);
+             if ( s != NULL )
+               is_ok = !strcmp(s->name, tail_iter->name.c_str());
+           }
+           break;
          case gload:
          case gcall:
          case call_exp:
@@ -172,6 +180,14 @@ int deriv_hack::validate_scan_items(path_edge &edge)
         return 0;
       }
       item.rva = found->second;
+    } else if ( item.type == sload )
+    {
+      auto s = m_pe->find_section_by_name(item.name.c_str());
+      if ( s == NULL )
+      {
+        fprintf(stderr, "no section %s for scan at line %d\n", item.name.c_str(), edge.m_line);
+        return 0;
+      }
     }
   }
   return 1;
@@ -204,6 +220,9 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
         goto process_results;
       }
      break;
+    case sload:
+     fprintf(stderr, "you cant have sload as first rule for scan at line %d\n", path.m_line);
+     return 0;     
     case gload:
     case gcall:
     case call_imp:

@@ -68,3 +68,10 @@ section .data
 sfunc 9
 stg10 movx2
 call_imp HeapAlloc
+
+# gServerIf
+section .rdata
+# store found with index 11
+scan 11
+at 4 guid A0 9E C0 69 09 4A 1B 10 AE 4B 08 00 2B 34 9A 02
+at 0 const 60
