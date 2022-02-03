@@ -159,6 +159,7 @@
     <ClCompile Include="bm_search.cpp" />
     <ClCompile Include="combase_hack.cpp" />
     <ClCompile Include="deriv.cpp" />
+    <ClCompile Include="deriv_dump.cpp" />
     <ClCompile Include="dict.c" />
     <ClCompile Include="etw_umod.cpp" />
     <ClCompile Include="exports_dict.cpp" />

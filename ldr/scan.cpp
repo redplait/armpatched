@@ -176,7 +176,7 @@ int deriv_hack::validate_scan_items(path_edge &edge)
       auto found = m_stg.find(item.stg_index);
       if ( found == m_stg.end() )
       {
-        fprintf(stderr, "nothing was found with storage index %d scan at line %d\n", item.stg_index, edge.m_line);
+        fprintf(stderr, "nothing was found with storage index %d for scan at line %d\n", item.stg_index, edge.m_line);
         return 0;
       }
       item.rva = found->second;

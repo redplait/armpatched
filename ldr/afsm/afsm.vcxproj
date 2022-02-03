@@ -166,6 +166,7 @@
   <ItemGroup>
     <ClCompile Include="..\bm_search.cpp" />
     <ClCompile Include="..\deriv.cpp" />
+    <ClCompile Include="..\deriv_dump.cpp" />
     <ClCompile Include="..\dict.c" />
     <ClCompile Include="..\exports_dict.cpp" />
     <ClCompile Include="..\hack.cpp" />
