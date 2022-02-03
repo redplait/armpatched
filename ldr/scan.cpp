@@ -89,8 +89,10 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
            {
              DWORD off = *(UINT64 *)(tab + tail_iter->at) - m_pe->image_base();
              auto s = m_pe->find_section_v(off);
-             if ( s != NULL )
+             if (s != NULL)
                is_ok = !strcmp(s->name, tail_iter->name.c_str());
+             else
+               is_ok = 0;
            }
            break;
          case gload:
@@ -130,6 +132,8 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
          default:
           fprintf(stderr, "unknown type %d in scan_value at line %d\n", tail_iter->type, path.m_line);
        }
+       if (!is_ok)
+         break;
      }
      if ( is_ok )
      {
