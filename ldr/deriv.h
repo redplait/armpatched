@@ -111,6 +111,7 @@ typedef enum
   addx,       // add regXX, reg, imm. index of register in reg_index
   movx,       // mov regXX, imm. index of register in reg_index
   rule,       // some early defined rule, index of rule in reg_index
+  poi,        // pointer from some early found address
 } path_item_type;
 
 struct path_item

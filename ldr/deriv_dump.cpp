@@ -193,6 +193,9 @@ void path_item::pod_dump(FILE *fp) const
     case rule:
         fprintf(fp, " at %d rule %d\n", at, reg_index);
        break;
+    case poi:
+        fprintf(fp, " poi %d offset %X\n", reg_index, value);
+       break;
     default:
         fprintf(fp, " unknown type %d\n", type);
   }  
@@ -238,6 +241,9 @@ void path_item::dump_at() const
        break;
     case rule:
         printf(" rule %d\n", reg_index);
+       break;
+    case poi:
+        printf(" poi %d offset %X\n", reg_index, value);
        break;
     default:
         printf(" unknown type %d\n", type);
@@ -447,6 +453,9 @@ void path_item::dump() const
        break;
     case rule:
         printf(" at %d rule %d\n", at, reg_index);
+       break;
+    case poi:
+        printf(" poi %d offset %X\n", reg_index, value);
        break;
     default:
         printf(" unknown type %d\n", type);

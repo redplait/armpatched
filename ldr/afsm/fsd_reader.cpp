@@ -399,6 +399,26 @@ int fsm_reader::parse(path_edge &path)
     NEXT
   }
 
+  // poi - 3
+  if ( !strncmp(curr, "poi", 3) )
+  {
+    SLIST
+    curr = trim_left(curr + 3);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad params for poi at line %d\n", m_line);
+      return -1;
+    }
+    item.reg_index = strtoul(curr, &curr, 10);
+    if ( !item.reg_index )
+    {
+      fprintf(stderr, "zero stg in poi at line %d\n", m_line);
+      return -2;
+    }
+    curr = trim_left(curr);
+    item.value = strtoul(curr, &curr, 16);
+    NEXT
+  }
   // sload - 5
   if ( !strncmp(curr, "sload", 5) )
   {

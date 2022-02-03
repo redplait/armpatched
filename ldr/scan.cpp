@@ -95,6 +95,9 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
                is_ok = 0;
            }
            break;
+         case poi:
+            is_ok = *(UINT64 *)(tab + tail_iter->at) == *(UINT64 *)(mz + tail_iter->rva + tail_iter->value);
+           break;
          case gload:
          case gcall:
          case call_exp:
@@ -175,6 +178,15 @@ int deriv_hack::validate_scan_items(path_edge &edge)
         fprintf(stderr, "cannot find delayed imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
         return 0;
       }
+    } else if ( item.type == poi )
+    {
+      auto found = m_stg.find(item.reg_index);
+      if ( found == m_stg.end() )
+      {
+        fprintf(stderr, "nothing was found with storage index %d for scan at line %d\n", item.reg_index, edge.m_line);
+        return 0;
+      }
+      item.rva = found->second;      
     } else if ( (item.type == gcall) || (item.type == gload) )
     {
       auto found = m_stg.find(item.stg_index);
@@ -202,7 +214,6 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
   if ( !validate_scan_items(path) )
     return 0;
   auto iter = path.scan_list.begin();
-  DWORD call_addr = 0;
   UINT64 sign;
   int pattern_size = sizeof(sign);
   PBYTE mz = m_pe->base_addr();
@@ -226,7 +237,11 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
      break;
     case sload:
      fprintf(stderr, "you cant have sload as first rule for scan at line %d\n", path.m_line);
-     return 0;     
+     return 0;
+    case poi:
+      sign = *(UINT64 *)(mz + iter->rva + iter->value);
+      srch.set((const PBYTE)&sign, pattern_size);
+     break;
     case gload:
     case gcall:
     case call_imp:
