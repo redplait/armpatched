@@ -266,7 +266,7 @@ int path_item::get_upper_bound() const
     case call_dimp:
     case call_imp:
     case rule:
-      return at + 8; // size of ptr
+      return at + iat_mod::ptr_size; // size of ptr
     case ldr_guid:
       return at + 16;
   }
@@ -562,6 +562,19 @@ struct path_state
   }
 };
 
+int deriv_hack::extract_poi(DWORD off, int at_offset, ptrdiff_t &out_val)
+{
+  auto s = m_pe->find_section_rva(off + at_offset);
+  if ( NULL == s )
+    return 0;
+  // check that we have enough space to read pointer
+  if ( s->va + s->size < off + at_offset + ptr_size )
+    return 0;
+  PBYTE mz = m_pe->base_addr();
+  out_val = *(UINT64 *)(mz + off + at_offset) - m_pe->image_base();
+  return 1;
+}
+
 int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<PBYTE> *cand)
 {
   int has_stg = path.has_stg();
@@ -634,12 +647,29 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<
     if ( !res && has_stg )
       m_stg = m_stg_copy; // restore storage
     return res;
+  } else if ( path.is_fpoi() )
+  {
+    // check if we have result in storage
+    auto value = m_stg.find(path.fpoi_index);
+    if ( value == m_stg.end() )
+    {
+      printf("cannot find stored value %d for fpoi (line %d)\n", path.fpoi_index, path.m_line);
+      return 0;
+    }
+    // extract ptr
+    ptrdiff_t val = NULL;
+    if ( !extract_poi(value->second, path.at, val) )
+      return 0;
+    int res = try_apply(s, m_pe->base_addr() + val, path, found);
+    if ( !res && has_stg )
+      m_stg = m_stg_copy; // restore storage
+    return res;
   } else if ( xref.stg_index )
   {
     auto value = m_stg.find(xref.stg_index);
     if ( value == m_stg.end() )
     {
-      printf("cannot find stored value %d\n", xref.stg_index);
+      printf("cannot find stored value %d (line %d)\n", xref.stg_index, path.m_line);
       return 0;
     }
     int res = try_apply(s, m_pe->base_addr() + value->second, path, found);
@@ -1348,6 +1378,8 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         if ( is_str() )
         {
           PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          if (NULL == what)
+            what = (PBYTE)used_regs.get_str(get_reg(1), m_dis.operands[2].op_imm.bits);
           if ( iter->second.s->type == strx )
           {
             if ( (iter->second.s->reg_index != -1) && (get_reg(0) != iter->second.s->reg_index) )

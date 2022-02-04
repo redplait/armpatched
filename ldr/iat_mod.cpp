@@ -49,7 +49,7 @@ DWORD iat_mod::get_iat_by_name(const char *name) const
   if ( NULL == m_iat )
     return NULL;
   DWORD addr = m_iat->iat_rva;
-  for ( DWORD index = 0; index < m_iat->iat_count; index++, addr += 8 )
+  for ( DWORD index = 0; index < m_iat->iat_count; index++, addr += ptr_size )
   {
     if ( m_iat->iat[index].name == NULL )
       continue;
@@ -64,7 +64,7 @@ DWORD iat_mod::get_diat_by_name(const char *name) const
   if ( NULL == m_diat )
     return NULL;
   DWORD addr = m_diat->iat_rva;
-  for ( DWORD index = 0; index < m_diat->iat_count; index++, addr += 8 )
+  for ( DWORD index = 0; index < m_diat->iat_count; index++, addr += ptr_size )
   {
     if ( m_diat->iat[index].name == NULL )
       continue;

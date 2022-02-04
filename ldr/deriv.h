@@ -142,6 +142,7 @@ struct path_item
   path_item() = default;
   path_item(path_item_type t, DWORD arva)
   {
+    at = 0;
     type = t;
     rva = arva;
     reg_index = 0;
@@ -172,6 +173,7 @@ struct path_item
   }
   path_item(DWORD val)
   {
+    at = 0;
     type = ldr_off;
     value_count = 0;
     value = val;
@@ -181,6 +183,7 @@ struct path_item
   }
   path_item(uint64_t val)
   {
+    at = 0;
     type = ldr64_off;
     value_count = 0;
     value64 = val;
@@ -209,10 +212,17 @@ class path_edge
   public:
    DWORD m_line = 0;
    DWORD m_rule = 0;
+   // for fpoi
+   DWORD fpoi_index = 0;
+   int at = 0;
    std::string symbol_section;
    std::list<path_item> list;
    std::list<path_item> scan_list;
 
+   inline int is_fpoi() const
+   {
+     return (fpoi_index != 0);
+   }
    inline int is_scan() const
    {
      return !scan_list.empty();
@@ -319,6 +329,7 @@ class deriv_hack: public iat_mod
     int validate_scan_items(path_edge &edge);
     int scan_value(found_xref &xref, bm_search &, int patter_size, path_edge &path, Rules_set &, std::set<PBYTE> &results);
     int is_inside_fids_table(PBYTE addr) const;
+    int extract_poi(DWORD off, int at_offset, ptrdiff_t &);
     // global storage
     std::map<DWORD, DWORD> m_stg;
     std::map<DWORD, DWORD> m_stg_copy;

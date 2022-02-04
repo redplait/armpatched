@@ -55,6 +55,14 @@ class regs_pad
      m_regs[reg1] = m_regs[reg2] + val;
      return m_regs[reg1];
    }
+   reg64_t get_str(int reg2, reg64_t val)
+   {
+     if (reg2 >= AD_REG_SP)
+       return 0;
+     if (!m_regs[reg2])
+       return 0;
+     return m_regs[reg2] + val;
+   }
    int ldar(int reg1, int reg2)
    {
      if ( (reg1 >= AD_REG_SP) || (reg2 >= AD_REG_SP) ) 

@@ -8,9 +8,25 @@ wait call_imp ?Enter@CWbemCriticalSection@@QEAAHK@Z
 # next store is our target - index 2
 stg2 store
 
-# to find CCoreServices vftable - from ~CCoreServices
+# to find CCoreServices vftable
 section .rdata
+rule 1
 fsection .text
-stg3 load
-guid 21 DF 14 0E 8D 0C 94 31 05 F9 A2 B6 B3 FC 34 F3
-wait call_imp ?WbemMemFree@CWin32DefaultArena@@SAHPEAX@Z
+# IID_IUnknown
+guid 00 00 00 00 00 00 00 00 C0 00 00 00 00 00 00 46
+call
+# IID_IWmiCoreServices
+guid 93 28 C9 5F BE A9 5F 47 BF 9E CF 50 EE A1 C9 58
+call
+
+# scan
+section .rdata
+# store found result in storage with index 3
+scan 3
+# at offset 0 must be function CCoreServices::QueryInterface from rule 1
+at 0 check 1
+
+# now find secret value
+section .data
+fpoi 3 40
+stg4 store

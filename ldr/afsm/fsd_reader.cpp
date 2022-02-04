@@ -158,6 +158,38 @@ int fsm_reader::parse(path_edge &path)
     m_state = 4;
     NEXT
   }
+  // fpoi - 4
+  if ( !strncmp(curr, "fpoi", 4) )
+  {
+    if ( m_state != 1 )
+    {
+      fprintf(stderr, "bad fpoi at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    if ( path.fpoi_index )
+    {
+      fprintf(stderr, "fpoi already defined at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    curr = trim_left(curr + 4);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad params for fpoi at line %d\n", m_line);
+      return -1;
+    }
+    path.fpoi_index = strtoul(curr, &curr, 10);
+    if ( !path.fpoi_index )
+    {
+      fprintf(stderr, "zero stg in fpoi at line %d\n", m_line);
+      return -2;
+    }
+    curr = trim_left(curr);
+    path.at = strtoul(curr, &curr, 16);
+    m_symbol.exported = NULL;
+    m_symbol.section_name.clear();
+    m_symbol.yara_rule.clear();
+    NEXT
+  }
   // rule - 4
   if ( !strncmp(curr, "rule", 4) )
   {
@@ -168,7 +200,7 @@ int fsm_reader::parse(path_edge &path)
     }
     if ( path.m_rule )
     {
-      fprintf(stderr, "bad rule at line %d, state %d\n", m_line, m_state);
+      fprintf(stderr, "rule already defined at line %d, state %d\n", m_line, m_state);
       return -1;
     }
     curr = trim_left(curr + 4);

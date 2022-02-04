@@ -17,6 +17,7 @@ class iat_mod: public arm64_hack
       m_verbose = verbose;
       return find_wpps(m_pe->base_addr(), out_res);
     }
+    static const int ptr_size = 8;
    protected:
     inline int is_inside_import(ptrdiff_t off, module_import *iat) const
     {
@@ -32,7 +33,7 @@ class iat_mod: public arm64_hack
            (off < (iat->iat_rva + iat->iat_size))
          )
       {
-        size_t index = (off - iat->iat_rva) / 8;
+        size_t index = (off - iat->iat_rva) / ptr_size;
         return iat->iat[index].name;
       }
       return NULL;
@@ -43,7 +44,7 @@ class iat_mod: public arm64_hack
            (off < (iat->iat_rva + iat->iat_size))
          )
       {
-        size_t index = (off - iat->iat_rva) / 8;
+        size_t index = (off - iat->iat_rva) / ptr_size;
         if ( iat->iat[index].name != NULL && !strcmp(iat->iat[index].name, name) )
           return 1;
       }
