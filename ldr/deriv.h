@@ -4,6 +4,11 @@
 #include "tpool.h"
 #include "bm_search.h"
 
+inline int has_ord_prefix(const char *exported)
+{
+  return (exported[0] == 'o') && (exported[1] == 'r') && (exported[2] == 'd');
+}
+
 struct found_xref
 {
   PBYTE pfunc;
@@ -22,7 +27,7 @@ struct found_xref
   {
     if ( exported == NULL )
       return 0;
-     return (exported[0] == 'o') && (exported[1] == 'r') && (exported[2] == 'd');
+     return has_ord_prefix(exported);
   }
 };
 

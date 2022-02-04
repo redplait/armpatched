@@ -613,11 +613,11 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<
        exp = m_ed->find(xref.exported);
        if ( (exp == NULL) && xref.ord_prefix() )
        {
-         int ord = atoi(xref.exported + 3);
-         exp = m_ed->find(ord);
+         xref.exported_ord = atoi(xref.exported + 3);
+         exp = m_ed->find(xref.exported_ord);
          if ( exp != NULL && exp->name != NULL )
          {
-           printf("exported function with ordinal %d has name %s\n", ord, exp->name);
+           printf("exported function with ordinal %d has name %s\n", xref.exported_ord, exp->name);
            return 0;
          }
        }
@@ -1784,7 +1784,10 @@ void deriv_hack::prepare(found_xref &xref, path_edge &out_res)
     else {
       exp = m_ed->find(xref.exported);
       if ( exp == NULL && xref.ord_prefix() )
-        exp = m_ed->find(atoi(xref.exported + 3));
+      {
+        xref.exported_ord = atoi(xref.exported + 3);
+        exp = m_ed->find(xref.exported_ord);
+      }
     }
     if ( exp == NULL )
     {

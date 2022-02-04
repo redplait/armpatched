@@ -156,6 +156,11 @@ int deriv_hack::validate_scan_items(path_edge &edge)
     if ( item.type == call_exp )
     {
       const export_item *exp = m_ed->find(item.name.c_str());
+      if ( exp == NULL && has_ord_prefix(item.name.c_str()) )
+      {
+        int ord = atoi(item.name.c_str() + 3);
+        exp = m_ed->find(ord);
+      }
       if ( exp == NULL )
       {
         fprintf(stderr, "cannot find exported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
