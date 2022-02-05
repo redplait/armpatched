@@ -119,10 +119,13 @@ typedef enum
   poi,        // pointer from some early found address
 } path_item_type;
 
+class path_edge;
+
 struct path_item
 {
   DWORD rva;
   int at = 0;
+  path_edge *apply_rule = NULL;
   path_item_type type;
   union
   {
@@ -143,6 +146,7 @@ struct path_item
   path_item(path_item_type t, DWORD arva)
   {
     at = 0;
+    apply_rule = NULL;
     type = t;
     rva = arva;
     reg_index = 0;
@@ -174,6 +178,7 @@ struct path_item
   path_item(DWORD val)
   {
     at = 0;
+    apply_rule = NULL;
     type = ldr_off;
     value_count = 0;
     value = val;
@@ -184,6 +189,7 @@ struct path_item
   path_item(uint64_t val)
   {
     at = 0;
+    apply_rule = NULL;
     type = ldr64_off;
     value_count = 0;
     value64 = val;
@@ -197,6 +203,16 @@ struct path_item
       return 0;
     out_val = reg_index;
     return 1;
+  }
+  inline int can_have_rule() const
+  {
+    switch(type)
+    {
+      case sload:
+      case call:
+        return 1;
+    }
+    return 0;
   }
   void reset();
   void dump() const;
@@ -309,6 +325,7 @@ class deriv_hack: public iat_mod
     int disasm_one_func(PBYTE addr, PBYTE what, FH &fh);
     int apply(found_xref &xref, path_edge &, DWORD &found, std::set<PBYTE> *c = NULL);
     int apply_scan(found_xref &xref, path_edge &, Rules_set &);
+    int resolve_rules(path_edge &, Rules_set &);
     void prepare(found_xref &xref, path_edge &);
     inline const std::map<DWORD, DWORD> &get_stg() const
     {
@@ -327,6 +344,7 @@ class deriv_hack: public iat_mod
     void store_stg(DWORD index, DWORD value);
     int check_rule_results(found_xref &xref, Rules_set &, int rule_no);
     int validate_scan_items(path_edge &edge);
+    int _resolve_rules(path_edge &, Rules_set &, std::set<int> &);
     int scan_value(found_xref &xref, bm_search &, int patter_size, path_edge &path, Rules_set &, std::set<PBYTE> &results);
     int is_inside_fids_table(PBYTE addr) const;
     int extract_poi(DWORD off, int at_offset, ptrdiff_t &);

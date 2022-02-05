@@ -22,6 +22,90 @@ int validate_scan(Rules_set &rules_set, path_edge &edge)
   return 1;
 }
 
+int deriv_hack::resolve_rules(path_edge &path, Rules_set &rules_set)
+{
+  std::set<int> resolved;
+  return _resolve_rules(path, rules_set, resolved);
+}
+
+// recursive resolve rules
+int deriv_hack::_resolve_rules(path_edge &path, Rules_set &rules_set, std::set<int> &resolved)
+{
+  if ( path.is_scan() )
+  {
+    for ( auto &r: path.scan_list )
+    {
+      int rule_no = 0;
+      if ( r.is_rule(rule_no) )
+      {
+        // check if this rule already was processed
+        auto checked = resolved.find(rule_no);
+        if ( checked != resolved.end() )
+          continue;
+        auto rule = rules_set.find(rule_no);
+        if ( rule == rules_set.end() )
+        {
+          fprintf(stderr, "cannot find rule %d for scan at line %d\n", rule_no, path.m_line);
+          return 0;
+        }
+        if ( !_resolve_rules(rule->second, rules_set, resolved) )
+          return 0;
+        resolved.insert(rule_no);
+      }
+      return 1;
+    }
+  } else {
+    // delete all rule after filling apply_rule field
+    if ( path.list.empty() )
+      return 1;
+    auto iter = path.list.begin();
+    int rule_no = 0;
+    if ( iter->is_rule(rule_no) )
+    {
+      fprintf(stderr, "you can`t have rule as first item at line %d\n", path.m_line);
+      return 0;
+    }
+    path_item *prev = &(*iter);
+    for ( ++iter; iter != path.list.end(); )
+    {
+      if ( iter->is_rule(rule_no) )
+      {
+        // check if previous item can have rule
+        if ( !prev->can_have_rule() )
+        {
+          fprintf(stderr, "you can`t apply rule to item with type %d at line %d\n", prev->type, path.m_line);
+          return 0;
+        }
+        if ( prev->apply_rule != NULL )
+        {
+          fprintf(stderr, "you can`t have several rule for item with type %d at line %d\n", prev->type, path.m_line);
+          return 0;
+        }
+        auto rule = rules_set.find(rule_no);
+        if ( rule == rules_set.end() )
+        {
+          fprintf(stderr, "cannot find rule %d at line %d\n", rule_no, path.m_line);
+          return 0;
+        }
+        prev->apply_rule = &rule->second;
+        // remove this item
+        iter = path.list.erase(iter);
+        // we already checked this?
+        auto checked = resolved.find(rule_no);
+        if ( checked != resolved.end() )
+          continue;
+        resolved.insert(rule_no);
+        if ( !_resolve_rules(rule->second, rules_set, resolved) )
+          return 0;        
+        continue;
+      }
+      prev = &(*iter);
+      ++iter;
+    }
+  }
+  return 1;
+}
+
 int deriv_hack::check_rule_results(found_xref &xref, Rules_set &rules_set, int rule_no)
 {
   auto iter = rules_set.find(rule_no);

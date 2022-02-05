@@ -287,6 +287,8 @@ int wmain(int argc, wchar_t **argv)
       int has_stg = path.has_stg();
       for ( const auto &mod: gTestPool.mods )
       {
+        if ( !mod.der->resolve_rules(path, rules_set) )
+          continue;
         mod.der->prepare(*ref, path);
         DWORD found = 0;
         if ( path.is_scan() )

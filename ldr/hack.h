@@ -316,6 +316,22 @@ class arm64_hack
      return in_executable_section(addr - m_pe->base_addr());
    }
   protected:
+   class save_psp
+   {
+     public:
+      save_psp(arm64_hack &mod)
+       : m_mod(mod)
+      {
+        stored_psp = mod.m_psp;
+      }
+      ~save_psp()
+      {
+        m_mod.m_psp = stored_psp;
+      }
+     protected:
+      arm64_hack &m_mod;
+      PBYTE stored_psp;
+   };
    void init_aux(const char *, PBYTE &aux);
    void fill_lc();
    // disasm methods

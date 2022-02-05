@@ -1001,6 +1001,17 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           {
             if ( iter->second.s->name.empty() )
             {
+              // check if must apply some rule
+              if ( iter->second.s->apply_rule != NULL )
+              {
+                const one_section *s = m_pe->find_section_rva(caddr - mz);
+                if ( s != NULL )
+                {
+                  save_psp rest(*this);
+                  if ( !try_apply(s, caddr, *(iter->second.s->apply_rule), found) )
+                    CHECK_WAIT
+                }
+              }
               store_stg(iter->second.s->stg_index, caddr - mz);
               if ( iter->second.next(path) )
                 return 1;
@@ -1012,6 +1023,14 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( !strcmp(s->name, iter->second.s->name.c_str()) )
             {
+              // check if must apply some rule
+              if ( iter->second.s->apply_rule != NULL )
+              {
+                save_psp rest(*this);
+                if ( !try_apply(s, caddr, *(iter->second.s->apply_rule), found) )
+                  CHECK_WAIT
+              }
+              store_stg(iter->second.s->stg_index, caddr - mz);
               if ( iter->second.next(path) )
                 return 1;
             } else
@@ -1226,6 +1245,13 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
               continue;
             if ( !strcmp(their->name, iter->second.s->name.c_str()) )
             {
+              // check if must apply some rule
+              if ( iter->second.s->apply_rule != NULL )
+              {
+                save_psp rest(*this);
+                if ( !try_apply(their, what, *(iter->second.s->apply_rule), found) )
+                  CHECK_WAIT
+              }
               store_stg(iter->second.s->stg_index, what - mz);
               if ( iter->second.next(path) )
               {
