@@ -513,6 +513,8 @@ int deriv_hack::check_thunk(DWORD addr, const char *need_name)
   PBYTE what = NULL;
   for ( int i = 0; i < 3; i++ )
   {
+    if ( !disasm() )
+      return 0;
     switch(i)
     {
       case 0: if ( is_adrp(used_regs) )
@@ -1033,6 +1035,16 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         PBYTE caddr = NULL;
         if ( is_bl_jimm(caddr) )
         {
+          if ( iter->second.s->type == call_imp )
+          {
+             save_psp rest(*this);
+             if ( check_thunk(caddr - mz, iter->second.s->name.c_str()) )
+             {
+               if ( iter->second.next(path) )
+                 return 1;
+               continue;
+             }
+          }
           if ( iter->second.s->type == call_exp )
           {
             const char *exp_func = get_exported(mz, caddr);
@@ -1042,6 +1054,7 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
             {
               if ( iter->second.next(path) )
                 return 1;
+              continue;
             } else
               CHECK_WAIT
           } else if ( iter->second.s->type == gcall )
