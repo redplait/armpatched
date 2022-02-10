@@ -354,6 +354,10 @@ class deriv_hack: public iat_mod
     // results of lazy rules evaluation
     // key - rule number, value - set with found results
     std::map<int, std::set<PBYTE> > rules_result;
+    // import thunks, key is offset, value is name from import_holder
+    std::map<DWORD, const char *> m_thunks;
+    int check_thunk(DWORD addr, const char *);
+    int find_thunk_byname(const char *, DWORD &) const;
 };
 
 // set of test files

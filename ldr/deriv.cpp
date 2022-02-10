@@ -479,6 +479,67 @@ int deriv_hack::find_in_fids_table(PBYTE mz, PBYTE func) const
   return 0;
 }
 
+int deriv_hack::find_thunk_byname(const char *name, DWORD &out_res) const
+{
+  for ( auto &thunk: m_thunks )
+    if ( !strcmp(thunk.second, name) )
+    {
+      out_res = thunk.first;
+      return 1;
+    }
+  return 0;
+}
+
+int deriv_hack::check_thunk(DWORD addr, const char *need_name)
+{
+  const auto res = m_thunks.find(addr);
+  if ( res != m_thunks.cend() )
+  {
+    return !strcmp(need_name, res->second);
+  }
+  // ok, try to disasm it
+  // typical thunk looks like
+  // ADRP reg, addr
+  // LDR reg, [reg + off]
+  // BR reg
+  // note - theoretically this can be different regs
+  PBYTE mz = m_pe->base_addr();
+  PBYTE psp = mz + addr;
+  if ( !setup(psp) )
+    return 0;
+  regs_pad used_regs;
+  DWORD base_reg;
+  const char *imp_name = NULL;
+  PBYTE what = NULL;
+  for ( int i = 0; i < 3; i++ )
+  {
+    switch(i)
+    {
+      case 0: if ( is_adrp(used_regs) )
+                continue;
+              return 0;
+      case 1: if ( is_ldr() )
+        {
+          what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          imp_name = get_iat_func(what);
+          if ( NULL == imp_name )
+            return 0;
+          base_reg = get_reg(0);
+          continue;
+        }
+        return 0;
+      case 2: if ( is_br_reg() && base_reg == get_reg(0) )
+        {
+          // add found thunk to cache
+          m_thunks[DWORD(what - mz)] = imp_name;
+          return !strcmp(need_name, imp_name);
+        }
+        return 0;
+    }
+  }
+  return 0;
+}
+
 void deriv_hack::check_exported(PBYTE mz, found_xref &item) const
 {
   DWORD rva = item.pfunc - mz;
