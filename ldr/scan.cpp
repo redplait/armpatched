@@ -123,21 +123,65 @@ int deriv_hack::check_rule_results(found_xref &xref, Rules_set &rules_set, int r
   return res;
 }
 
+int deriv_hack::scan_thunk(path_edge &path, DWORD &out_value)
+{
+  const one_section *s = m_pe->find_section_by_name(path.symbol_section.c_str());
+  if ( s == NULL )
+  {
+    printf("scan_thunk: cannot find section %s\n", path.symbol_section.c_str());
+    return 0;
+  }
+  auto iter = path.scan_list.begin();
+  // calc max size of data
+  DWORD size = path.get_scan_max_size();
+  if (size > s->size)
+  {
+    printf("scan_thunk: section %s is too small, size %d, needed %d\n", path.symbol_section.c_str(), s->size, size);
+    return 0;
+  }
+  PBYTE mz = m_pe->base_addr();
+  PBYTE curr = mz + s->va;
+  PBYTE end = curr + s->size - size;
+  for ( curr += iter->at; curr < end; curr += iat_mod::ptr_size )
+  {
+    uint64_t val = *(uint64_t *)curr;
+    if ( !val )
+      continue;
+    DWORD off = DWORD(val - (uint64_t)mz);
+    if ( !in_executable_section(off) )
+      continue;
+    if ( check_thunk(off, iter->name.c_str()) )
+    {
+      out_value = off;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+DWORD path_edge::get_scan_max_size() const
+{
+  auto iter = scan_list.cbegin();
+  // calc max size of data
+  DWORD size = iter->get_upper_bound();
+  std::for_each(scan_list.cbegin(), scan_list.cend(), [&size](const path_item &item) { auto curr_size = item.get_upper_bound(); if (curr_size > size) size = curr_size; });
+  return size;
+}
+
 int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, path_edge &path, Rules_set &rules_set, std::set<PBYTE> &results)
 {
   const one_section *s = m_pe->find_section_by_name(path.symbol_section.c_str());
   if ( s == NULL )
   {
-    printf("cannot find section %s\n", path.symbol_section.c_str());
+    printf("scan_value: cannot find section %s\n", path.symbol_section.c_str());
     return 0;
   }
   auto iter = path.scan_list.begin();
   // calc max size of data
-  DWORD size = iter->get_upper_bound();
-  std::for_each(path.scan_list.cbegin(), path.scan_list.cend(), [&size](const path_item &item) { auto curr_size = item.get_upper_bound(); if (curr_size > size) size = curr_size; });
+  DWORD size = path.get_scan_max_size();
   if (size > s->size)
   {
-    printf("section %s is too small, size %d, needed %d\n", path.symbol_section.c_str(), s->size, size);
+    printf("scan_value: section %s is too small, size %d, needed %d\n", path.symbol_section.c_str(), s->size, size);
     return 0;
   }
   PBYTE mz = m_pe->base_addr();
@@ -182,10 +226,15 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
          case poi:
             is_ok = *(UINT64 *)(tab + tail_iter->at) == *(UINT64 *)(mz + tail_iter->rva + tail_iter->value);
            break;
+         case call_imp:
+           {
+             DWORD off = *(UINT64 *)(tab + tail_iter->at) - m_pe->image_base();
+             is_ok = check_thunk(off, tail_iter->name.c_str());
+           }
+           break;
          case gload:
          case gcall:
          case call_exp:
-         case call_imp:
          case call_dimp:
            is_ok = ( *(UINT64 *)(tab + tail_iter->at) - m_pe->image_base() == tail_iter->rva );
           break;
@@ -331,9 +380,27 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
       sign = *(UINT64 *)(mz + iter->rva + iter->value);
       srch.set((const PBYTE)&sign, pattern_size);
      break;
+    case call_imp:
+     {
+       DWORD cached = 0;
+       if ( find_thunk_byname(iter->name.c_str(), cached) )
+       {
+         sign = UINT64(m_pe->image_base() + cached);
+         srch.set((const PBYTE)&sign, pattern_size);
+       } else {
+         // we need to scan whole section content to find right import thunk
+         if ( !scan_thunk(path, cached) )
+         {
+           fprintf(stderr, "cant find thunk for import %s for scan at line %d\n", iter->name.c_str(), path.m_line);
+           return 0;
+         }
+         sign = UINT64(m_pe->image_base() + cached);
+         srch.set((const PBYTE)&sign, pattern_size);
+       }
+     }
+     break;
     case gload:
     case gcall:
-    case call_imp:
     case call_dimp:
     case call_exp:
       sign = UINT64(m_pe->image_base() + iter->rva);

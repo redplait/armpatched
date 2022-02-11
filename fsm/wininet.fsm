@@ -3,10 +3,10 @@ rule 1
 fsection .text
 # IID_IAbortable
 guid 6F DD 13 F5 B4 61 60 42 B5 63 55 D3 94 E3 21 0B
-call
+call_imp memcmp
 # IID_IStreamSocket
 guid F7 19 78 65 DD 10 3D 40 99 FB 15 D8 4D 22 F7 EB
-call
+call_imp memcmp
 # IID_IHttp2Stream
 guid 48 9F CC E1 A1 C6 0A 4F 81 78 DF 0D 15 13 1A 84
 

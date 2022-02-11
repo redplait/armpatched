@@ -290,6 +290,7 @@ class path_edge
    int collect_poi(std::list<const path_item *> &) const;
    int collect_limps(std::set<std::string> &) const;
    int collect_call_imps(std::set<std::string> &) const;
+   DWORD get_scan_max_size() const;
 };
 
 typedef std::map<int, path_edge> Rules_set;
@@ -346,6 +347,7 @@ class deriv_hack: public iat_mod
     int validate_scan_items(path_edge &edge);
     int _resolve_rules(path_edge &, Rules_set &, std::set<int> &);
     int scan_value(found_xref &xref, bm_search &, int patter_size, path_edge &path, Rules_set &, std::set<PBYTE> &results);
+    int scan_thunk(path_edge &path, DWORD &value);
     int is_inside_fids_table(PBYTE addr) const;
     int extract_poi(DWORD off, int at_offset, ptrdiff_t &);
     // global storage
