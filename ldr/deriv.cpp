@@ -1155,7 +1155,13 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
           } else if ( iter->second.s->type == call_icall )
           {
             if ( what == m_GuardCFCheckFunctionPointer )
-              iter->second.next(path);
+            {
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            }
+            else
+              CHECK_WAIT
           }
           continue;
         }
