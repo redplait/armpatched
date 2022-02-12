@@ -1,0 +1,9 @@
+section .data
+func GenerateGPNotificationInternalWorker
+# g_dwDebugLevel
+stg1 load
+# g_lpDebugMsgContext
+stg2 load
+# g_lpDebugMsg
+stg3 load
+wait call_icall

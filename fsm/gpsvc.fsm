@@ -1,0 +1,12 @@
+section .data
+func RsopSetPolicySettingStatusInternal
+wait call_icall
+# g_dwDebugLevel
+stg1 load
+# g_lpDebugMsg
+stg2 load
+# in next branch - g_lpDebugMsgContext
+stg3 load
+# g_lpDebugMsgContextInstance
+stg4 load
+call
