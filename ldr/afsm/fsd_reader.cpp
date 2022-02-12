@@ -144,6 +144,18 @@ int fsm_reader::parse(path_edge &path)
     path.m_line = m_line;
     NEXT
   }
+  // entry - 5
+  if ( !strncmp(curr, "entry", 5) )
+  {
+    if ( m_state != 1 )
+    {
+      fprintf(stderr, "bad rule at line %d, state %d\n", m_line, m_state);
+      return -1;
+    }
+    m_state = 2;
+    path.type = entry;
+    NEXT
+  }
   // scan - 4
   if ( !strncmp(curr, "scan", 4) )
   {

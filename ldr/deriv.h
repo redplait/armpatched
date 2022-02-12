@@ -223,9 +223,16 @@ struct path_item
   int get_upper_bound() const;
 };
 
+typedef enum
+{
+  none = 0,
+  entry = 1,
+} egde_type;
+
 class path_edge
 {
   public:
+   egde_type type;
    DWORD m_line = 0;
    DWORD m_rule = 0;
    // for fpoi
@@ -235,6 +242,10 @@ class path_edge
    std::list<path_item> list;
    std::list<path_item> scan_list;
 
+   inline int is_entry() const
+   {
+     return (type == entry);
+   }
    inline int is_fpoi() const
    {
      return (fpoi_index != 0);

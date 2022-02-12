@@ -674,6 +674,12 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<
          m_stg = m_stg_copy; // restore storage
      }
      return 0;
+  } else if ( path.is_entry() )
+  {
+    int res = try_apply(s, xref.pfunc, path, found);
+    if ( !res && has_stg )
+      m_stg = m_stg_copy; // restore storage
+    return res;    
   } else if ( xref.is_exported() )
   {
     const export_item *exp = NULL;
@@ -1913,7 +1919,12 @@ end:
 
 void deriv_hack::prepare(found_xref &xref, path_edge &out_res)
 {
-  if ( !xref.is_exported() )
+  if ( out_res.is_entry() )
+  {
+    PBYTE mz = m_pe->base_addr();
+    xref.pfunc = mz + m_pe->entry_point();
+    return;
+  } else if ( !xref.is_exported() )
     calc_const_count_in_section(xref.section_name.c_str(), out_res);
   else {
     const export_item *exp = NULL;
