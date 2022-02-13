@@ -121,6 +121,16 @@ int path_edge::has_const_count(int below) const
   return std::any_of(list.cbegin(), list.cend(), [=](const path_item &item) -> bool { return (item.type == ldr_off || item.type == ldr64_off) && item.value_count && (item.value_count < below); });
 }
 
+int path_edge::contains_yarares() const
+{
+  for ( const auto &c: list )
+  {
+    if ( c.type == yarares )
+      return 1;
+  }
+  return 0;
+}
+
 int path_edge::contains_imp(std::string &name) const
 {
   for ( const auto &c: list )
@@ -637,6 +647,22 @@ int deriv_hack::extract_poi(DWORD off, int at_offset, ptrdiff_t &out_val)
   PBYTE mz = m_pe->base_addr();
   out_val = *(UINT64 *)(mz + off + at_offset) - m_pe->image_base();
   return 1;
+}
+
+int deriv_hack::check_yarares(const path_item *item, DWORD what, DWORD &found) const
+{
+  const auto yrules = yara_results.find(item->name.c_str());
+  if ( yrules == yara_results.cend() )
+    return 0;
+  for ( DWORD yres: yrules->second )
+  {
+    if ( yres + item->reg_index == what )
+    {
+      found = what;
+      return 1;
+    }
+  }
+  return 0;
 }
 
 int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<PBYTE> *cand)
@@ -1203,6 +1229,17 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
                 break;
             }
             // we fall down to find next states after poi here
+          }
+          if ( iter->second.s->type == yarares )
+          {
+            if ( check_yarares(iter->second.s, what - mz, found) )
+            {
+              store_stg(iter->second.s->stg_index, what - mz);
+              if ( iter->second.next(path) )
+                return 1;
+              continue;
+            } else
+              CHECK_WAIT
           }
           if ( iter->second.s->type == addx )
           {

@@ -283,6 +283,7 @@ class path_edge
    int is_imp1_only(std::string &) const;
    int contains_imp(std::string &) const;
    int contains_limp(std::string &) const;
+   int contains_yarares() const;
    int is_dimp1_only(std::string &) const;
    int contains_dimp(std::string &) const;
    int has_const_count(int below) const;
@@ -362,6 +363,7 @@ class deriv_hack: public iat_mod
     int scan_thunk(path_edge &path, DWORD &value);
     int is_inside_fids_table(PBYTE addr) const;
     int extract_poi(DWORD off, int at_offset, ptrdiff_t &);
+    int check_yarares(const path_item *item, DWORD what, DWORD &found) const;
     // global storage
     std::map<DWORD, DWORD> m_stg;
     std::map<DWORD, DWORD> m_stg_copy;
