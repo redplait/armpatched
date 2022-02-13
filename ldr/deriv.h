@@ -358,6 +358,7 @@ class deriv_hack: public iat_mod
     void store_stg(DWORD index, DWORD value);
     int check_rule_results(found_xref &xref, Rules_set &, int rule_no);
     int validate_scan_items(path_edge &edge);
+    int _has_yara(const path_item *item) const;
     int _resolve_rules(path_edge &, Rules_set &, std::set<int> &);
     int scan_value(found_xref &xref, bm_search &, int patter_size, path_edge &path, Rules_set &, std::set<PBYTE> &results);
     int scan_thunk(path_edge &path, DWORD &value);

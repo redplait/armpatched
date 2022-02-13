@@ -28,6 +28,14 @@ int deriv_hack::resolve_rules(path_edge &path, Rules_set &rules_set)
   return _resolve_rules(path, rules_set, resolved);
 }
 
+int deriv_hack::_has_yara(const path_item *item) const
+{
+  const auto yrules = yara_results.find(item->name.c_str());
+  if ( yrules == yara_results.cend() )
+    return 0;
+  return !yrules->second.empty();
+}
+
 // recursive resolve rules
 int deriv_hack::_resolve_rules(path_edge &path, Rules_set &rules_set, std::set<int> &resolved)
 {
@@ -65,9 +73,26 @@ int deriv_hack::_resolve_rules(path_edge &path, Rules_set &rules_set, std::set<i
       fprintf(stderr, "you can`t have rule as first item at line %d\n", path.m_line);
       return 0;
     }
+    if ( iter->type == yarares )
+    {
+      if ( !_has_yara(&(*iter)) )
+      {
+        fprintf(stderr, "no results for yara rule %s was found (line %d)\n", iter->name.c_str(), path.m_line);
+        return 0;
+      }
+    }
     path_item *prev = &(*iter);
     for ( ++iter; iter != path.list.end(); )
     {
+      if (iter->type == yarares)
+      {
+        if (!_has_yara(&(*iter)))
+        {
+          fprintf(stderr, "no results for yara rule %s was found (line %d)\n", iter->name.c_str(), path.m_line);
+          return 0;
+        }
+        continue;
+      }
       if ( iter->is_rule(rule_no) )
       {
         // check if previous item can have rule
