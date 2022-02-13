@@ -443,6 +443,25 @@ int fsm_reader::parse(path_edge &path)
     NEXT
   }
 
+  // yarares - 7
+  if ( !strncmp(curr, "yarares", 7) )
+  {
+    SLIST
+    curr = trim_left(curr + 7);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad params for yarares at line %d\n", m_line);
+      return -1;
+    }
+    item.reg_index = 0;
+    auto token_end = next_token(curr);
+    std::string tmp(curr, token_end);
+    item.name = tmp;
+    curr = trim_left(token_end);
+    if ( *curr )
+      item.reg_index = strtoul(curr, &curr, 16);
+    NEXT
+  }
   // poi - 3
   if ( !strncmp(curr, "poi", 3) )
   {

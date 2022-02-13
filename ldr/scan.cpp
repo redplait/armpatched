@@ -223,6 +223,23 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
                is_ok = 0;
            }
            break;
+         case yarares:
+          {
+            auto yrules = yara_results.find(tail_iter->name.c_str());
+            if ( yrules == yara_results.cend() )
+              is_ok = 0;
+            else {
+              DWORD off = *(UINT64 *)(tab + tail_iter->at) - m_pe->image_base() + tail_iter->reg_index;
+              for ( DWORD yres: yrules->second )
+              {
+                if ( off == yres )
+                {
+                  is_ok = 1;
+                  break;
+                }
+              }
+            }
+          }
          case poi:
             is_ok = *(UINT64 *)(tab + tail_iter->at) == *(UINT64 *)(mz + tail_iter->rva + tail_iter->value);
            break;
@@ -316,6 +333,19 @@ int deriv_hack::validate_scan_items(path_edge &edge)
         fprintf(stderr, "cannot find delayed imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
         return 0;
       }
+    } else if ( item.type == yarares )
+    {
+     const auto yrules = yara_results.find(item.name.c_str());
+     if ( yrules == yara_results.cend() )
+     {
+       fprintf(stderr, "cannot find results of yara rule %s for yarares for scan at line %d\n", item.name.c_str(), edge.m_line);
+       return 0;
+     }
+     if ( yrules->second.empty() )
+     {
+       fprintf(stderr, "no results of yara rule %s for yarares for scan at line %d\n", item.name.c_str(), edge.m_line);
+       return 0;
+     }
     } else if ( item.type == poi )
     {
       auto found = m_stg.find(item.reg_index);
@@ -372,6 +402,27 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
         }
         goto process_results;
       }
+     break;
+    case yarares:
+     {
+       auto yrules = yara_results.find(iter->name.c_str());
+       if ( yrules == yara_results.cend() )
+         return 0;
+       if ( 1 == yrules->second.size() )
+       {
+         DWORD yoff = *(yrules->second.cbegin());
+         sign = *(UINT64 *)(mz + yoff + iter->reg_index);
+         srch.set((const PBYTE)&sign, pattern_size);
+       } else {
+         for ( const auto yoff: yrules->second )
+         {
+           sign = *(UINT64 *)(mz + yoff + iter->reg_index);
+           srch.set((const PBYTE)&sign, pattern_size);
+           scan_value(xref, srch, pattern_size, path, rules_set, results);
+         }
+         goto process_results;
+       }
+     }
      break;
     case sload:
      fprintf(stderr, "you cant have sload as first rule for scan at line %d\n", path.m_line);

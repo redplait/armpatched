@@ -27,7 +27,7 @@ struct found_xref
   {
     if ( exported == NULL )
       return 0;
-     return has_ord_prefix(exported);
+    return has_ord_prefix(exported);
   }
 };
 
@@ -117,6 +117,7 @@ typedef enum
   movx,       // mov regXX, imm. index of register in reg_index
   rule,       // some early defined rule, index of rule in reg_index
   poi,        // pointer from some early found address
+  yarares,    // result from yara scan. name of rule in name, offset in reg_index
 } path_item_type;
 
 class path_edge;

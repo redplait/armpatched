@@ -76,6 +76,17 @@ char *fsm_base_reader::read_string(size_t &size)
   return m_ptr;  
 }
 
+char *fsm_base_reader::next_token(char *str)
+{
+  while(*str)
+  {
+    if ( isspace(*str) )
+      return str;
+    str++;
+  }
+  return str;
+}
+
 char *fsm_base_reader::trim_left(char *str)
 {
   while(*str)

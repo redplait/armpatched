@@ -7,6 +7,7 @@ class fsm_base_reader
    int is_comment(char *str);
    char *read_string(size_t &size);
    char *trim_left(char *);
+   char *next_token(char *);
    void trim_right(char *);
 
    FILE *m_fp;

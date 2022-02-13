@@ -266,6 +266,7 @@ int path_item::get_upper_bound() const
     case call_dimp:
     case call_imp:
     case rule:
+    case yarares:
       return at + iat_mod::ptr_size; // size of ptr
     case ldr_guid:
       return at + 16;

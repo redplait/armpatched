@@ -196,6 +196,14 @@ void path_item::pod_dump(FILE *fp) const
     case poi:
         fprintf(fp, " poi %d offset %X\n", reg_index, value);
        break;
+    case yarares:
+        if ( stg_index )
+          fprintf(fp, " stg%d", stg_index);
+        if ( reg_index )
+          fprintf(fp, " yarares %s offset %X\n", name.c_str(), reg_index);
+        else
+          fprintf(fp, " yarares %s\n", name.c_str());
+       break;
     default:
         fprintf(fp, " unknown type %d\n", type);
   }  
@@ -244,6 +252,14 @@ void path_item::dump_at() const
        break;
     case poi:
         printf(" poi %d offset %X\n", reg_index, value);
+       break;
+    case yarares:
+        if ( stg_index )
+          printf(" stg%d", stg_index);
+        if ( reg_index )
+          printf(" yarares %s offset %X\n", name.c_str(), reg_index);
+        else
+          printf(" yarares %s\n", name.c_str());
        break;
     default:
         printf(" unknown type %d\n", type);
@@ -456,6 +472,14 @@ void path_item::dump() const
        break;
     case poi:
         printf(" poi %d offset %X\n", reg_index, value);
+       break;
+    case yarares:
+        if ( stg_index )
+          printf(" stg%d", stg_index);
+        if ( reg_index )
+          printf(" yarares %s offset %X\n", name.c_str(), reg_index);
+        else
+          printf(" yarares %s\n", name.c_str());
        break;
     default:
         printf(" unknown type %d\n", type);
