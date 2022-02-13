@@ -240,6 +240,7 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
               }
             }
           }
+          break;
          case poi:
             is_ok = *(UINT64 *)(tab + tail_iter->at) == *(UINT64 *)(mz + tail_iter->rva + tail_iter->value);
            break;
@@ -411,12 +412,12 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
        if ( 1 == yrules->second.size() )
        {
          DWORD yoff = *(yrules->second.cbegin());
-         sign = *(UINT64 *)(mz + yoff + iter->reg_index);
+         sign = m_pe->image_base() + UINT64(yoff + iter->reg_index);
          srch.set((const PBYTE)&sign, pattern_size);
        } else {
          for ( const auto yoff: yrules->second )
          {
-           sign = *(UINT64 *)(mz + yoff + iter->reg_index);
+           sign = m_pe->image_base() + yoff + UINT64(iter->reg_index);
            srch.set((const PBYTE)&sign, pattern_size);
            scan_value(xref, srch, pattern_size, path, rules_set, results);
          }

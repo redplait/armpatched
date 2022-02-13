@@ -453,6 +453,7 @@ int fsm_reader::parse(path_edge &path)
       fprintf(stderr, "bad params for yarares at line %d\n", m_line);
       return -1;
     }
+    item.type = yarares;
     item.reg_index = 0;
     auto token_end = next_token(curr);
     std::string tmp(curr, token_end);

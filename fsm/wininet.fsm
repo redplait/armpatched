@@ -32,3 +32,10 @@ section .rdata
 scan 2
 # at offset 0 must be function CProxyList::QueryInterface from rule 2
 at 0 check 2
+
+# yarares test
+section .rdata
+# store found result in storage with index 3
+scan 3
+at 0 yarares sc
+at 8 yarares lm

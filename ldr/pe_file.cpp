@@ -104,6 +104,21 @@ const one_section *arm64_pe_file::find_section_v(DWORD addr) const
   return NULL;
 }
 
+void arm64_pe_file::get_nonempty_sections(std::list<one_section> &out_list) const
+{
+  for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )
+  {
+    if ( iter->size )
+    {
+      try
+      {
+        out_list.push_back(*iter);
+      } catch(std::bad_alloc)
+      { break; }
+    }
+  }
+}
+
 void arm64_pe_file::get_exec_sections(std::list<one_section> &out_list) const
 {
   for ( auto iter = m_sects.cbegin(); iter != m_sects.cend(); ++iter )

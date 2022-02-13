@@ -249,7 +249,8 @@ int wmain(int argc, wchar_t **argv)
      for ( auto &mod: gTestPool.mods )
      {
        std::list<one_section> slist;
-       mod.pe->get_exec_sections(slist);
+//       mod.pe->get_exec_sections(slist);
+       mod.pe->get_nonempty_sections(slist);
        scan_user_data sud { &mod.der->yara_results };
        for ( const auto &siter: slist )
        {
