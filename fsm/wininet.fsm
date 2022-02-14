@@ -1,3 +1,6 @@
+# test fsm for checking integration with yara
+# run with -y wininet.yara option
+
 section .rdata
 rule 1
 fsection .text

@@ -655,7 +655,7 @@ const std::set<DWORD> *deriv_hack::get_best_yarares(path_edge &path, int &yoff) 
   size_t cand_size = 0;
   for ( const auto &item: path.list )
   {
-     if ( item.is_yara() )
+     if ( !item.is_yara() )
        continue;
      const auto yrules = yara_results.find(item.name.c_str());
      if ( yrules == yara_results.cend() )
