@@ -39,3 +39,11 @@ section .rdata
 scan 3
 at 0 yarares sc
 at 8 yarares lm
+
+# test to find DetermineClientContainerType function and GlobalIsProcessIE from it
+section .data
+fsection .text
+wait yarares edge
+call_imp wcsstr
+# store GlobalIsProcessIE with index 4
+stg4 load

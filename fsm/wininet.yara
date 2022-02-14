@@ -11,3 +11,10 @@ rule lm {
  condition:
    $str2
 }
+
+rule edge {
+ strings:
+  $str3 = "AppData\\Local\\Packages\\microsoft.microsoftedge_8wekyb3d8b" wide
+ condition:
+   $str3
+}

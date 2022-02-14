@@ -309,7 +309,7 @@ class arm64_pe_file
    // return list of executable sections
    void get_exec_sections(std::list<one_section> &out_list) const;
    // return list of all sections with some content
-   void get_nonempty_sections(std::list<one_section> &out_list) const;
+   void get_nonempty_sections(std::list<one_section> &out_list, int with_resource = 0) const;
    // exports
    exports_dict *get_export_dict();
    // read relocs

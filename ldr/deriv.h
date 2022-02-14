@@ -198,6 +198,10 @@ struct path_item
     stg_index = 0;
     wait_for = 0;
   }
+  inline int is_yara() const
+  {
+    return (type == yarares);
+  }
   inline int is_rule(int &out_val) const
   {
     if ( type != rule )
@@ -358,6 +362,7 @@ class deriv_hack: public iat_mod
     void store_stg(DWORD index, DWORD value);
     int check_rule_results(found_xref &xref, Rules_set &, int rule_no);
     int validate_scan_items(path_edge &edge);
+    const std::set<DWORD> *get_best_yarares(path_edge &, int &yoff) const;
     int _has_yara(const path_item *item) const;
     int _resolve_rules(path_edge &, Rules_set &, std::set<int> &);
     int scan_value(found_xref &xref, bm_search &, int patter_size, path_edge &path, Rules_set &, std::set<PBYTE> &results);

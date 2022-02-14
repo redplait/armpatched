@@ -125,7 +125,7 @@ int path_edge::contains_yarares() const
 {
   for ( const auto &c: list )
   {
-    if ( c.type == yarares )
+    if ( c.is_yara() )
       return 1;
   }
   return 0;
@@ -649,6 +649,30 @@ int deriv_hack::extract_poi(DWORD off, int at_offset, ptrdiff_t &out_val)
   return 1;
 }
 
+const std::set<DWORD> *deriv_hack::get_best_yarares(path_edge &path, int &yoff) const
+{
+  const std::set<DWORD> *cand = NULL;
+  size_t cand_size = 0;
+  for ( const auto &item: path.list )
+  {
+     if ( item.is_yara() )
+       continue;
+     const auto yrules = yara_results.find(item.name.c_str());
+     if ( yrules == yara_results.cend() )
+       return NULL;
+     size_t ysize = yrules->second.size();
+     if ( !ysize )
+       return NULL;
+     if ( !cand_size || cand_size < ysize )
+     {
+       cand = &yrules->second;
+       cand_size = ysize;
+       yoff = item.reg_index;
+     }
+  }
+  return cand;
+}
+
 int deriv_hack::check_yarares(const path_item *item, DWORD what, DWORD &found) const
 {
   const auto yrules = yara_results.find(item->name.c_str());
@@ -872,6 +896,38 @@ int deriv_hack::apply(found_xref &xref, path_edge &path, DWORD &found, std::set<
         std::list<PBYTE> refs;
         xref_finder xf;
         if ( !xf.find(m_pe->base_addr() + cs->va, cs->size, *citer, refs) )
+          continue;
+        for ( const auto &cref: refs )
+        {
+          PBYTE func = find_pdata(cref);
+          if ( NULL == func )
+            continue;
+          auto already_processed = cached_funcs.find(func);
+          if ( already_processed != cached_funcs.end() )
+            continue;
+          cached_funcs.insert(func);
+          if ( try_apply(s, func, path, found) )
+          {
+            if ( cand != NULL )
+              cand->insert(func);
+            else
+              return 1;
+          }
+          if ( has_stg )
+            m_stg = m_stg_copy; // restore storage
+        }
+      }
+    }
+    // check yara results
+    int yoff = 0;
+    auto yaras = get_best_yarares(path, yoff);
+    if ( yaras != NULL )
+    {
+      for ( auto citer = yaras->cbegin(); citer != yaras->cend(); ++citer )
+      {
+        std::list<PBYTE> refs;
+        xref_finder xf;
+        if ( !xf.find(m_pe->base_addr() + cs->va, cs->size, mz + *citer + yoff, refs) )
           continue;
         for ( const auto &cref: refs )
         {
