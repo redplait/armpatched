@@ -268,6 +268,7 @@ int path_item::get_upper_bound() const
       return at + sizeof(value);
     case ldr64_off:
       return at + sizeof(value64);
+    case ypoi:
     case poi:
     case sload:
     case gload:
