@@ -73,7 +73,7 @@ int deriv_hack::_resolve_rules(path_edge &path, Rules_set &rules_set, std::set<i
       fprintf(stderr, "you can`t have rule as first item at line %d\n", path.m_line);
       return 0;
     }
-    if ( iter->type == yarares )
+    if ( iter->type == yarares || iter->type == ypoi )
     {
       if ( !_has_yara(&(*iter)) )
       {
@@ -84,7 +84,7 @@ int deriv_hack::_resolve_rules(path_edge &path, Rules_set &rules_set, std::set<i
     path_item *prev = &(*iter);
     for ( ++iter; iter != path.list.end(); )
     {
-      if (iter->type == yarares)
+      if ( iter->type == yarares || iter->type == ypoi )
       {
         if (!_has_yara(&(*iter)))
         {
@@ -248,6 +248,25 @@ int deriv_hack::scan_value(found_xref &xref, bm_search &bm, int pattern_size, pa
                is_ok = 0;
            }
            break;
+         case ypoi:
+          {
+            auto yrules = yara_results.find(tail_iter->name.c_str());
+            if ( yrules == yara_results.cend() )
+              is_ok = 0;
+            else {
+              ptrdiff_t off = *(UINT64 *)(tab + tail_iter->at) - m_pe->image_base();
+              for ( DWORD yres: yrules->second )
+              {
+                ptrdiff_t yres = NULL;
+                if ( extract_poi(yres, tail_iter->reg_index, yres) && yres == off )
+                {
+                  is_ok = 1;
+                  break;
+                }
+              }
+            }
+          }
+           break;
          case yarares:
           {
             auto yrules = yara_results.find(tail_iter->name.c_str());
@@ -348,7 +367,7 @@ int deriv_hack::validate_scan_items(path_edge &edge)
       item.rva = get_iat_by_name(item.name.c_str());
       if ( !item.rva )
       {
-        fprintf(stderr, "cannot find imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
+        fprintf(stderr, "cannot find imported function %s in scan at line %d\n", item.name.c_str(), edge.m_line);
         return 0;
       }
     } else if ( item.type == call_dimp )
@@ -356,20 +375,21 @@ int deriv_hack::validate_scan_items(path_edge &edge)
       item.rva = get_diat_by_name(item.name.c_str());
       if ( !item.rva )
       {
-        fprintf(stderr, "cannot find delayed imported function %s for scan at line %d\n", item.name.c_str(), edge.m_line);
+        fprintf(stderr, "cannot find delayed imported function %s in scan at line %d\n", item.name.c_str(), edge.m_line);
         return 0;
       }
-    } else if ( item.type == yarares )
+    } else if ( item.type == yarares || item.type == ypoi )
     {
+     const char *tname = (item.type == yarares) ? "yarares" : "ypoi";
      const auto yrules = yara_results.find(item.name.c_str());
      if ( yrules == yara_results.cend() )
      {
-       fprintf(stderr, "cannot find results of yara rule %s for yarares for scan at line %d\n", item.name.c_str(), edge.m_line);
+       fprintf(stderr, "cannot find results of yara rule %s for %s in scan at line %d\n", item.name.c_str(), tname, edge.m_line);
        return 0;
      }
      if ( yrules->second.empty() )
      {
-       fprintf(stderr, "no results of yara rule %s for yarares for scan at line %d\n", item.name.c_str(), edge.m_line);
+       fprintf(stderr, "no results of yara rule %s for %s in scan at line %d\n", item.name.c_str(), tname, edge.m_line);
        return 0;
      }
     } else if ( item.type == poi )
@@ -377,7 +397,7 @@ int deriv_hack::validate_scan_items(path_edge &edge)
       auto found = m_stg.find(item.reg_index);
       if ( found == m_stg.end() )
       {
-        fprintf(stderr, "nothing was found with storage index %d for scan at line %d\n", item.reg_index, edge.m_line);
+        fprintf(stderr, "nothing was found with storage index %d for poi in scan at line %d\n", item.reg_index, edge.m_line);
         return 0;
       }
       item.rva = found->second;      
@@ -386,7 +406,7 @@ int deriv_hack::validate_scan_items(path_edge &edge)
       auto found = m_stg.find(item.stg_index);
       if ( found == m_stg.end() )
       {
-        fprintf(stderr, "nothing was found with storage index %d for scan at line %d\n", item.stg_index, edge.m_line);
+        fprintf(stderr, "nothing was found with storage index %d in scan at line %d\n", item.stg_index, edge.m_line);
         return 0;
       }
       item.rva = found->second;
@@ -428,6 +448,39 @@ int deriv_hack::apply_scan(found_xref &xref, path_edge &path, Rules_set &rules_s
         }
         goto process_results;
       }
+     break;
+    case ypoi:
+     {
+       auto yrules = yara_results.find(iter->name.c_str());
+       if ( yrules == yara_results.cend() )
+         return 0;
+       if ( 1 == yrules->second.size() )
+       {
+         DWORD yoff = *(yrules->second.cbegin());
+         ptrdiff_t yres = NULL;
+         if ( !extract_poi(yoff, iter->reg_index, yres) )
+         {
+           fprintf(stderr, "cannot extract ypoi %s at offset %X\n", iter->name.c_str(), iter->reg_index);
+           return 0;
+         }
+         sign = m_pe->image_base() + UINT64(yres);
+         srch.set((const PBYTE)&sign, pattern_size);
+       } else {
+         for ( const auto yoff: yrules->second )
+         {
+           ptrdiff_t yres = NULL;
+           if ( !extract_poi(yoff, iter->reg_index, yres) )
+           {
+             fprintf(stderr, "cannot extract ypoi %s at offset %X\n", iter->name.c_str(), iter->reg_index);
+             continue;
+           }
+           sign = m_pe->image_base() + UINT64(yres);
+           srch.set((const PBYTE)&sign, pattern_size);
+           scan_value(xref, srch, pattern_size, path, rules_set, results);
+         }
+         goto process_results;
+       }
+     }
      break;
     case yarares:
      {

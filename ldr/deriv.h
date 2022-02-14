@@ -116,8 +116,9 @@ typedef enum
   addx,       // add regXX, reg, imm. index of register in reg_index
   movx,       // mov regXX, imm. index of register in reg_index
   rule,       // some early defined rule, index of rule in reg_index
-  poi,        // pointer from some early found address
+  poi,        // pointer from some early found address. stg index in reg_index, offset in value
   yarares,    // result from yara scan. name of rule in name, offset in reg_index
+  ypoi,       // pointer from yara scan. name of rule in name, offset in reg_index
 } path_item_type;
 
 class path_edge;
@@ -218,6 +219,13 @@ struct path_item
         return 1;
     }
     return 0;
+  }
+  inline void clear()
+  {
+    at = 0;
+    value_count = 0;
+    reg_index = 0;
+    name.clear();
   }
   void reset();
   void dump() const;

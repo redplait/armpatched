@@ -253,6 +253,11 @@ void path_item::dump_at() const
     case poi:
         printf(" poi %d offset %X\n", reg_index, value);
        break;
+    case ypoi:
+        if ( stg_index )
+          printf(" stg%d", stg_index);
+        printf(" ypoi %s %X\n", name.c_str(), reg_index);
+       break;
     case yarares:
         if ( stg_index )
           printf(" stg%d", stg_index);

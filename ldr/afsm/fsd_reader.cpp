@@ -74,14 +74,14 @@ int fsm_reader::read_rule(found_xref **ref, path_edge &path)
 }
 
 #define NEXT    curr = NULL; return 0;
-#define SLIST    if ( m_state == 3 ) { path.list.push_back(item); } \
+#define SLIST    if ( m_state == 3 ) { path.list.push_back(item); item.clear(); } \
                  if ( m_state < 3 ) m_state = 3; \
                  else if ( m_state > 3 ) m_state = 5; \
                  item.wait_for = wait_for;
 
-#define AT_SLIST if ( m_state == 3 ) { path.list.push_back(item); } \
+#define AT_SLIST if ( m_state == 3 ) { path.list.push_back(item); item.clear(); } \
                  if ( m_state < 3 ) m_state = 3; \
-                 else if ( m_state == 5 ) { path.scan_list.push_back(item); } \
+                 else if ( m_state == 5 ) { path.scan_list.push_back(item); item.clear(); } \
                  if ( m_state > 3 ) m_state = 5; \
                  item.wait_for = wait_for;
 
@@ -454,6 +454,26 @@ int fsm_reader::parse(path_edge &path)
       return -1;
     }
     item.type = yarares;
+    item.reg_index = 0;
+    auto token_end = next_token(curr);
+    std::string tmp(curr, token_end);
+    item.name = tmp;
+    curr = trim_left(token_end);
+    if ( *curr )
+      item.reg_index = strtoul(curr, &curr, 16);
+    NEXT
+  }
+  // ypoi - 4 yname offset
+  if ( !strncmp(curr, "ypoi", 4) )
+  {
+    SLIST
+    curr = trim_left(curr + 4);
+    if ( !*curr )
+    {
+      fprintf(stderr, "bad params for ypoi at line %d\n", m_line);
+      return -1;
+    }
+    item.type = ypoi;
     item.reg_index = 0;
     auto token_end = next_token(curr);
     std::string tmp(curr, token_end);
