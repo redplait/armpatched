@@ -186,7 +186,10 @@ class cf_graph: public graph_ranges<T>
      try
      {
        for ( auto iter = m_nodes.cbegin(); iter != m_nodes.cend(); ++iter )
-         list->push_back(*iter);
+       {
+         if ( !this->in_mranges(*iter) )
+           list->push_back(*iter);
+       }
      } catch(std::bad_alloc)
      {}
      ranges->clear();
@@ -201,7 +204,7 @@ class cf_graph: public graph_ranges<T>
      try
      {
        vec.reserve(m_nodes.size());
-       std::copy(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec));
+       std::copy_if(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec), [](const T &curr) -> bool { return !this->in_mranges(curr); } );
      } catch(std::bad_alloc)
      {}
      // sort vector
@@ -227,7 +230,10 @@ class cf_graph: public graph_ranges<T>
      try
      {
        for ( auto iter = m_nodes.cbegin(); iter != m_nodes.cend(); ++iter )
-         list->push_back(*iter);
+       {
+         if ( !this->in_mranges(*iter) )
+           list->push_back(*iter);
+       }
      } catch(std::bad_alloc)
      {}
      return list->size();
@@ -242,7 +248,7 @@ class cf_graph: public graph_ranges<T>
       try
       {
          vec.reserve(m_nodes.size());
-         std::copy(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec));
+         std::copy_if(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec), [](const T &curr) -> bool { return !this->in_mranges(curr); } );
       } catch(std::bad_alloc)
       {}
       // sort vector
@@ -307,8 +313,11 @@ class statefull_graph: public graph_ranges<T>
      {
        for ( auto iter = m_nodes.cbegin(); iter != m_nodes.cend(); ++iter )
        {
-         Edge tmp { iter->first, iter->second };
-         list->push_back(tmp);
+         if ( !this->in_mranges(iter->first) )
+         {
+           Edge tmp { iter->first, iter->second };
+           list->push_back(tmp);
+         }
        }
      } catch(std::bad_alloc)
      { }
@@ -323,7 +332,7 @@ class statefull_graph: public graph_ranges<T>
      try
      {
         vec.reserve(m_nodes.size());
-        std::copy(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec));
+        std::copy_if(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec), [](const T &curr) -> bool { return !this->in_mranges(curr->first); });
      } catch(std::bad_alloc)
      { }
      // sort vector
