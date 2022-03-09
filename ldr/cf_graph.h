@@ -332,7 +332,7 @@ class statefull_graph: public graph_ranges<T>
      try
      {
         vec.reserve(m_nodes.size());
-        std::copy_if(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec), [](const T &curr) -> bool { return !this->in_mranges(curr->first); });
+        std::copy_if(m_nodes.cbegin(), m_nodes.cend(), back_inserter(vec), [](const Edge &curr) -> bool { return !this->in_mranges(curr.first); });
      } catch(std::bad_alloc)
      { }
      // sort vector
