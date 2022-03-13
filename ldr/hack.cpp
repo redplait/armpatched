@@ -114,6 +114,15 @@ int arm64_hack::is_bl_jimm(PBYTE &addr) const
     return 0;
 }
 
+int arm64_hack::is_adr() const
+{
+  return (m_dis.instr_id == AD_INSTR_ADR) && 
+         (m_dis.num_operands == 2) &&
+         (m_dis.operands[0].type == AD_OP_REG) &&
+         (m_dis.operands[1].type == AD_OP_IMM)
+  ;
+}
+
 int arm64_hack::is_adrp() const
 {
   return (m_dis.instr_id == AD_INSTR_ADRP) && 

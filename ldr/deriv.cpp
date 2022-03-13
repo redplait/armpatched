@@ -531,6 +531,8 @@ int deriv_hack::check_thunk(DWORD addr, const char *need_name)
     {
       case 0: if ( is_adrp(used_regs) )
                 continue;
+              if ( is_adr(used_regs) )
+                continue;
               return 0;
       case 1: if ( is_ldr() )
         {
@@ -1211,6 +1213,8 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         }
         if ( is_adrp(used_regs) )
           continue;
+        if ( is_adr(used_regs) )
+          continue;
         // ldar
         if ( is_ldar(used_regs) )
           continue;
@@ -1863,6 +1867,8 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
         }
         if ( is_adrp(used_regs) )
           continue;
+        if ( is_adr(used_regs) )
+          continue;
         // ldar
         if ( is_ldar(used_regs) )
           continue;
@@ -2158,6 +2164,8 @@ int deriv_hack::disasm_one_func(PBYTE psp, PBYTE pattern, FH &fh)
           break;
         }
         if ( is_adrp(used_regs) )
+          continue;
+        if ( is_adr(used_regs) )
           continue;
         // check for bl
         PBYTE caddr = NULL;

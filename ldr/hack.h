@@ -519,6 +519,14 @@ class arm64_hack
      used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
      return 1;
    }
+   int is_adr() const;
+   inline int is_adr(regs_pad &used_regs) const
+   {
+     if ( !is_adr() )
+       return 0;
+     used_regs.adrp(get_reg(0), m_dis.operands[1].op_imm.bits);
+     return 1;
+   }
    int is_add() const;
    int is_ldr() const;
    int is_ldrh() const;
