@@ -494,6 +494,31 @@ int xref_finder::find(PBYTE start, DWORD size, PBYTE what, std::list<PBYTE> &out
       m_regs[reg_n].where = start;
       continue;
     }
+    // check for adr
+    if ( (val & 0x9f000000) == 0x10000000 )
+    {
+       if ( ArmadilloDisassemble(val, (ULONGLONG)start, &dis) )
+         continue;
+       disasm_cnt++;
+       if ( dis.instr_id != AD_INSTR_ADR )
+         continue;
+       adrp_cnt++;
+       reg_n = dis.operands[0].op_reg.rn;
+       if ( reg_n >= AD_REG_SP )
+         continue;
+       m_regs[reg_n].addr = (PBYTE)dis.operands[1].op_imm.bits;
+       if ( m_regs[reg_n].addr == what )
+       {
+         try
+         {
+           out_list.push_back(start);
+           res++;
+         } catch(std::bad_alloc)
+         { break; }
+       }
+       m_regs[reg_n].where = start;
+       continue;
+    }
     // check for add
     if ( (val & 0x7f000000) == 0x11000000 )
     {
