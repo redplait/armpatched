@@ -582,6 +582,8 @@ static int DisassembleAddSubtractShiftedOrExtendedInstr(struct instruction *i, s
 
         if(ex)
             concat(DECODE_STR(out), ", %s", ex);
+        if (imm3)
+          ADD_SHIFT_OPERAND(out, AD_SHIFT_LSL, imm3);
     }
 
     SET_INSTR_ID(out, instr_id);
