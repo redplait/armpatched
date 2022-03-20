@@ -1213,8 +1213,6 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
         }
         if ( is_adrp(used_regs) )
           continue;
-        if ( is_adr(used_regs) )
-          continue;
         // ldar
         if ( is_ldar(used_regs) )
           continue;
@@ -1270,9 +1268,10 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
            continue;
         }
         // and now different variants of xref
-        if ( is_add() )
+        if ( is_add() || is_adr(used_regs) )
         {
-          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          PBYTE what = (m_dis.instr_id == AD_INSTR_ADR) ? (PBYTE)used_regs.get(get_reg(0)) :
+            (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           // check poi first
           if ( iter->second.s->type == poi )
           {
@@ -1900,9 +1899,10 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
           continue;
         }
         // and now different variants of xref
-        if ( is_add() )
+        if ( is_add() || is_adr(used_regs) )
         {
-          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          PBYTE what = (m_dis.instr_id == AD_INSTR_ADR) ? (PBYTE)used_regs.get(get_reg(0)) :
+            (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           // check const in .rdata
           if ( r != NULL && gUseRData && !is_inside_IAT(what) )
           {
