@@ -1301,7 +1301,7 @@ int deriv_hack::try_apply(const one_section *s, PBYTE psp, path_edge &path, DWOR
             } else
               CHECK_WAIT
           }
-          if ( iter->second.s->type == addx )
+          if ( (m_dis.instr_id == AD_INSTR_ADD) && iter->second.s->type == addx )
           {
             if ( (iter->second.s->reg_index != -1) && (get_reg(0) != iter->second.s->reg_index) )
               continue;
