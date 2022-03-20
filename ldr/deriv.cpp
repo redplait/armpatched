@@ -1866,8 +1866,6 @@ int deriv_hack::make_path(DWORD rva, PBYTE psp, path_edge &out_res)
         }
         if ( is_adrp(used_regs) )
           continue;
-        if ( is_adr(used_regs) )
-          continue;
         // ldar
         if ( is_ldar(used_regs) )
           continue;
@@ -2165,8 +2163,6 @@ int deriv_hack::disasm_one_func(PBYTE psp, PBYTE pattern, FH &fh)
         }
         if ( is_adrp(used_regs) )
           continue;
-        if ( is_adr(used_regs) )
-          continue;
         // check for bl
         PBYTE caddr = NULL;
         if ( is_bl_jimm(caddr) )
@@ -2182,9 +2178,10 @@ int deriv_hack::disasm_one_func(PBYTE psp, PBYTE pattern, FH &fh)
           break;
         }
         // and now different variants of xref
-        if ( is_add() )
+        if ( is_add() || is_adr(used_regs) )
         {
-          PBYTE what = (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
+          PBYTE what = (m_dis.instr_id == AD_INSTR_ADR) ? (PBYTE)used_regs.get(get_reg(0)) :
+            (PBYTE)used_regs.add2(get_reg(0), get_reg(1), m_dis.operands[2].op_imm.bits);
           if ( what == pattern )
             res++;
           continue;
