@@ -175,6 +175,8 @@ poor_stat process_func(func_t *f)
         case AD_INSTR_PRFM:
           break;
 
+        case AD_INSTR_LDP:
+        case AD_INSTR_LDNP:
         case AD_INSTR_LDPSW:
          if ( dis.num_operands == 3 && (dis.operands[0].type == AD_OP_REG) &&
                (dis.operands[1].type == AD_OP_REG)
@@ -197,7 +199,6 @@ poor_stat process_func(func_t *f)
         case AD_INSTR_LDRB:
         case AD_INSTR_LDRSB:
         case AD_INSTR_LDRH:
-        case AD_INSTR_LDP:
         case AD_INSTR_LDUR:
         case AD_INSTR_LDURB:
         case AD_INSTR_LDURH:
