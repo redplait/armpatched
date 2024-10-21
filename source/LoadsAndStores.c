@@ -1341,10 +1341,12 @@ static int DisassembleLoadAndStoreRegisterInstr(struct instruction *i, struct ad
             concat(DECODE_STR(out), "]");
         }
         else if(kind == IMMEDIATE_POST_INDEXED){
+            out->idx_kind = 1;
             ADD_IMM_OPERAND(out, AD_IMM_ULONG, imm9);
             concat(DECODE_STR(out), "], #"S_X"", S_A(imm9));
         }
         else if(kind == IMMEDIATE_PRE_INDEXED){
+          out->idx_kind = 3;
           ADD_IMM_OPERAND(out, AD_IMM_ULONG, imm9);
           concat(DECODE_STR(out), ", #"S_X"]!", S_A(imm9));
         }

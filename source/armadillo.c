@@ -86,6 +86,7 @@ void armadillo_init(struct ad_insn *dis)
   dis->num_operands = 0;
 
   dis->cc = AD_NONE;
+  dis->idx_kind = 0;
 }
 
 int ArmadilloDisassemble(unsigned int opcode, uint64 PC, struct ad_insn *out)

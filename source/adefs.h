@@ -10,7 +10,7 @@
 struct ad_operand {
     /* operand type (AD_OP_*) */
     int type;
-    
+
     union
     {
     /* type == AD_OP_REG */
@@ -25,7 +25,7 @@ struct ad_operand {
         int zr;
         /* if this is a system register, sysreg holds its encoding (AD_SYSREG_*) */
         int sysreg;
-        
+
         /* register string table, use rn for indexing */
         const char *const *rtbl;
     } op_reg;
@@ -68,7 +68,9 @@ struct ad_insn {
     int num_operands;
 
     /* code condition, if any (AD_CC_*) */
-    int cc;
+    unsigned char cc;
+    /* for IMMEDIATE_POST_INDEXED 1, for IMMEDIATE_PRE_INDEXED 3 */
+    unsigned char idx_kind;
 };
 
 #define AD_NONE  -1
