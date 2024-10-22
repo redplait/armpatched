@@ -1172,13 +1172,15 @@ static int DisassembleLoadAndStoreRegisterPairInstr(struct instruction *i,
     if(imm7 == 0)
         concat(DECODE_STR(out), "]");
     else{
-        if(kind == POST_INDEXED)
+        if(kind == POST_INDEXED) {
+            out->idx_kind = 1;
             concat(DECODE_STR(out), "], #"S_X"", S_A(imm7));
-        else if(kind == OFFSET || kind == NO_ALLOCATE)
+        } else if(kind == OFFSET || kind == NO_ALLOCATE)
             concat(DECODE_STR(out), ", #"S_X"]", S_A(imm7));
-        else
+        else {
+            out->idx_kind = 3;
             concat(DECODE_STR(out), ", #"S_X"]!", S_A(imm7));
-
+        }
         ADD_IMM_OPERAND(out, AD_IMM_INT, *(int *)&imm7);
     }
 

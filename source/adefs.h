@@ -68,7 +68,7 @@ struct ad_insn {
     int num_operands;
 
     /* code condition, if any (AD_CC_*) */
-    unsigned char cc;
+    int cc;
     /* for IMMEDIATE_POST_INDEXED 1, for IMMEDIATE_PRE_INDEXED 3 */
     unsigned char idx_kind;
 };
